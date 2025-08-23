@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CHAYA 관리자 앱</title>
+    <!-- Inter Font -->
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web@2.1.1/dist/phosphor.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .tab-button.active {
+            @apply bg-orange-500 text-white;
+        }
+        .modal {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.95); opacity: 0; visibility: hidden; z-index: 1000;
+            background-color: white; padding: 2rem; border-radius: 1rem; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease-out, opacity 0.3s ease-out, visibility 0.3s;
+        }
+        /* Additional style for modal background click area */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease-out, visibility 0.3s;
+        }
+        .modal-overlay.is-visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal.is-visible { transform: translate(-50%, -50%) scale(1); opacity: 1; visibility: visible; }
+        .tab-page.hidden { display: none; }
+    </style>
+</head>
+<body class="bg-gray-100 p-4 sm:p-8 font-sans min-h-screen flex flex-col items-center">
+
+    <!-- Modal Overlays -->
+    <div id="menu-modal-overlay" class="modal-overlay"></div>
+    <div id="category-modal-overlay" class="modal-overlay"></div>
+    <div id="order-modal-overlay" class="modal-overlay"></div>
+    <div id="confirm-modal-overlay" class="modal-overlay"></div>
+
+    <div id="root" class="w-full max-w-4xl bg-white rounded-xl shadow-lg p-6 sm:p-8">
+        <h1 class="text-3xl sm:text-4xl font-bold text-center text-gray-800 mb-6">CHAYA 관리자 앱</h1>
+
+        <!-- Tab Navigation -->
+        <div class="flex justify-center bg-gray-200 rounded-lg p-1 mb-6">
+            <button id="menu-tab" class="tab-button active flex-1 py-2 px-4 rounded-md text-center text-gray-700 font-medium transition-colors">메뉴 관리</button>
+            <button id="orders-tab" class="tab-button flex-1 py-2 px-4 rounded-md text-center text-gray-700 font-medium transition-colors">주문 목록</button>
+        </div>
+
+        <!-- Content Area -->
+        <div id="tab-content" class="w-full">
+            <!-- Menu Management Section -->
+            <div id="menu-content" class="tab-page">
+                <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 mb-4">
+                    <button id="add-menu-btn" class="flex-1 bg-orange-500 text-white py-3 rounded-lg font-bold hover:bg-orange-600 transition-colors duration-300 flex items-center justify-center">
+                        <i class="ph ph-plus text-lg mr-2"></i> 메뉴 추가
+                    </button>
+                    <button id="add-category-btn" class="flex-1 bg-teal-500 text-white py-3 rounded-lg font-bold hover:bg-teal-600 transition-colors duration-300 flex items-center justify-center">
+                        <i class="ph ph-list-plus text-lg mr-2"></i> 카테고리 관리
+                    </button>
+                </div>
+                <div id="menu-list" class="space-y-4">
+                    <!-- Menu items will be dynamically added here -->
+                </div>
+            </div>
+
+            <!-- Orders List Section -->
+            <div id="orders-content" class="tab-page hidden">
+                <div id="orders-list" class="space-y-4">
+                    <!-- Order items will be dynamically added here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for adding/editing menu -->
+    <div id="menu-modal" class="modal w-11/12 max-w-lg">
+        <div class="flex justify-between items-center mb-4">
+            <h2 id="modal-title" class="text-2xl font-bold text-gray-800">메뉴 추가</h2>
+            <button id="close-modal-btn" class="text-gray-500 hover:text-gray-700 transition-colors">
+                <i class="ph ph-x text-2xl"></i>
+            </button>
+        </div>
+        <form id="menu-form" class="space-y-4">
+            <div class="space-y-2">
+                <label for="menu-name" class="block text-gray-700 font-medium">메뉴 이름</label>
+                <input type="text" id="menu-name" name="menuName" placeholder="메뉴 이름을 입력하세요" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+            </div>
+            <div class="space-y-2">
+                <label for="menu-price" class="block text-gray-700 font-medium">가격 (원)</label>
+                <input type="number" id="menu-price" name="menuPrice" placeholder="가격을 입력하세요" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+            </div>
+            <div class="space-y-2">
+                <label for="menu-description" class="block text-gray-700 font-medium">설명</label>
+                <textarea id="menu-description" name="menuDescription" rows="3" placeholder="메뉴 설명을 입력하세요" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"></textarea>
+            </div>
+            <div class="space-y-2">
+                <label for="menu-category" class="block text-gray-700 font-medium">카테고리</label>
+                <select id="menu-category" name="menuCategory" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                    <option value="">카테고리 선택</option>
+                </select>
+            </div>
+            <div class="space-y-2">
+                <label for="menu-image" class="block text-gray-700 font-medium">이미지</label>
+                <input type="file" id="menu-image" name="menuImage" accept="image/*" class="w-full text-gray-700">
+            </div>
+            <button type="submit" id="save-menu-btn" class="w-full bg-orange-500 text-white py-3 rounded-lg font-bold hover:bg-orange-600 transition-colors duration-300">메뉴 저장</button>
+        </form>
+    </div>
+
+    <!-- Modal for category management -->
+    <div id="category-modal" class="modal">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-bold text-gray-800">카테고리 관리</h2>
+            <button id="close-category-modal-btn" class="text-gray-500 hover:text-gray-700 transition-colors">
+                <i class="ph ph-x text-2xl"></i>
+            </button>
+        </div>
+        <form id="category-form" class="space-y-4 mb-4">
+            <div class="flex space-x-2">
+                <input type="text" id="new-category" name="newCategory" placeholder="새 카테고리 이름" class="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                <button type="submit" class="bg-teal-500 text-white py-3 px-6 rounded-lg font-bold hover:bg-teal-600 transition-colors">추가</button>
+            </div>
+        </form>
+        <div id="category-list" class="space-y-2">
+            <!-- Categories will be dynamically added here -->
+        </div>
+    </div>
+
+    <!-- Modal for order details -->
+    <div id="order-modal" class="modal">
+        <div class="flex justify-between items-center mb-4">
+            <h2 id="order-modal-title" class="text-2xl font-bold text-gray-800">주문 상세</h2>
+            <button id="close-order-modal-btn" class="text-gray-500 hover:text-gray-700 transition-colors">
+                <i class="ph ph-x text-2xl"></i>
+            </button>
+        </div>
+        <div id="order-details-content">
+            <!-- Order details will be dynamically added here -->
+        </div>
+    </div>
+    
+    <!-- Custom Confirmation Modal -->
+    <div id="confirm-modal" class="modal w-11/12 max-w-sm">
+        <div class="p-4">
+            <p id="confirm-message" class="text-center text-lg font-medium mb-4"></p>
+            <div class="flex justify-center space-x-4">
+                <button id="confirm-yes-btn" class="flex-1 bg-red-500 text-white py-2 rounded-lg font-bold hover:bg-red-600 transition-colors duration-300">삭제</button>
+                <button id="confirm-no-btn" class="flex-1 bg-gray-300 text-gray-800 py-2 rounded-lg font-bold hover:bg-gray-400 transition-colors duration-300">취소</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Message -->
+    <div id="toast-message" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-sm px-4 py-2 rounded-lg shadow-xl opacity-0 transition-opacity duration-300 z-50"></div>
+
+    <!-- Firebase -->
+    <script type="module">
+        // Import Firebase modules
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, doc, setDoc, deleteDoc, onSnapshot, query, getDocs, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+
+        // Constants
+        const TAB_MENU = 'menu';
+        const TAB_ORDERS = 'orders';
+        let isAuthReady = false;
+
+        // Get DOM elements
+        const menuTabBtn = document.getElementById('menu-tab');
+        const ordersTabBtn = document.getElementById('orders-tab');
+        const menuContent = document.getElementById('menu-content');
+        const ordersContent = document.getElementById('orders-content');
+        const menuList = document.getElementById('menu-list');
+        const ordersList = document.getElementById('orders-list');
+        const addMenuBtn = document.getElementById('add-menu-btn');
+        const addCategoryBtn = document.getElementById('add-category-btn');
+        const menuModal = document.getElementById('menu-modal');
+        const categoryModal = document.getElementById('category-modal');
+        const closeMenuModalBtn = document.getElementById('close-modal-btn');
+        const closeCategoryModalBtn = document.getElementById('close-category-modal-btn');
+        const menuForm = document.getElementById('menu-form');
+        const categoryForm = document.getElementById('category-form');
+        const newCategoryInput = document.getElementById('new-category');
+        const categoryListContainer = document.getElementById('category-list');
+        const modalTitle = document.getElementById('modal-title');
+        const menuCategorySelect = document.getElementById('menu-category');
+        const menuImageInput = document.getElementById('menu-image');
+        const orderModal = document.getElementById('order-modal');
+        const closeOrderModalBtn = document.getElementById('close-order-modal-btn');
+        const orderDetailsContent = document.getElementById('order-details-content');
+        const toastMessage = document.getElementById('toast-message');
+        
+        // Custom Confirmation Modal
+        const confirmModal = document.getElementById('confirm-modal');
+        const confirmOverlay = document.getElementById('confirm-modal-overlay');
+        const confirmMessage = document.getElementById('confirm-message');
+        const confirmYesBtn = document.getElementById('confirm-yes-btn');
+        const confirmNoBtn = document.getElementById('confirm-no-btn');
+
+        // Get modal overlays
+        const menuModalOverlay = document.getElementById('menu-modal-overlay');
+        const categoryModalOverlay = document.getElementById('category-modal-overlay');
+        const orderModalOverlay = document.getElementById('order-modal-overlay');
+
+        let currentEditingMenuId = null;
+        let onConfirmCallback = null;
+
+        // Firebase variables
+        let db;
+        let auth;
+        let storage;
+        let userId;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        // --- Utility Functions ---
+
+        function showToast(message) {
+            toastMessage.textContent = message;
+            toastMessage.classList.add('show');
+            setTimeout(() => {
+                toastMessage.classList.remove('show');
+            }, 3000);
+        }
+
+        function showModal(modal, overlay) {
+            modal.classList.add('is-visible');
+            overlay.classList.add('is-visible');
+        }
+
+        function hideModal(modal, overlay) {
+            modal.classList.remove('is-visible');
+            overlay.classList.remove('is-visible');
+        }
+
+        // Custom confirmation modal function
+        function showConfirmModal(message, callback) {
+            confirmMessage.textContent = message;
+            onConfirmCallback = callback;
+            showModal(confirmModal, confirmOverlay);
+        }
+
+        function switchTab(tab) {
+            if (tab === TAB_MENU) {
+                menuTabBtn.classList.add('active');
+                ordersTabBtn.classList.remove('active');
+                menuContent.classList.remove('hidden');
+                ordersContent.classList.add('hidden');
+            } else if (tab === TAB_ORDERS) {
+                ordersTabBtn.classList.add('active');
+                menuTabBtn.classList.remove('active');
+                ordersContent.classList.remove('hidden');
+                menuContent.classList.add('hidden');
+            }
+        }
+
+        // --- UI Rendering Functions ---
+
+        function renderMenuItems(menuItems) {
+            menuList.innerHTML = '';
+            const menuHtml = menuItems.map(menu => `
+                <div class="flex items-center p-4 bg-gray-50 rounded-lg shadow-sm border border-gray-200">
+                    <img src="${menu.image || 'https://placehold.co/80x80/e2e8f0/64748b?text=Menu'}" alt="${menu.name}" class="w-20 h-20 rounded-lg object-cover flex-shrink-0 mr-4">
+                    <div class="flex-grow">
+                        <h3 class="text-lg font-semibold text-gray-800">${menu.name}</h3>
+                        <p class="text-sm text-gray-600">${menu.description}</p>
+                        <p class="text-md font-bold text-orange-600 mt-1">${menu.price}원</p>
+                    </div>
+                    <div class="flex space-x-2 ml-4">
+                        <button class="edit-btn text-gray-500 hover:text-blue-500" data-id="${menu.id}" aria-label="메뉴 수정">
+                            <i class="ph ph-note-pencil text-xl"></i>
+                        </button>
+                        <button class="delete-btn text-gray-500 hover:text-red-500" data-id="${menu.id}" data-image-url="${menu.image || ''}" aria-label="메뉴 삭제">
+                            <i class="ph ph-trash text-xl"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+            menuList.innerHTML = menuHtml;
+        }
+
+        function renderOrders(orders) {
+            ordersList.innerHTML = '';
+            if (orders.length === 0) {
+                ordersList.innerHTML = '<p class="text-center text-gray-500 mt-8">새로운 주문이 없습니다.</p>';
+                return;
+            }
+
+            const orderHtml = orders.map(order => `
+                <div class="p-4 bg-gray-50 rounded-lg shadow-sm border border-gray-200 flex justify-between items-center">
+                    <div>
+                        <p class="text-sm text-gray-500">주문 시간: ${new Date(order.timestamp).toLocaleString()}</p>
+                        <p class="text-lg font-bold text-gray-800 mt-1">총 금액: ${order.totalPrice}원</p>
+                    </div>
+                    <button class="view-order-btn bg-orange-500 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors" data-id="${order.id}">
+                        상세 보기
+                    </button>
+                </div>
+            `).join('');
+            ordersList.innerHTML = orderHtml;
+        }
+
+        function renderOrderDetails(order) {
+            const itemsHtml = order.items.map(item => `
+                <div class="flex justify-between items-center py-2 border-b last:border-0">
+                    <p class="text-gray-700">${item.name} x ${item.quantity}</p>
+                    <p class="text-gray-900 font-medium">${item.price}원</p>
+                </div>
+            `).join('');
+            
+            orderDetailsContent.innerHTML = `
+                <p class="text-sm text-gray-500 mb-2">주문 시간: ${new Date(order.timestamp).toLocaleString()}</p>
+                <div class="space-y-2 mb-4">
+                    ${itemsHtml}
+                </div>
+                <div class="flex justify-between items-center font-bold text-lg border-t pt-4">
+                    <p>총 금액:</p>
+                    <p class="text-orange-600">${order.totalPrice}원</p>
+                </div>
+            `;
+            showModal(orderModal, orderModalOverlay);
+        }
+
+        function renderCategories(categories) {
+            menuCategorySelect.innerHTML = '<option value="">카테고리 선택</option>';
+            categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.name;
+                option.textContent = category.name;
+                menuCategorySelect.appendChild(option);
+            });
+
+            categoryListContainer.innerHTML = '';
+            const categoryHtml = categories.map(category => `
+                <div class="flex justify-between items-center p-3 bg-gray-100 rounded-lg">
+                    <span>${category.name}</span>
+                    <button class="delete-category-btn text-gray-500 hover:text-red-500" data-id="${category.id}">
+                        <i class="ph ph-trash text-xl"></i>
+                    </button>
+                </div>
+            `).join('');
+            categoryListContainer.innerHTML = categoryHtml;
+        }
+
+        // --- Firestore Operations ---
+
+        async function uploadImage(file) {
+            const storageRef = ref(storage, `menu_images/${Date.now()}_${file.name}`);
+            const snapshot = await uploadBytes(storageRef, file);
+            return await getDownloadURL(snapshot.ref);
+        }
+
+        async function addMenu(menuData, imageFile) {
+            try {
+                let imageUrl = '';
+                if (imageFile) {
+                    imageUrl = await uploadImage(imageFile);
+                }
+                const menuCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'menu');
+                await addDoc(menuCollectionRef, { ...menuData, image: imageUrl });
+                showToast('메뉴가 추가되었습니다.');
+            } catch (e) {
+                console.error("Error adding document: ", e);
+                showToast('메뉴 추가 중 오류가 발생했습니다.');
+            } finally {
+                // Ensure the modal is always hidden after a save attempt
+                hideModal(menuModal, menuModalOverlay);
+            }
+        }
+
+        async function updateMenu(id, menuData, imageFile) {
+            try {
+                let imageUrl = menuData.image;
+                if (imageFile) {
+                    if (imageUrl) {
+                        const oldImageRef = ref(storage, imageUrl);
+                        await deleteObject(oldImageRef);
+                    }
+                    imageUrl = await uploadImage(imageFile);
+                }
+                const menuRef = doc(db, 'artifacts', appId, 'public', 'data', 'menu', id);
+                await setDoc(menuRef, { ...menuData, image: imageUrl }, { merge: true });
+                showToast('메뉴가 수정되었습니다.');
+            } catch (e) {
+                console.error("Error updating document: ", e);
+                showToast('메뉴 수정 중 오류가 발생했습니다.');
+            } finally {
+                // Ensure the modal is always hidden after an update attempt
+                hideModal(menuModal, menuModalOverlay);
+            }
+        }
+
+        async function deleteMenu(id, imageUrl) {
+            showConfirmModal('정말 이 메뉴를 삭제하시겠습니까?', async () => {
+                try {
+                    const menuRef = doc(db, 'artifacts', appId, 'public', 'data', 'menu', id);
+                    await deleteDoc(menuRef);
+                    if (imageUrl) {
+                        const imageRef = ref(storage, imageUrl);
+                        await deleteObject(imageRef);
+                    }
+                    showToast('메뉴가 삭제되었습니다.');
+                } catch (e) {
+                    console.error("Error removing document: ", e);
+                    showToast('메뉴 삭제 중 오류가 발생했습니다.');
+                }
+            });
+        }
+
+        async function addCategory(categoryName) {
+            try {
+                const categoriesCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'categories');
+                await addDoc(categoriesCollectionRef, { name: categoryName, timestamp: Date.now() });
+                showToast('카테고리가 추가되었습니다.');
+                newCategoryInput.value = '';
+                hideModal(categoryModal, categoryModalOverlay);
+            } catch (e) {
+                console.error("Error adding category: ", e);
+                showToast('카테고리 추가 중 오류가 발생했습니다.');
+            }
+        }
+
+        async function deleteCategory(id) {
+            showConfirmModal('이 카테고리를 삭제하시겠습니까? 이 카테고리에 속한 메뉴들은 카테고리가 사라집니다.', async () => {
+                try {
+                    const categoryRef = doc(db, 'artifacts', appId, 'public', 'data', 'categories', id);
+                    await deleteDoc(categoryRef);
+                    showToast('카테고리가 삭제되었습니다.');
+                } catch (e) {
+                    console.error("Error deleting category: ", e);
+                    showToast('카테고리 삭제 중 오류가 발생했습니다.');
+                }
+            });
+        }
+
+        // --- Event Handlers ---
+
+        async function handleAddOrEditMenu() {
+            const name = menuForm.menuName.value.trim();
+            const price = parseInt(menuForm.menuPrice.value, 10);
+            const description = menuForm.menuDescription.value.trim();
+            const category = menuForm.menuCategory.value;
+            const imageFile = menuImageInput.files[0];
+
+            if (!name || isNaN(price) || !description || !category) {
+                showToast('모든 필드를 채워주세요.');
+                return;
+            }
+
+            const menuData = {
+                name: name,
+                price: price,
+                description: description,
+                category: category,
+                timestamp: Date.now()
+            };
+
+            if (currentEditingMenuId) {
+                // BUG FIX: Added 'await' to ensure the update operation completes before proceeding.
+                await updateMenu(currentEditingMenuId, menuData, imageFile);
+            } else {
+                await addMenu(menuData, imageFile);
+            }
+        }
+        
+        // --- Event Listeners ---
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (firebaseConfig.apiKey) {
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+                storage = getStorage(app);
+
+                try {
+                    if (initialAuthToken) {
+                        await signInWithCustomToken(auth, initialAuthToken);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                } catch (error) {
+                    console.error('Firebase authentication failed:', error);
+                    showToast('인증 오류: Firebase 설정 또는 네트워크 문제');
+                    return;
+                }
+
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        isAuthReady = true;
+
+                        onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'menu')), (snapshot) => {
+                            const menuItems = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                            renderMenuItems(menuItems);
+                        });
+
+                        onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'orders')), (snapshot) => {
+                            const orders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), timestamp: doc.data().timestamp.toDate() }));
+                            orders.sort((a, b) => b.timestamp - a.timestamp);
+                            renderOrders(orders);
+                        });
+                        
+                        onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'categories')), (snapshot) => {
+                            const categories = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                            categories.sort((a, b) => a.name.localeCompare(b.name));
+                            renderCategories(categories);
+                        });
+                    } else {
+                        console.log('No user is signed in.');
+                    }
+                });
+            } else {
+                showToast('Firebase 설정이 누락되었습니다. 앱을 실행할 수 없습니다.');
+            }
+        });
+
+        menuTabBtn.addEventListener('click', () => switchTab(TAB_MENU));
+        ordersTabBtn.addEventListener('click', () => switchTab(TAB_ORDERS));
+
+        addMenuBtn.addEventListener('click', () => {
+            currentEditingMenuId = null;
+            modalTitle.textContent = '메뉴 추가';
+            menuForm.reset();
+            showModal(menuModal, menuModalOverlay);
+        });
+
+        addCategoryBtn.addEventListener('click', () => {
+            // Fix: Reset form when opening
+            categoryForm.reset();
+            showModal(categoryModal, categoryModalOverlay);
+        });
+
+        // Close buttons
+        closeMenuModalBtn.addEventListener('click', () => hideModal(menuModal, menuModalOverlay));
+        closeCategoryModalBtn.addEventListener('click', () => hideModal(categoryModal, categoryModalOverlay));
+        closeOrderModalBtn.addEventListener('click', () => hideModal(orderModal, orderModalOverlay));
+
+        // Add event listeners for clicking outside the modal
+        menuModalOverlay.addEventListener('click', () => hideModal(menuModal, menuModalOverlay));
+        categoryModalOverlay.addEventListener('click', () => hideModal(categoryModal, categoryModalOverlay));
+        orderModalOverlay.addEventListener('click', () => hideModal(orderModal, orderModalOverlay));
+        confirmOverlay.addEventListener('click', () => hideModal(confirmModal, confirmOverlay));
+
+        // Confirmation modal buttons
+        confirmYesBtn.addEventListener('click', () => {
+            if (onConfirmCallback) {
+                onConfirmCallback();
+            }
+            hideModal(confirmModal, confirmOverlay);
+        });
+        confirmNoBtn.addEventListener('click', () => hideModal(confirmModal, confirmOverlay));
+
+
+        menuForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            handleAddOrEditMenu();
+        });
+
+        categoryForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const categoryName = newCategoryInput.value.trim();
+            if (categoryName) {
+                addCategory(categoryName);
+            }
+        });
+
+        menuList.addEventListener('click', (e) => {
+            const editBtn = e.target.closest('.edit-btn');
+            const deleteBtn = e.target.closest('.delete-btn');
+
+            if (editBtn) {
+                const id = editBtn.dataset.id;
+                getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'menu', id)).then(docSnapshot => {
+                    if (docSnapshot.exists()) {
+                        const menuData = docSnapshot.data();
+                        currentEditingMenuId = id;
+                        modalTitle.textContent = '메뉴 수정';
+                        menuForm.menuName.value = menuData.name;
+                        menuForm.menuPrice.value = menuData.price;
+                        menuForm.menuDescription.value = menuData.description;
+                        menuForm.menuCategory.value = menuData.category;
+                        showModal(menuModal, menuModalOverlay);
+                    }
+                });
+            } else if (deleteBtn) {
+                const id = deleteBtn.dataset.id;
+                const imageUrl = deleteBtn.dataset.imageUrl;
+                deleteMenu(id, imageUrl);
+            }
+        });
+        
+        ordersList.addEventListener('click', (e) => {
+            const viewBtn = e.target.closest('.view-order-btn');
+            if (viewBtn) {
+                const id = viewBtn.dataset.id;
+                getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'orders', id)).then(docSnapshot => {
+                    if (docSnapshot.exists()) {
+                        const orderData = docSnapshot.data();
+                        renderOrderDetails(orderData);
+                    }
+                });
+            }
+        });
+
+        categoryListContainer.addEventListener('click', (e) => {
+            const deleteBtn = e.target.closest('.delete-category-btn');
+            if (deleteBtn) {
+                const id = deleteBtn.dataset.id;
+                deleteCategory(id);
+            }
+        });
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CHAYA 메뉴판</title>
+    <!-- Inter Font -->
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web@2.1.1/dist/phosphor.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .modal {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.95); opacity: 0; visibility: hidden; z-index: 1000;
+            background-color: white; padding: 2rem; border-radius: 1rem; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease-out, opacity 0.3s ease-out, visibility 0.3s;
+        }
+        .modal.is-visible { transform: translate(-50%, -50%) scale(1); opacity: 1; visibility: visible; }
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.5); z-index: 999;
+            opacity: 0; visibility: hidden; transition: opacity 0.3s ease-out, visibility 0.3s;
+        }
+        .modal-overlay.is-visible { opacity: 1; visibility: visible; }
+        .show { opacity: 1 !important; transform: translate(-50%, 0) !important; }
+    </style>
+</head>
+<body class="bg-gray-100 p-4 sm:p-8 font-sans min-h-screen">
+
+    <div id="root" class="w-full max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-6 sm:p-8">
+        <h1 class="text-3xl sm:text-4xl font-bold text-center text-gray-800 mb-8">CHAYA 메뉴판</h1>
+        <div id="content" class="w-full">
+            <!-- Menus will be dynamically added here -->
+        </div>
+    </div>
+
+    <!-- Floating Cart Button -->
+    <button id="cart-button" class="fixed bottom-6 right-6 bg-orange-500 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center transform hover:scale-110 transition-transform duration-300">
+        <i class="ph ph-shopping-cart text-2xl"></i>
+        <span id="cart-item-count" class="absolute top-0 right-0 bg-red-600 text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full transform translate-x-1/3 -translate-y-1/3">0</span>
+    </button>
+
+    <!-- Cart Modal -->
+    <div id="cart-modal-overlay" class="modal-overlay"></div>
+    <div id="cart-modal" class="modal w-11/12 max-w-lg">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-bold text-gray-800">장바구니</h2>
+            <button id="close-cart-btn" class="text-gray-500 hover:text-gray-700 transition-colors">
+                <i class="ph ph-x text-2xl"></i>
+            </button>
+        </div>
+        <div id="cart-items" class="space-y-4 max-h-96 overflow-y-auto pr-2">
+            <!-- Cart items will be dynamically added here -->
+        </div>
+        <div class="border-t pt-4 mt-4 flex justify-between items-center">
+            <span class="text-lg font-bold text-gray-800">총 금액: <span id="cart-total-price" class="text-orange-600">0원</span></span>
+            <button id="checkout-btn" class="bg-green-600 text-white py-2 px-6 rounded-lg font-bold hover:bg-green-700 transition-colors duration-300">주문하기</button>
+        </div>
+    </div>
+    
+    <!-- Toast Message -->
+    <div id="toast-message" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-sm px-4 py-2 rounded-lg shadow-xl opacity-0 transition-opacity duration-300 z-50"></div>
+    
+    <!-- Firebase -->
+    <script type="module">
+        // Import Firebase modules
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase variables
+        let db;
+        let auth;
+        let userId;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        // Get DOM elements
+        const contentDiv = document.getElementById('content');
+        const cartButton = document.getElementById('cart-button');
+        const cartItemCountSpan = document.getElementById('cart-item-count');
+        const cartModal = document.getElementById('cart-modal');
+        const cartModalOverlay = document.getElementById('cart-modal-overlay');
+        const closeCartBtn = document.getElementById('close-cart-btn');
+        const cartItemsDiv = document.getElementById('cart-items');
+        const cartTotalPriceSpan = document.getElementById('cart-total-price');
+        const checkoutBtn = document.getElementById('checkout-btn');
+        const toastMessage = document.getElementById('toast-message');
+
+        let cart = {}; // { menuId: { menuData, quantity } }
+        let menuDataCache = {}; // Cache for menu data
+
+        // --- Utility Functions ---
+
+        function showToast(message) {
+            toastMessage.textContent = message;
+            toastMessage.classList.add('show');
+            setTimeout(() => {
+                toastMessage.classList.remove('show');
+            }, 3000);
+        }
+
+        function showModal(modal, overlay) {
+            modal.classList.add('is-visible');
+            overlay.classList.add('is-visible');
+        }
+
+        function hideModal(modal, overlay) {
+            modal.classList.remove('is-visible');
+            overlay.classList.remove('is-visible');
+        }
+
+        function updateCartUI() {
+            let totalCount = 0;
+            let totalPrice = 0;
+            cartItemsDiv.innerHTML = '';
+
+            const cartItems = Object.values(cart);
+            if (cartItems.length === 0) {
+                cartItemsDiv.innerHTML = '<p class="text-center text-gray-500 mt-8">장바구니가 비어 있습니다.</p>';
+                cartItemCountSpan.textContent = 0;
+                cartTotalPriceSpan.textContent = '0원';
+                return;
+            }
+
+            const cartItemsHtml = cartItems.map(item => {
+                totalCount += item.quantity;
+                totalPrice += item.menuData.price * item.quantity;
+                return `
+                    <div class="flex items-center justify-between p-3 bg-gray-100 rounded-lg">
+                        <div class="flex-grow">
+                            <h3 class="font-medium">${item.menuData.name}</h3>
+                            <p class="text-sm text-gray-600">${item.menuData.price}원 x ${item.quantity}</p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button class="remove-from-cart-btn text-gray-500 hover:text-red-500" data-id="${item.menuData.id}">
+                                <i class="ph ph-minus-circle text-lg"></i>
+                            </button>
+                            <button class="add-to-cart-btn text-gray-500 hover:text-green-500" data-id="${item.menuData.id}">
+                                <i class="ph ph-plus-circle text-lg"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            cartItemsDiv.innerHTML = cartItemsHtml;
+            cartItemCountSpan.textContent = totalCount;
+            cartTotalPriceSpan.textContent = `${totalPrice}원`;
+        }
+
+        // --- Firestore Operations ---
+
+        function renderMenus(menuItems, categories) {
+            contentDiv.innerHTML = '';
+            
+            const groupedMenus = menuItems.reduce((acc, menu) => {
+                if (!acc[menu.category]) {
+                    acc[menu.category] = [];
+                }
+                acc[menu.category].push(menu);
+                return acc;
+            }, {});
+
+            const allCategories = categories.map(cat => cat.name);
+            const sortedCategories = allCategories.sort((a, b) => a.localeCompare(b));
+            
+            const renderCategorySection = (category) => {
+                const menus = groupedMenus[category] || [];
+                if (menus.length === 0) return '';
+                
+                const menuHtml = menus.map(menu => `
+                    <div class="flex items-center p-4 bg-gray-50 rounded-lg shadow-sm border border-gray-200 cursor-pointer add-to-cart-btn" data-id="${menu.id}">
+                        <img src="${menu.image || 'https://placehold.co/80x80/e2e8f0/64748b?text=Menu'}" alt="${menu.name}" class="w-20 h-20 rounded-lg object-cover flex-shrink-0 mr-4">
+                        <div class="flex-grow">
+                            <h3 class="text-lg font-semibold text-gray-800">${menu.name}</h3>
+                            <p class="text-sm text-gray-600">${menu.description}</p>
+                            <p class="text-md font-bold text-orange-600 mt-1">${menu.price}원</p>
+                        </div>
+                    </div>
+                `).join('');
+
+                return `
+                    <div class="mb-6">
+                        <h2 class="text-2xl font-bold text-gray-700 mb-4">${category}</h2>
+                        <div class="space-y-4">
+                            ${menuHtml}
+                        </div>
+                    </div>
+                `;
+            };
+
+            const fullHtml = sortedCategories.map(renderCategorySection).join('');
+            contentDiv.innerHTML = fullHtml;
+        }
+
+        async function submitOrder() {
+            if (Object.keys(cart).length === 0) {
+                showToast('장바구니가 비어 있습니다.');
+                return;
+            }
+
+            const orderItems = Object.values(cart).map(item => ({
+                name: item.menuData.name,
+                price: item.menuData.price,
+                quantity: item.quantity,
+                menuId: item.menuData.id
+            }));
+
+            const totalPrice = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            
+            try {
+                const ordersCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'orders');
+                await addDoc(ordersCollectionRef, {
+                    items: orderItems,
+                    totalPrice: totalPrice,
+                    timestamp: new Date(),
+                    userId: userId 
+                });
+                
+                showToast('주문이 성공적으로 접수되었습니다!');
+                cart = {};
+                updateCartUI();
+                hideModal(cartModal, cartModalOverlay);
+            } catch (e) {
+                console.error("Error adding order: ", e);
+                showToast('주문 중 오류가 발생했습니다.');
+            }
+        }
+
+        // --- Event Handlers & Listeners ---
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (firebaseConfig.apiKey) {
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                try {
+                    // Sign in anonymously for a consumer app
+                    await signInAnonymously(auth);
+                } catch (error) {
+                    console.error('Firebase authentication failed:', error);
+                    showToast('인증 오류: Firebase 설정 또는 네트워크 문제');
+                    return;
+                }
+
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        userId = user.uid;
+
+                        onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'menu')), (snapshot) => {
+                            const menuItems = snapshot.docs.map(doc => {
+                                const data = { id: doc.id, ...doc.data() };
+                                menuDataCache[doc.id] = data;
+                                return data;
+                            });
+                            onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'categories')), (catSnapshot) => {
+                                const categories = catSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                                renderMenus(menuItems, categories);
+                            });
+                        });
+                    } else {
+                        console.log('No user is signed in.');
+                    }
+                });
+            } else {
+                showToast('Firebase 설정이 누락되었습니다. 앱을 실행할 수 없습니다.');
+            }
+        });
+
+        // Event delegation for adding to cart
+        contentDiv.addEventListener('click', (e) => {
+            const menuElement = e.target.closest('.add-to-cart-btn');
+            if (menuElement) {
+                const menuId = menuElement.dataset.id;
+                const menuData = menuDataCache[menuId];
+                if (menuData) {
+                    if (cart[menuId]) {
+                        cart[menuId].quantity += 1;
+                    } else {
+                        cart[menuId] = { menuData: menuData, quantity: 1 };
+                    }
+                    showToast(`${menuData.name}이(가) 장바구니에 담겼습니다.`);
+                    updateCartUI();
+                }
+            }
+        });
+
+        // Cart modal listeners
+        cartButton.addEventListener('click', () => {
+            updateCartUI();
+            showModal(cartModal, cartModalOverlay);
+        });
+
+        closeCartBtn.addEventListener('click', () => hideModal(cartModal, cartModalOverlay));
+        cartModalOverlay.addEventListener('click', () => hideModal(cartModal, cartModalOverlay));
+
+        checkoutBtn.addEventListener('click', () => {
+            submitOrder();
+        });
+        
+        // Event delegation for cart item buttons
+        cartItemsDiv.addEventListener('click', (e) => {
+            const addBtn = e.target.closest('.add-to-cart-btn');
+            const removeBtn = e.target.closest('.remove-from-cart-btn');
+
+            if (addBtn) {
+                const menuId = addBtn.dataset.id;
+                if (cart[menuId]) {
+                    cart[menuId].quantity += 1;
+                    updateCartUI();
+                }
+            } else if (removeBtn) {
+                const menuId = removeBtn.dataset.id;
+                if (cart[menuId]) {
+                    cart[menuId].quantity -= 1;
+                    if (cart[menuId].quantity <= 0) {
+                        delete cart[menuId];
+                    }
+                    updateCartUI();
+                }
+            }
+        });
+
+    </script>
+</body>
+</html>
