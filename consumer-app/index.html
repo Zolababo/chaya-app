@@ -4,328 +4,383 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CHAYA 메뉴판</title>
-    <!-- Inter Font -->
     <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Phosphor Icons -->
-    <script src="https://unpkg.com/@phosphor-icons/web@2.1.1/dist/phosphor.js"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { font-family: 'Inter', sans-serif; }
-        .modal {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.95); opacity: 0; visibility: hidden; z-index: 1000;
-            background-color: white; padding: 2rem; border-radius: 1rem; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-            transition: transform 0.3s ease-out, opacity 0.3s ease-out, visibility 0.3s;
+        .no-select {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
         }
-        .modal.is-visible { transform: translate(-50%, -50%) scale(1); opacity: 1; visibility: visible; }
         .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0, 0, 0, 0.5); z-index: 999;
-            opacity: 0; visibility: hidden; transition: opacity 0.3s ease-out, visibility 0.3s;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
         }
-        .modal-overlay.is-visible { opacity: 1; visibility: visible; }
-        .show { opacity: 1 !important; transform: translate(-50%, 0) !important; }
+        .category-scroll-container::-webkit-scrollbar {
+            display: none;
+        }
+        .category-scroll-container {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
     </style>
 </head>
-<body class="bg-gray-100 p-4 sm:p-8 font-sans min-h-screen">
+<body class="bg-gray-100 font-sans antialiased text-gray-800">
 
-    <div id="root" class="w-full max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-6 sm:p-8">
-        <h1 class="text-3xl sm:text-4xl font-bold text-center text-gray-800 mb-8">CHAYA 메뉴판</h1>
-        <div id="content" class="w-full">
-            <!-- Menus will be dynamically added here -->
-        </div>
-    </div>
+    <div id="root"></div>
 
-    <!-- Floating Cart Button -->
-    <button id="cart-button" class="fixed bottom-6 right-6 bg-orange-500 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center transform hover:scale-110 transition-transform duration-300">
-        <i class="ph ph-shopping-cart text-2xl"></i>
-        <span id="cart-item-count" class="absolute top-0 right-0 bg-red-600 text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full transform translate-x-1/3 -translate-y-1/3">0</span>
-    </button>
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
 
-    <!-- Cart Modal -->
-    <div id="cart-modal-overlay" class="modal-overlay"></div>
-    <div id="cart-modal" class="modal w-11/12 max-w-lg">
-        <div class="flex justify-between items-center mb-4">
-            <h2 class="text-2xl font-bold text-gray-800">장바구니</h2>
-            <button id="close-cart-btn" class="text-gray-500 hover:text-gray-700 transition-colors">
-                <i class="ph ph-x text-2xl"></i>
-            </button>
-        </div>
-        <div id="cart-items" class="space-y-4 max-h-96 overflow-y-auto pr-2">
-            <!-- Cart items will be dynamically added here -->
-        </div>
-        <div class="border-t pt-4 mt-4 flex justify-between items-center">
-            <span class="text-lg font-bold text-gray-800">총 금액: <span id="cart-total-price" class="text-orange-600">0원</span></span>
-            <button id="checkout-btn" class="bg-green-600 text-white py-2 px-6 rounded-lg font-bold hover:bg-green-700 transition-colors duration-300">주문하기</button>
-        </div>
-    </div>
-    
-    <!-- Toast Message -->
-    <div id="toast-message" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-sm px-4 py-2 rounded-lg shadow-xl opacity-0 transition-opacity duration-300 z-50"></div>
-    
-    <!-- Firebase -->
-    <script type="module">
-        // Import Firebase modules
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        const SUPABASE_URL = 'https://kzxdrwdfqhwpkqbswutr.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6eGRyd2RmcWh3cGtxYnN3dXRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY2NDQyMzcsImV4cCI6MjA3MjIyMDIzN30.pAjU3qCA7tkAoORn9-04HBNlt0N3u25nx0Y_uy0F3jc';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Firebase variables
-        let db;
-        let auth;
-        let userId;
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        const Message = ({ message, isVisible }) => {
+            return (
+                <div className={`fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-sm px-4 py-2 rounded-lg shadow-xl opacity-0 transition-opacity duration-300 z-50 ${isVisible ? 'opacity-100' : ''}`}>
+                    {message}
+                </div>
+            );
+        };
 
-        // Get DOM elements
-        const contentDiv = document.getElementById('content');
-        const cartButton = document.getElementById('cart-button');
-        const cartItemCountSpan = document.getElementById('cart-item-count');
-        const cartModal = document.getElementById('cart-modal');
-        const cartModalOverlay = document.getElementById('cart-modal-overlay');
-        const closeCartBtn = document.getElementById('close-cart-btn');
-        const cartItemsDiv = document.getElementById('cart-items');
-        const cartTotalPriceSpan = document.getElementById('cart-total-price');
-        const checkoutBtn = document.getElementById('checkout-btn');
-        const toastMessage = document.getElementById('toast-message');
+        const App = () => {
+            const [menus, setMenus] = useState([]);
+            const [categories, setCategories] = useState([]);
+            const [isLoading, setIsLoading] = useState(true);
+            const [orderItems, setOrderItems] = useState({});
+            const [isItemModalOpen, setIsItemModalOpen] = useState(false);
+            const [isCartOpen, setIsCartOpen] = useState(false);
+            const [selectedItem, setSelectedItem] = useState(null);
+            const [itemQuantity, setItemQuantity] = useState(0);
+            const [itemNotes, setItemNotes] = useState('');
+            const [message, setMessage] = useState('');
+            const [isMessageVisible, setIsMessageVisible] = useState(false);
+            const [selectedCategory, setSelectedCategory] = useState('전체');
 
-        let cart = {}; // { menuId: { menuData, quantity } }
-        let menuDataCache = {}; // Cache for menu data
-
-        // --- Utility Functions ---
-
-        function showToast(message) {
-            toastMessage.textContent = message;
-            toastMessage.classList.add('show');
-            setTimeout(() => {
-                toastMessage.classList.remove('show');
-            }, 3000);
-        }
-
-        function showModal(modal, overlay) {
-            modal.classList.add('is-visible');
-            overlay.classList.add('is-visible');
-        }
-
-        function hideModal(modal, overlay) {
-            modal.classList.remove('is-visible');
-            overlay.classList.remove('is-visible');
-        }
-
-        function updateCartUI() {
-            let totalCount = 0;
-            let totalPrice = 0;
-            cartItemsDiv.innerHTML = '';
-
-            const cartItems = Object.values(cart);
-            if (cartItems.length === 0) {
-                cartItemsDiv.innerHTML = '<p class="text-center text-gray-500 mt-8">장바구니가 비어 있습니다.</p>';
-                cartItemCountSpan.textContent = 0;
-                cartTotalPriceSpan.textContent = '0원';
-                return;
-            }
-
-            const cartItemsHtml = cartItems.map(item => {
-                totalCount += item.quantity;
-                totalPrice += item.menuData.price * item.quantity;
-                return `
-                    <div class="flex items-center justify-between p-3 bg-gray-100 rounded-lg">
-                        <div class="flex-grow">
-                            <h3 class="font-medium">${item.menuData.name}</h3>
-                            <p class="text-sm text-gray-600">${item.menuData.price}원 x ${item.quantity}</p>
-                        </div>
-                        <div class="flex items-center space-x-2">
-                            <button class="remove-from-cart-btn text-gray-500 hover:text-red-500" data-id="${item.menuData.id}">
-                                <i class="ph ph-minus-circle text-lg"></i>
-                            </button>
-                            <button class="add-to-cart-btn text-gray-500 hover:text-green-500" data-id="${item.menuData.id}">
-                                <i class="ph ph-plus-circle text-lg"></i>
-                            </button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            cartItemsDiv.innerHTML = cartItemsHtml;
-            cartItemCountSpan.textContent = totalCount;
-            cartTotalPriceSpan.textContent = `${totalPrice}원`;
-        }
-
-        // --- Firestore Operations ---
-
-        function renderMenus(menuItems, categories) {
-            contentDiv.innerHTML = '';
-            
-            const groupedMenus = menuItems.reduce((acc, menu) => {
-                if (!acc[menu.category]) {
-                    acc[menu.category] = [];
-                }
-                acc[menu.category].push(menu);
-                return acc;
-            }, {});
-
-            const allCategories = categories.map(cat => cat.name);
-            const sortedCategories = allCategories.sort((a, b) => a.localeCompare(b));
-            
-            const renderCategorySection = (category) => {
-                const menus = groupedMenus[category] || [];
-                if (menus.length === 0) return '';
-                
-                const menuHtml = menus.map(menu => `
-                    <div class="flex items-center p-4 bg-gray-50 rounded-lg shadow-sm border border-gray-200 cursor-pointer add-to-cart-btn" data-id="${menu.id}">
-                        <img src="${menu.image || 'https://placehold.co/80x80/e2e8f0/64748b?text=Menu'}" alt="${menu.name}" class="w-20 h-20 rounded-lg object-cover flex-shrink-0 mr-4">
-                        <div class="flex-grow">
-                            <h3 class="text-lg font-semibold text-gray-800">${menu.name}</h3>
-                            <p class="text-sm text-gray-600">${menu.description}</p>
-                            <p class="text-md font-bold text-orange-600 mt-1">${menu.price}원</p>
-                        </div>
-                    </div>
-                `).join('');
-
-                return `
-                    <div class="mb-6">
-                        <h2 class="text-2xl font-bold text-gray-700 mb-4">${category}</h2>
-                        <div class="space-y-4">
-                            ${menuHtml}
-                        </div>
-                    </div>
-                `;
+            const categorySummaryColors = {
+                '음식': 'bg-pink-300',
+                '음료': 'bg-purple-300',
+                '샐러드': 'bg-green-300',
+                '커피': 'bg-orange-300',
+                '디저트': 'bg-sky-300',
+                '기타': 'bg-gray-300',
             };
 
-            const fullHtml = sortedCategories.map(renderCategorySection).join('');
-            contentDiv.innerHTML = fullHtml;
-        }
+            const showMessage = (msg) => {
+                setMessage(msg);
+                setIsMessageVisible(true);
+                setTimeout(() => {
+                    setIsMessageVisible(false);
+                }, 3000);
+            };
 
-        async function submitOrder() {
-            if (Object.keys(cart).length === 0) {
-                showToast('장바구니가 비어 있습니다.');
-                return;
-            }
+            const fetchMenus = async () => {
+                setIsLoading(true);
+                const { data: menuItems, error } = await supabase
+                    .from('ChayaMenus')
+                    .select('*');
+                if (error) {
+                    console.error("데이터 불러오기 오류:", error);
+                    showMessage("메뉴 데이터를 불러오는 데 실패했습니다.");
+                } else {
+                    setMenus(menuItems);
+                    const uniqueCategories = [...new Set(menuItems.map(menu => menu.category))];
+                    const sortedCategories = uniqueCategories.sort((a, b) => {
+                        if (a === '음식') return -1;
+                        if (b === '음식') return 1;
+                        return a.localeCompare(b);
+                    });
+                    setCategories(['전체', ...sortedCategories]);
+                }
+                setIsLoading(false);
+            };
 
-            const orderItems = Object.values(cart).map(item => ({
-                name: item.menuData.name,
-                price: item.menuData.price,
-                quantity: item.quantity,
-                menuId: item.menuData.id
-            }));
+            useEffect(() => {
+                fetchMenus();
+            }, []);
 
-            const totalPrice = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-            
-            try {
-                const ordersCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'orders');
-                await addDoc(ordersCollectionRef, {
-                    items: orderItems,
-                    totalPrice: totalPrice,
-                    timestamp: new Date(),
-                    userId: userId 
+            const openItemModal = (menu) => {
+                setSelectedItem(menu);
+                setItemQuantity(orderItems[menu.id]?.quantity || 0);
+                setItemNotes(orderItems[menu.id]?.notes || '');
+                setIsItemModalOpen(true);
+            };
+
+            const closeItemModal = () => {
+                setIsItemModalOpen(false);
+                setSelectedItem(null);
+            };
+
+            const handleUpdateItem = (menu, quantity) => {
+                setOrderItems(prev => {
+                    const newOrder = { ...prev };
+                    if (quantity <= 0) {
+                        delete newOrder[menu.id];
+                        showMessage(`${menu.name}이(가) 삭제되었습니다.`);
+                    } else {
+                        const existingItem = newOrder[menu.id] || { ...menu, quantity: 0, notes: '' };
+                        newOrder[menu.id] = {
+                            ...existingItem,
+                            quantity: quantity,
+                            category: menu.category,
+                        };
+                        showMessage(`${menu.name} 수량이 ${quantity}개로 변경되었습니다.`);
+                    }
+                    return newOrder;
                 });
-                
-                showToast('주문이 성공적으로 접수되었습니다!');
-                cart = {};
-                updateCartUI();
-                hideModal(cartModal, cartModalOverlay);
-            } catch (e) {
-                console.error("Error adding order: ", e);
-                showToast('주문 중 오류가 발생했습니다.');
-            }
-        }
+            };
 
-        // --- Event Handlers & Listeners ---
+            const handleUpdateItemInModal = () => {
+                if (itemQuantity > 0) {
+                    const newItem = {
+                        ...selectedItem,
+                        quantity: itemQuantity,
+                        notes: itemNotes,
+                        category: selectedItem.category,
+                    };
+                    setOrderItems(prev => ({
+                        ...prev,
+                        [selectedItem.id]: newItem,
+                    }));
+                } else {
+                    setOrderItems(prev => {
+                        const newOrder = { ...prev };
+                        delete newOrder[selectedItem.id];
+                        return newOrder;
+                    });
+                }
+                closeItemModal();
+                showMessage(`${selectedItem.name} ${itemQuantity > 0 ? '이(가) 수정되었습니다.' : '이(가) 삭제되었습니다.'}`);
+            };
+            
+            const handlePlaceOrder = async () => {
+                const orderedItems = Object.values(orderItems).map(item => ({
+                    id: item.id,
+                    name: item.name,
+                    price: item.price,
+                    quantity: item.quantity,
+                    notes: item.notes,
+                }));
 
-        document.addEventListener('DOMContentLoaded', async () => {
-            if (firebaseConfig.apiKey) {
-                const app = initializeApp(firebaseConfig);
-                auth = getAuth(app);
-                db = getFirestore(app);
-
-                try {
-                    // Sign in anonymously for a consumer app
-                    await signInAnonymously(auth);
-                } catch (error) {
-                    console.error('Firebase authentication failed:', error);
-                    showToast('인증 오류: Firebase 설정 또는 네트워크 문제');
+                if (orderedItems.length === 0) {
+                    showMessage("주문할 메뉴를 선택해주세요.");
                     return;
                 }
+                
+                showMessage("주문이 접수되고 있습니다...");
 
-                onAuthStateChanged(auth, (user) => {
-                    if (user) {
-                        userId = user.uid;
+                const total_price = orderedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                
+                const { error } = await supabase.from('orders').insert([{
+                    items: orderedItems,
+                    total_price: total_price
+                }]);
 
-                        onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'menu')), (snapshot) => {
-                            const menuItems = snapshot.docs.map(doc => {
-                                const data = { id: doc.id, ...doc.data() };
-                                menuDataCache[doc.id] = data;
-                                return data;
-                            });
-                            onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'categories')), (catSnapshot) => {
-                                const categories = catSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                                renderMenus(menuItems, categories);
-                            });
-                        });
-                    } else {
-                        console.log('No user is signed in.');
-                    }
-                });
-            } else {
-                showToast('Firebase 설정이 누락되었습니다. 앱을 실행할 수 없습니다.');
-            }
-        });
-
-        // Event delegation for adding to cart
-        contentDiv.addEventListener('click', (e) => {
-            const menuElement = e.target.closest('.add-to-cart-btn');
-            if (menuElement) {
-                const menuId = menuElement.dataset.id;
-                const menuData = menuDataCache[menuId];
-                if (menuData) {
-                    if (cart[menuId]) {
-                        cart[menuId].quantity += 1;
-                    } else {
-                        cart[menuId] = { menuData: menuData, quantity: 1 };
-                    }
-                    showToast(`${menuData.name}이(가) 장바구니에 담겼습니다.`);
-                    updateCartUI();
+                if (error) {
+                    console.error("주문 실패:", error);
+                    showMessage("주문 전송에 실패했습니다. 다시 시도해주세요.");
+                } else {
+                    showMessage("주문이 성공적으로 접수되었습니다!");
+                    setOrderItems({});
+                    setIsCartOpen(false);
                 }
-            }
-        });
+            };
+            
+            const totalItems = useMemo(() => {
+                return Object.values(orderItems).reduce((sum, item) => sum + item.quantity, 0);
+            }, [orderItems]);
 
-        // Cart modal listeners
-        cartButton.addEventListener('click', () => {
-            updateCartUI();
-            showModal(cartModal, cartModalOverlay);
-        });
+            const totalPrice = useMemo(() => {
+                return Object.values(orderItems).reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            }, [orderItems]);
 
-        closeCartBtn.addEventListener('click', () => hideModal(cartModal, cartModalOverlay));
-        cartModalOverlay.addEventListener('click', () => hideModal(cartModal, cartModalOverlay));
+            const filteredCategories = useMemo(() => {
+                if (selectedCategory === '전체') {
+                    return categories.filter(c => c !== '전체');
+                } else {
+                    return [selectedCategory];
+                }
+            }, [categories, selectedCategory]);
 
-        checkoutBtn.addEventListener('click', () => {
-            submitOrder();
-        });
+            // UI 컴포넌트들
+            const ItemDetailModal = () => (
+                <div className="modal-overlay" onClick={closeItemModal}>
+                    <div className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-lg mx-4 animate-fade-in-up" onClick={e => e.stopPropagation()}>
+                        {selectedItem.imageUrl && <img src={selectedItem.imageUrl} alt={selectedItem.name} className="w-full h-48 object-cover rounded-2xl mb-4" />}
+                        <h3 className="text-2xl font-bold text-gray-900 mb-2">{selectedItem.name}</h3>
+                        <p className="text-gray-500 mb-4">{selectedItem.description}</p>
+                        <p className="text-2xl font-bold text-indigo-600 mb-4">{selectedItem.price.toLocaleString()}원</p>
+                        
+                        <div className="mb-4">
+                            <label htmlFor="itemNotes" className="block text-sm font-medium text-gray-700">추가 요청사항 (예: 덜 맵게 해주세요)</label>
+                            <textarea id="itemNotes" value={itemNotes} onChange={e => setItemNotes(e.target.value)} rows="3" className="mt-1 block w-full border-gray-300 rounded-xl shadow-sm p-2 focus:ring-indigo-500 focus:border-indigo-500 transition"></textarea>
+                        </div>
+                        
+                        <div className="flex items-center justify-between mb-6">
+                            <span className="text-lg font-semibold">수량</span>
+                            <div className="flex items-center space-x-4">
+                                <button onClick={() => setItemQuantity(Math.max(0, itemQuantity - 1))} className="bg-gray-200 text-gray-800 p-2 rounded-full w-10 h-10 flex items-center justify-center font-bold text-lg hover:bg-gray-300 transition">-</button>
+                                <span className="text-xl font-bold w-6 text-center">{itemQuantity}</span>
+                                <button onClick={() => setItemQuantity(itemQuantity + 1)} className="bg-indigo-600 text-white p-2 rounded-full w-10 h-10 flex items-center justify-center font-bold text-lg hover:bg-indigo-700 transition">+</button>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end space-x-4">
+                            <button onClick={closeItemModal} className="bg-gray-300 text-gray-800 p-3 rounded-lg hover:bg-gray-400 transition">취소</button>
+                            <button onClick={handleUpdateItemInModal} className="bg-indigo-600 text-white p-3 rounded-lg hover:bg-indigo-700 transition">
+                                {itemQuantity > 0 ? `${itemQuantity}개 담기` : '삭제'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const CartModal = () => (
+                <div className="modal-overlay" onClick={() => setIsCartOpen(false)}>
+                    <div className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto animate-fade-in-up" onClick={e => e.stopPropagation()}>
+                        <h3 className="text-2xl font-bold text-gray-900 mb-4">주문 확인</h3>
+                        <div className="space-y-4 mb-6">
+                            {Object.values(orderItems).length === 0 ? (
+                                <p className="text-center text-gray-500">장바구니가 비어있습니다.</p>
+                            ) : (
+                                Object.values(orderItems).map(item => (
+                                    <div key={item.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg shadow-sm">
+                                        {item.imageUrl && <img src={item.imageUrl} alt={item.name} className="w-16 h-16 object-cover rounded-lg mr-4" />}
+                                        <div className="flex-grow">
+                                            <p className="font-semibold text-gray-800">{item.name}</p>
+                                            <p className="text-sm text-gray-500">{item.price.toLocaleString()}원</p>
+                                            {item.notes && <p className="text-xs text-gray-400 mt-1">요청: {item.notes}</p>}
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <button onClick={() => handleUpdateItem(item, item.quantity - 1)} className="bg-gray-200 text-gray-800 p-1 rounded-full w-7 h-7 flex items-center justify-center font-bold text-sm hover:bg-gray-300 transition">-</button>
+                                            <span className="text-lg font-bold w-6 text-center">{item.quantity}</span>
+                                            <button onClick={() => handleUpdateItem(item, item.quantity + 1)} className="bg-gray-200 text-gray-800 p-1 rounded-full w-7 h-7 flex items-center justify-center font-bold text-sm hover:bg-gray-300 transition">+</button>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                        <div className="flex justify-between items-center text-xl font-bold text-gray-900 mb-6 border-t pt-4">
+                            <span>총 합계</span>
+                            <span>{totalPrice.toLocaleString()}원</span>
+                        </div>
+                        <div className="flex justify-end space-x-4">
+                            <button onClick={() => setIsCartOpen(false)} className="bg-gray-300 text-gray-800 p-3 rounded-lg hover:bg-gray-400 transition">더 담으러 가기</button>
+                            <button onClick={handlePlaceOrder} className="bg-green-600 text-white p-3 rounded-lg hover:bg-green-700 transition" disabled={totalItems === 0}>
+                                {totalPrice.toLocaleString()}원 주문하기
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const MenuSection = ({ category, menus }) => (
+                <div className="mb-8">
+                    <h2 className="text-2xl font-bold text-gray-700 mb-4">{category}</h2>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                        {menus.map(menu => {
+                            const quantity = orderItems[menu.id]?.quantity || 0;
+                            return (
+                                <div key={menu.id} onClick={() => openItemModal(menu)} className={`rounded-3xl shadow-xl overflow-hidden flex flex-col cursor-pointer transition transform hover:scale-105 active:scale-95 duration-300 bg-white`}>
+                                    {menu.imageUrl && <img src={menu.imageUrl} alt={menu.name} className="w-full h-32 object-cover" />}
+                                    <div className="p-3 flex flex-col justify-between flex-grow">
+                                        <div>
+                                            <h3 className="text-md font-bold text-gray-800 truncate">{menu.name}</h3>
+                                            <p className="text-sm text-gray-400 mt-1 truncate">{menu.description}</p>
+                                        </div>
+                                        <div className="flex items-center justify-between mt-2">
+                                            <p className="text-md font-bold text-gray-600">{menu.price.toLocaleString()}원</p>
+                                            <div className="flex items-center space-x-2">
+                                                <button onClick={(e) => { e.stopPropagation(); handleUpdateItem(menu, Math.max(0, quantity - 1)); }} className="bg-gray-200 text-gray-800 p-1 rounded-full w-7 h-7 flex items-center justify-center font-bold text-sm hover:bg-gray-300 transition">-</button>
+                                                <span className="text-lg font-bold w-6 text-center">{quantity}</span>
+                                                <button onClick={(e) => { e.stopPropagation(); handleUpdateItem(menu, quantity + 1); }} className="bg-gray-200 text-gray-800 p-1 rounded-full w-7 h-7 flex items-center justify-center font-bold text-sm hover:bg-gray-300 transition">+</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+
+            return (
+                <div className="bg-gray-100 min-h-screen relative p-4 pb-20 sm:p-8 sm:pb-24">
+                    <div className="container mx-auto max-w-5xl">
+                        <header className="sticky top-0 bg-gray-800 z-20 py-4 mb-4 shadow-md">
+                            <h1 className="text-3xl font-bold text-white text-center no-select">CHAYA</h1>
+                        </header>
+
+                        <div className="sticky top-[4.5rem] bg-gray-200 z-10 py-4 mb-4 category-scroll-container overflow-x-auto whitespace-nowrap border-b border-gray-300">
+                            {categories.map(category => (
+                                <button
+                                    key={category}
+                                    onClick={() => setSelectedCategory(category)}
+                                    className={`inline-block px-4 py-2 rounded-full font-semibold transition-colors duration-200 mr-2
+                                        ${selectedCategory === category ? 'bg-purple-600 text-white' : 'text-gray-700 hover:bg-gray-300'}`}
+                                >
+                                    {category}
+                                </button>
+                            ))}
+                        </div>
+                        
+                        {isLoading ? (
+                            <p className="text-center text-gray-500 mt-20">메뉴를 불러오는 중...</p>
+                        ) : (
+                            <main>
+                                {filteredCategories.map(category => (
+                                    <MenuSection key={category} category={category} menus={menus.filter(menu => menu.category === category)} />
+                                ))}
+                            </main>
+                        )}
+                        
+                        {totalItems > 0 && (
+                            <footer className="fixed bottom-0 left-0 right-0 bg-white shadow-2xl p-4 sm:p-6 border-t border-gray-200 z-30">
+                                <div className="container mx-auto max-w-5xl flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                                    <div className="flex-grow overflow-x-auto whitespace-nowrap mb-2 sm:mb-0 pb-2">
+                                        {Object.values(orderItems).map(item => (
+                                            <span key={item.id} className={`inline-block ${categorySummaryColors[item.category] || 'bg-gray-300'} rounded-full px-3 py-1 text-sm font-semibold text-gray-800 mr-2`}>
+                                                {item.name} {item.quantity}개
+                                            </span>
+                                        ))}
+                                    </div>
+                                    <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto">
+                                        <p className="text-lg font-bold text-indigo-600 sm:ml-4">{totalPrice.toLocaleString()}원</p>
+                                        <button onClick={() => setIsCartOpen(true)} className="bg-indigo-600 text-white p-3 rounded-lg shadow-md hover:bg-indigo-700 transition ml-4">
+                                            장바구니 확인
+                                        </button>
+                                    </div>
+                                </div>
+                            </footer>
+                        )}
+                    </div>
+                    {isItemModalOpen && <ItemDetailModal />}
+                    {isCartOpen && <CartModal />}
+                    <Message message={message} isVisible={isMessageVisible} />
+                </div>
+            );
+        };
         
-        // Event delegation for cart item buttons
-        cartItemsDiv.addEventListener('click', (e) => {
-            const addBtn = e.target.closest('.add-to-cart-btn');
-            const removeBtn = e.target.closest('.remove-from-cart-btn');
-
-            if (addBtn) {
-                const menuId = addBtn.dataset.id;
-                if (cart[menuId]) {
-                    cart[menuId].quantity += 1;
-                    updateCartUI();
-                }
-            } else if (removeBtn) {
-                const menuId = removeBtn.dataset.id;
-                if (cart[menuId]) {
-                    cart[menuId].quantity -= 1;
-                    if (cart[menuId].quantity <= 0) {
-                        delete cart[menuId];
-                    }
-                    updateCartUI();
-                }
-            }
-        });
-
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
     </script>
 </body>
 </html>
