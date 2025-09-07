@@ -81,7 +81,6 @@
             const [message, setMessage] = useState('');
             const [isMessageVisible, setIsMessageVisible] = useState(false);
             const [selectedCategory, setSelectedCategory] = useState('전체');
-            const storeId = 'chaya';
 
             const categorySummaryColors = {
                 '음식': 'bg-pink-300',
@@ -105,7 +104,6 @@
                 const { data: menuItems, error } = await supabase
                     .from('ChayaMenus')
                     .select('*')
-                    .eq('store_id', storeId)
                     .order('category', { ascending: true })
                     .order('name', { ascending: true });
 
@@ -182,7 +180,7 @@
                 closeItemModal();
                 showMessage(`${selectedItem.name} ${itemQuantity > 0 ? '이(가) 수정되었습니다.' : '이(가) 삭제되었습니다.'}`);
             };
-
+            
             const handlePlaceOrder = async () => {
                 const orderedItems = Object.values(orderItems).map(item => ({
                     id: item.id,
@@ -202,7 +200,6 @@
                 const total_price = orderedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
                 
                 const { error } = await supabase.from('orders').insert([{
-                    store_id: storeId,
                     items: orderedItems,
                     total_price: total_price
                 }]);
