@@ -40,6 +40,13 @@
             -ms-overflow-style: none;
             scrollbar-width: none;
         }
+        .animate-fade-in-up {
+            animation: fadeInUp 0.5s ease-out forwards;
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
 <body class="bg-gray-100 font-sans antialiased text-gray-800">
@@ -74,6 +81,7 @@
             const [message, setMessage] = useState('');
             const [isMessageVisible, setIsMessageVisible] = useState(false);
             const [selectedCategory, setSelectedCategory] = useState('전체');
+            const storeId = 'chaya';
 
             const categorySummaryColors = {
                 '음식': 'bg-pink-300',
@@ -96,7 +104,11 @@
                 setIsLoading(true);
                 const { data: menuItems, error } = await supabase
                     .from('ChayaMenus')
-                    .select('*');
+                    .select('*')
+                    .eq('store_id', storeId)
+                    .order('category', { ascending: true })
+                    .order('name', { ascending: true });
+
                 if (error) {
                     console.error("데이터 불러오기 오류:", error);
                     showMessage("메뉴 데이터를 불러오는 데 실패했습니다.");
@@ -170,7 +182,7 @@
                 closeItemModal();
                 showMessage(`${selectedItem.name} ${itemQuantity > 0 ? '이(가) 수정되었습니다.' : '이(가) 삭제되었습니다.'}`);
             };
-            
+
             const handlePlaceOrder = async () => {
                 const orderedItems = Object.values(orderItems).map(item => ({
                     id: item.id,
@@ -190,6 +202,7 @@
                 const total_price = orderedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
                 
                 const { error } = await supabase.from('orders').insert([{
+                    store_id: storeId,
                     items: orderedItems,
                     total_price: total_price
                 }]);
@@ -325,11 +338,11 @@
             return (
                 <div className="bg-gray-100 min-h-screen relative p-4 pb-20 sm:p-8 sm:pb-24">
                     <div className="container mx-auto max-w-5xl">
-                        <header className="sticky top-0 bg-gray-800 z-20 py-4 mb-4 shadow-md">
-                            <h1 className="text-3xl font-bold text-white text-center no-select">CHAYA</h1>
+                        <header className="sticky top-0 bg-white z-20 py-4 mb-4 shadow-md rounded-b-xl">
+                            <h1 className="text-3xl font-bold text-gray-800 text-center no-select">CHAYA</h1>
                         </header>
 
-                        <div className="sticky top-[4.5rem] bg-gray-200 z-10 py-4 mb-4 category-scroll-container overflow-x-auto whitespace-nowrap border-b border-gray-300">
+                        <div className="sticky top-[4.5rem] bg-white z-10 py-4 mb-4 category-scroll-container overflow-x-auto whitespace-nowrap border-b border-gray-300 shadow-sm rounded-xl">
                             {categories.map(category => (
                                 <button
                                     key={category}
