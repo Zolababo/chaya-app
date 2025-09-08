@@ -1,371 +1,391 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CHAYA 관리자</title>
-  <!-- Tailwind (CDN) -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- React (CDN + Babel) -->
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <!-- Supabase -->
-  <script src="https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CHAYA 관리자</title>
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .no-select {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+        .animate-fade-in-up {
+            animation: fadeInUp 0.5s ease-out forwards;
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .show {
+            opacity: 1 !important;
+        }
+        .message-box {
+            position: fixed;
+            bottom: 4rem;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1001;
+            transition: opacity 0.3s ease-out;
+        }
+    </style>
 </head>
-<body class="bg-slate-100">
-  <div id="root" class="max-w-3xl mx-auto p-4"></div>
+<body class="bg-gray-100 font-sans antialiased text-gray-800">
 
-  <script type="text/babel">
-    // ================== 환경변수 ==================
-    const SUPABASE_URL = "https://kzxdrwdfqhwpkqbswutr.supabase.co"; // ← 수정
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6eGRyd2RmcWh3cGtxYnN3dXRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY2NDQyMzcsImV4cCI6MjA3MjIyMDIzN30.pAjU3qCA7tkAoORn9-04HBNlt0N3u25nx0Y_uy0F3jc";                   // ← 수정
+    <div id="root"></div>
 
-    // 버킷/경로 상수 (실제 콘솔과 100% 동일해야 함)
-    const BUCKET = "menu-images";
-    const DIR = "images"; // 버킷 내부 폴더
+    <script type="text/babel">
+        const { useState, useEffect } = React;
 
-    // ================== Supabase 초기화 ==================
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const SUPABASE_URL = 'https://kzxdrwdfqhwpkqbswutr.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6eGRyd2RmcWh3cGtxYnN3dXRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY2NDQyMzcsImV4cCI6MjA3MjIyMDIzN30.pAjU3qCA7tkAoORn9-04HBNlt0N3u25nx0Y_uy0F3jc';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        const showMessage = (msg, setMessage, setIsMessageVisible) => {
+            setMessage(msg);
+            setIsMessageVisible(true);
+            setTimeout(() => {
+                setIsMessageVisible(false);
+            }, 3000);
+        };
 
-    // object path 생성
-    const makeObjectPath = (filename) => `${DIR}/${filename}`;
+        const App = () => {
+            const [menus, setMenus] = useState([]);
+            const [editingMenu, setEditingMenu] = useState(null);
+            const [isModalOpen, setIsModalOpen] = useState(false);
+            const [isLoading, setIsLoading] = useState(true);
+            const [orders, setOrders] = useState([]);
+            const [activeTab, setActiveTab] = useState('메뉴 관리');
+            const [message, setMessage] = useState('');
+            const [isMessageVisible, setIsMessageVisible] = useState(false);
+            const [imageFile, setImageFile] = useState(null);
+            const [previewUrl, setPreviewUrl] = useState('');
 
-    // 공개 URL 생성
-    const getPublicUrl = (objectPath) => {
-      const { data } = supabase.storage.from(BUCKET).getPublicUrl(objectPath);
-      return data.publicUrl;
-    };
+            const fetchMenus = async () => {
+                const { data, error } = await supabase.from('ChayaMenus').select('*');
+                if (error) {
+                    console.error("Error fetching menus:", error);
+                    showMessage("메뉴를 불러오는 데 실패했습니다.", setMessage, setIsMessageVisible);
+                } else {
+                    setMenus(data);
+                }
+            };
 
-    // ================== UI ==================
-    const { useEffect, useState, useMemo } = React;
+            const fetchOrders = async () => {
+                const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+                if (error) {
+                    console.error("Error fetching orders:", error);
+                    showMessage("주문 내역을 불러오는 데 실패했습니다.", setMessage, setIsMessageVisible);
+                } else {
+                    setOrders(data);
+                }
+            };
 
-    function App() {
-      const [session, setSession] = useState(null);
-      const [tab, setTab] = useState("menus"); // menus | orders
-      const [menus, setMenus] = useState([]);
-      const [loading, setLoading] = useState(false);
+            useEffect(() => {
+                fetchMenus();
+                fetchOrders();
+                setIsLoading(false);
+            }, []);
 
-      const [modalOpen, setModalOpen] = useState(false);
-      const emptyMenu = { id: null, name: "", price: "", category: "", description: "", imageUrl: "" };
-      const [editingMenu, setEditingMenu] = useState(emptyMenu);
-      const [imageFile, setImageFile] = useState(null);
-      const [imagePreview, setImagePreview] = useState("");
+            useEffect(() => {
+                const orderSubscription = supabase
+                    .channel('public:orders')
+                    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, payload => {
+                        console.log('새로운 주문이 들어왔습니다:', payload.new);
+                        alert(`새로운 주문이 들어왔습니다! 총 ${payload.new.total_price.toLocaleString()}원`);
+                        setOrders(prev => [payload.new, ...prev]);
+                    })
+                    .subscribe();
+                
+                return () => {
+                    supabase.removeChannel(orderSubscription);
+                };
+            }, []);
 
-      // --- 인증 ---
-      useEffect(() => {
-        (async () => {
-          const { data: { session } } = await supabase.auth.getSession();
-          setSession(session);
-        })();
-        const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
-        return () => sub.subscription.unsubscribe();
-      }, []);
+            const openModal = (menu = null) => {
+                setEditingMenu(menu ? { ...menu } : { name: '', description: '', price: 0, category: '', imageUrl: '' });
+                if (menu?.imageUrl) {
+                    setPreviewUrl(menu.imageUrl);
+                } else {
+                    setPreviewUrl('');
+                }
+                setImageFile(null);
+                setIsModalOpen(true);
+            };
 
-      const signedIn = !!session;
+            const closeModal = () => {
+                setIsModalOpen(false);
+                setEditingMenu(null);
+                setImageFile(null);
+                setPreviewUrl('');
+            };
 
-      const signIn = async () => {
-        await supabase.auth.signInWithOAuth({ provider: "github", options: { redirectTo: window.location.href } });
-      };
-      const signOut = async () => {
-        await supabase.auth.signOut();
-        window.location.reload();
-      };
+            const handleImageChange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    setImageFile(file);
+                    setPreviewUrl(URL.createObjectURL(file));
+                }
+            };
 
-      // --- 메뉴 로드 ---
-      const fetchMenus = async () => {
-        setLoading(true);
-        const { data, error } = await supabase.from("ChayaMenus").select("*").order("created_at", { ascending: true });
-        if (error) {
-          console.error("[LOAD] menus error:", error);
-          alert("메뉴 로드 실패: " + error.message);
-        } else {
-          setMenus(data || []);
-        }
-        setLoading(false);
-      };
+            const handleInputChange = (e) => {
+                const { name, value } = e.target;
+                setEditingMenu(prev => ({
+                    ...prev,
+                    [name]: value
+                }));
+            };
 
-      useEffect(() => { fetchMenus(); }, []);
+            const handleSaveMenu = async () => {
+                setIsLoading(true);
+                let imageUrl = editingMenu.imageUrl;
 
-      // --- 이미지 선택 ---
-      const onSelectImage = (file) => {
-        setImageFile(file || null);
-        if (file) {
-          const url = URL.createObjectURL(file);
-          setImagePreview(url);
-        } else {
-          setImagePreview("");
-        }
-      };
+                if (imageFile) {
+                    const fileExt = imageFile.name.split('.').pop();
+                    const fileName = `${Date.now()}.${fileExt}`;
+                    const { data, error: uploadError } = await supabase.storage
+                        .from('chaya-menu-images')
+                        .upload(fileName, imageFile, { cacheControl: '3600', upsert: false });
 
-      // --- 메뉴 추가/수정 오픈 ---
-      const openCreate = () => {
-        setEditingMenu(emptyMenu);
-        setImageFile(null);
-        setImagePreview("");
-        setModalOpen(true);
-      };
-      const openEdit = (menu) => {
-        setEditingMenu({ ...menu });
-        setImageFile(null);
-        setImagePreview(menu.imageUrl || "");
-        setModalOpen(true);
-      };
+                    if (uploadError) {
+                        console.error("이미지 업로드 실패:", uploadError);
+                        showMessage("이미지 업로드에 실패했습니다.", setMessage, setIsMessageVisible);
+                        setIsLoading(false);
+                        return;
+                    }
 
-      // --- 업로드 + URL ---
-      const uploadIfNeededAndGetUrl = async () => {
-        if (!imageFile) {
-          // 새 파일 없으면 기존 URL 유지
-          return editingMenu.imageUrl || "";
-        }
-        const ext = (imageFile.name.split(".").pop() || "png").toLowerCase();
-        const filename = `${crypto.randomUUID()}.${ext}`;
-        const objectPath = makeObjectPath(filename);
+                    const { data: publicUrlData } = supabase.storage
+                        .from('chaya-menu-images')
+                        .getPublicUrl(fileName);
+                    imageUrl = publicUrlData.publicUrl;
+                }
 
-        const { error: upErr } = await supabase.storage.from(BUCKET).upload(objectPath, imageFile, { upsert: true });
-        if (upErr) {
-          console.error("[UPLOAD] error:", upErr);
-          throw upErr;
-        }
-        return getPublicUrl(objectPath);
-      };
+                let error = null;
+                let msg = '';
 
-      // --- 저장 ---
-      const handleSave = async () => {
-        if (!signedIn) {
-          alert("먼저 로그인하세요.");
-          return;
-        }
-        try {
-          setLoading(true);
-          // 숫자 변환 (빈값 방지)
-          const priceNum = Number(editingMenu.price ?? 0);
-          if (Number.isNaN(priceNum)) {
-            alert("가격은 숫자만 입력하세요.");
-            setLoading(false);
-            return;
-          }
+                const menuData = { ...editingMenu, imageUrl };
 
-          const imageUrl = await uploadIfNeededAndGetUrl();
+                if (menuData.id) {
+                    const { error: updateError } = await supabase
+                        .from('ChayaMenus')
+                        .update(menuData)
+                        .eq('id', menuData.id);
+                    error = updateError;
+                    msg = '메뉴가 수정되었습니다.';
+                } else {
+                    const { error: insertError } = await supabase
+                        .from('ChayaMenus')
+                        .insert(menuData);
+                    error = insertError;
+                    msg = '새 메뉴가 추가되었습니다.';
+                }
 
-          const payload = {
-            name: editingMenu.name?.trim() || "",
-            price: priceNum,
-            category: editingMenu.category?.trim() || "",
-            description: editingMenu.description?.trim() || "",
-            imageUrl, // 컬럼명과 일치
-          };
+                if (error) {
+                    console.error("메뉴 저장 오류:", error);
+                    showMessage("메뉴 저장에 실패했습니다.", setMessage, setIsMessageVisible);
+                } else {
+                    fetchMenus();
+                    closeModal();
+                    showMessage(msg, setMessage, setIsMessageVisible);
+                }
+                setIsLoading(false);
+            };
 
-          if (editingMenu.id) {
-            // UPDATE
-            const { error } = await supabase
-              .from("ChayaMenus")
-              .update(payload)
-              .eq("id", editingMenu.id);
-            if (error) throw error;
-          } else {
-            // INSERT
-            const { error } = await supabase
-              .from("ChayaMenus")
-              .insert([payload]);
-            if (error) throw error;
-          }
+            const handleDeleteMenu = async (id) => {
+                if (!window.confirm("정말 이 메뉴를 삭제하시겠습니까?")) {
+                    return;
+                }
+                const { error } = await supabase
+                    .from('ChayaMenus')
+                    .delete()
+                    .eq('id', id);
 
-          setModalOpen(false);
-          await fetchMenus();
-        } catch (e) {
-          console.error("[SAVE] error:", e);
-          alert("저장 실패: " + (e?.message || e));
-        } finally {
-          setLoading(false);
-        }
-      };
+                if (error) {
+                    console.error("메뉴 삭제 오류:", error);
+                    showMessage("메뉴 삭제에 실패했습니다.", setMessage, setIsMessageVisible);
+                } else {
+                    fetchMenus();
+                    showMessage("메뉴가 삭제되었습니다.", setMessage, setIsMessageVisible);
+                }
+            };
 
-      // --- 삭제 ---
-      const handleDelete = async (id) => {
-        if (!signedIn) {
-          alert("먼저 로그인하세요.");
-          return;
-        }
-        if (!confirm("정말 삭제하시겠습니까?")) return;
-        setLoading(true);
-        const { error } = await supabase.from("ChayaMenus").delete().eq("id", id);
-        if (error) {
-          console.error("[DELETE] error:", error);
-          alert("삭제 실패: " + error.message);
-        } else {
-          await fetchMenus();
-        }
-        setLoading(false);
-      };
+            const handleDeleteOrder = async (id) => {
+                if (!window.confirm("정말 이 주문을 삭제하시겠습니까?")) {
+                    return;
+                }
+                const { error } = await supabase
+                    .from('orders')
+                    .delete()
+                    .eq('id', id);
 
-      return (
-        <div className="py-6">
-          {/* 헤더 */}
-          <div className="bg-white rounded-2xl shadow p-5 flex items-center justify-between">
-            <h1 className="text-2xl font-bold">CHAYA 관리자</h1>
-            <div className="space-x-2">
-              {!signedIn ? (
-                <button onClick={signIn} className="px-3 py-1 rounded bg-slate-900 text-white">GitHub 로그인</button>
-              ) : (
-                <button onClick={signOut} className="px-3 py-1 rounded bg-slate-200 text-slate-800">로그아웃</button>
-              )}
-            </div>
-          </div>
+                if (error) {
+                    console.error("주문 삭제 오류:", error);
+                    showMessage("주문 삭제에 실패했습니다.", setMessage, setIsMessageVisible);
+                } else {
+                    fetchOrders();
+                    showMessage("주문이 삭제되었습니다.", setMessage, setIsMessageVisible);
+                }
+            };
 
-          {/* 탭 */}
-          <div className="bg-white rounded-2xl shadow p-3 mt-4">
-            <div className="inline-flex rounded-xl overflow-hidden">
-              <button
-                className={`px-4 py-2 ${tab==='menus'?'bg-slate-900 text-white':'bg-slate-100 text-slate-700'}`}
-                onClick={() => setTab('menus')}
-              >
-                메뉴 관리
-              </button>
-              <button
-                className={`px-4 py-2 ${tab==='orders'?'bg-slate-900 text-white':'bg-slate-100 text-slate-700'}`}
-                onClick={() => setTab('orders')}
-              >
-                주문 내역
-              </button>
-            </div>
-          </div>
-
-          {/* 컨텐츠 */}
-          <div className="bg-white rounded-2xl shadow p-5 mt-4">
-            {tab === 'menus' && (
-              <>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-semibold">메뉴 목록</h2>
-                  <button
-                    className="px-4 py-2 rounded-full bg-blue-600 text-white disabled:opacity-50"
-                    onClick={openCreate}
-                    disabled={!signedIn}
-                    title={!signedIn ? "로그인 필요" : ""}
-                  >
-                    메뉴 추가
-                  </button>
-                </div>
-
-                {loading && <div className="text-slate-500 mb-3">로딩 중…</div>}
-
-                <div className="space-y-3">
-                  {menus.map(m => (
-                    <div key={m.id} className="flex items-center justify-between p-3 rounded-2xl bg-slate-50">
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={m.imageUrl || ""}
-                          onError={(e)=>{e.currentTarget.style.display='none';}}
-                          alt=""
-                          className="w-16 h-16 rounded object-cover bg-white border"
-                        />
-                        <div>
-                          <div className="font-semibold">{m.name}</div>
-                          <div className="text-slate-600 text-sm">{m.price?.toLocaleString?.() ?? m.price}원</div>
-                          <div className="text-slate-400 text-xs">{m.category}</div>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          className="px-3 py-1 rounded bg-amber-400 text-white disabled:opacity-50"
-                          onClick={() => openEdit(m)}
-                          disabled={!signedIn}
-                          title={!signedIn ? "로그인 필요" : ""}
-                        >
-                          수정
+            const renderMenuManager = () => (
+                <div className="p-4 bg-white rounded-3xl shadow-lg">
+                    <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-2xl font-bold text-gray-800">메뉴 목록</h2>
+                        <button onClick={() => openModal()} className="bg-blue-600 text-white p-3 rounded-xl shadow-md hover:bg-blue-700 transition">
+                            메뉴 추가
                         </button>
-                        <button
-                          className="px-3 py-1 rounded bg-rose-500 text-white disabled:opacity-50"
-                          onClick={() => handleDelete(m.id)}
-                          disabled={!signedIn}
-                          title={!signedIn ? "로그인 필요" : ""}
-                        >
-                          삭제
-                        </button>
-                      </div>
                     </div>
-                  ))}
-                  {menus.length === 0 && !loading && (
-                    <div className="text-slate-500">등록된 메뉴가 없습니다.</div>
-                  )}
-                </div>
-              </>
-            )}
-
-            {tab === 'orders' && (
-              <div className="text-slate-500">주문 내역 화면은 추후 연결 예정</div>
-            )}
-          </div>
-
-          {/* 모달 */}
-          {modalOpen && (
-            <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
-              <div className="bg-white w-[92%] max-w-xl rounded-2xl shadow p-5">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="text-lg font-semibold">{editingMenu.id ? "메뉴 수정" : "메뉴 추가"}</div>
-                  <button className="px-3 py-1 rounded bg-slate-200" onClick={()=>setModalOpen(false)}>닫기</button>
-                </div>
-
-                <div className="grid grid-cols-1 gap-3">
-                  <label className="grid gap-1">
-                    <span className="text-sm text-slate-600">이름</span>
-                    <input className="px-3 py-2 border rounded-lg"
-                           value={editingMenu.name}
-                           onChange={e=>setEditingMenu({...editingMenu, name:e.target.value})}/>
-                  </label>
-
-                  <label className="grid gap-1">
-                    <span className="text-sm text-slate-600">가격</span>
-                    <input className="px-3 py-2 border rounded-lg"
-                           inputMode="numeric"
-                           value={editingMenu.price}
-                           onChange={e=>setEditingMenu({...editingMenu, price:e.target.value})}/>
-                  </label>
-
-                  <label className="grid gap-1">
-                    <span className="text-sm text-slate-600">카테고리</span>
-                    <input className="px-3 py-2 border rounded-lg"
-                           value={editingMenu.category}
-                           onChange={e=>setEditingMenu({...editingMenu, category:e.target.value})}/>
-                  </label>
-
-                  <label className="grid gap-1">
-                    <span className="text-sm text-slate-600">설명</span>
-                    <textarea className="px-3 py-2 border rounded-lg"
-                              rows="3"
-                              value={editingMenu.description}
-                              onChange={e=>setEditingMenu({...editingMenu, description:e.target.value})}/>
-                  </label>
-
-                  <div className="grid gap-2">
-                    <span className="text-sm text-slate-600">이미지</span>
-                    {imagePreview && (
-                      <img src={imagePreview} alt="" className="w-full h-40 object-cover rounded border" />
+                    {isLoading ? (
+                        <p className="text-center text-gray-500">메뉴를 불러오는 중...</p>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {menus.map(menu => (
+                                <div key={menu.id} className="bg-gray-50 p-4 rounded-xl shadow-sm flex items-center space-x-4">
+                                    {menu.imageUrl && <img src={menu.imageUrl} alt={menu.name} className="w-16 h-16 object-cover rounded-lg" />}
+                                    <div className="flex-grow">
+                                        <h3 className="font-bold text-gray-800">{menu.name}</h3>
+                                        <p className="text-sm text-gray-600">{menu.price.toLocaleString()}원</p>
+                                    </div>
+                                    <div className="flex space-x-2">
+                                        <button onClick={() => openModal(menu)} className="bg-yellow-400 p-2 rounded-lg text-sm text-white font-bold hover:bg-yellow-500 transition">수정</button>
+                                        <button onClick={() => handleDeleteMenu(menu.id)} className="bg-red-500 p-2 rounded-lg text-sm text-white font-bold hover:bg-red-600 transition">삭제</button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     )}
-                    <input type="file" accept="image/*"
-                           onChange={(e)=>onSelectImage(e.target.files?.[0])}/>
-                    {editingMenu.imageUrl && !imagePreview && (
-                      <div className="text-xs text-slate-500 break-all">기존: {editingMenu.imageUrl}</div>
-                    )}
-                  </div>
-
-                  <div className="flex justify-end gap-2 mt-2">
-                    <button className="px-4 py-2 rounded bg-slate-200" onClick={()=>setModalOpen(false)}>취소</button>
-                    <button className="px-4 py-2 rounded bg-blue-600 text-white disabled:opacity-50"
-                            disabled={!signedIn || loading}
-                            onClick={handleSave}>
-                      {editingMenu.id ? "수정 저장" : "추가 저장"}
-                    </button>
-                  </div>
                 </div>
-              </div>
-            </div>
-          )}
-        </div>
-      );
-    }
+            );
 
-    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
-  </script>
+            const renderOrderList = () => (
+                <div className="p-4 bg-white rounded-3xl shadow-lg">
+                    <h2 className="text-2xl font-bold text-gray-800 mb-6">주문 내역</h2>
+                    {orders.length === 0 ? (
+                        <p className="text-center text-gray-500">아직 주문이 없습니다.</p>
+                    ) : (
+                        <div className="space-y-6">
+                            {orders.map(order => (
+                                <div key={order.id} className="p-4 rounded-xl bg-gray-50 shadow-sm">
+                                    <div className="flex justify-between items-center border-b pb-2 mb-2">
+                                        <p className="font-bold text-gray-700">주문 번호: <span className="text-blue-600">{order.id.slice(0, 8)}</span></p>
+                                        <p className="text-sm text-gray-500">주문 시간: {new Date(order.created_at).toLocaleTimeString('ko-KR')}</p>
+                                    </div>
+                                    <div className="space-y-2">
+                                        {order.items.map((item, index) => (
+                                            <div key={index} className="flex justify-between items-center text-gray-600">
+                                                <span>{item.name} ({item.quantity}개)</span>
+                                                <span className="font-semibold">{item.price.toLocaleString()}원</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-200">
+                                        <p className="font-bold text-lg text-gray-800">총 가격: {order.total_price.toLocaleString()}원</p>
+                                        <button onClick={() => handleDeleteOrder(order.id)} className="bg-red-500 p-2 rounded-lg text-sm text-white font-bold hover:bg-red-600 transition">주문 삭제</button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            );
+
+            return (
+                <div className="min-h-screen bg-gray-100 p-4 sm:p-8">
+                    <div className="container mx-auto max-w-5xl">
+                        <header className="sticky top-0 bg-white z-20 py-4 mb-4 shadow-md rounded-b-xl">
+                            <h1 className="text-3xl font-bold text-gray-800 text-center no-select">CHAYA 관리자</h1>
+                        </header>
+
+                        <div className="flex justify-center bg-white rounded-xl shadow-md p-2 mb-6 space-x-2">
+                            <button
+                                onClick={() => setActiveTab('메뉴 관리')}
+                                className={`px-4 py-2 rounded-lg font-semibold transition ${activeTab === '메뉴 관리' ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-300'}`}
+                            >
+                                메뉴 관리
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('주문 내역')}
+                                className={`px-4 py-2 rounded-lg font-semibold transition ${activeTab === '주문 내역' ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-300'}`}
+                            >
+                                주문 내역
+                            </button>
+                        </div>
+                        
+                        <main>
+                            {activeTab === '메뉴 관리' && renderMenuManager()}
+                            {activeTab === '주문 내역' && renderOrderList()}
+                        </main>
+
+                        {isModalOpen && (
+                            <div className="modal-overlay" onClick={closeModal}>
+                                <div className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-lg mx-4 animate-fade-in-up" onClick={e => e.stopPropagation()}>
+                                    <h3 className="text-2xl font-bold text-gray-900 mb-4">{editingMenu?.id ? '메뉴 수정' : '메뉴 추가'}</h3>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">이름</label>
+                                            <input type="text" name="name" value={editingMenu?.name} onChange={handleInputChange} className="mt-1 block w-full rounded-xl border-gray-300 shadow-sm p-2 focus:border-indigo-500 focus:ring-indigo-500" required />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">설명</label>
+                                            <textarea name="description" value={editingMenu?.description} onChange={handleInputChange} rows="3" className="mt-1 block w-full rounded-xl border-gray-300 shadow-sm p-2 focus:border-indigo-500 focus:ring-indigo-500"></textarea>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">가격</label>
+                                            <input type="number" name="price" value={editingMenu?.price} onChange={handleInputChange} className="mt-1 block w-full rounded-xl border-gray-300 shadow-sm p-2 focus:border-indigo-500 focus:ring-indigo-500" required />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">카테고리</label>
+                                            <input type="text" name="category" value={editingMenu?.category} onChange={handleInputChange} className="mt-1 block w-full rounded-xl border-gray-300 shadow-sm p-2 focus:border-indigo-500 focus:ring-indigo-500" required />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">메뉴 이미지</label>
+                                            <input type="file" onChange={handleImageChange} className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" accept="image/*" />
+                                            {previewUrl && (
+                                                <img src={previewUrl} alt="미리보기" className="w-24 h-24 object-cover rounded-lg mt-4" />
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-end space-x-4 mt-6">
+                                        <button onClick={closeModal} className="bg-gray-300 text-gray-800 p-3 rounded-lg hover:bg-gray-400 transition">취소</button>
+                                        <button onClick={handleSaveMenu} className="bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 transition">저장</button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className={`message-box text-center bg-gray-900 text-white text-sm px-4 py-2 rounded-lg shadow-xl opacity-0 ${isMessageVisible ? 'show' : ''}`}>
+                            {message}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+        
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
 </body>
 </html>
