@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CHAYA 관리자</title>
+    <title>CHAYA 메뉴판 (관리자)</title>
     <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
@@ -12,45 +12,27 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { font-family: 'Inter', sans-serif; }
-        .no-select {
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
-            -khtml-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
-        }
         .modal-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
+            background-color: rgba(0, 0, 0, 0.5);
             display: flex;
             justify-content: center;
             align-items: center;
             z-index: 1000;
-            backdrop-filter: blur(5px);
         }
-        .animate-fade-in-up {
-            animation: fadeInUp 0.5s ease-out forwards;
+        .modal-content {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            max-width: 90%;
+            width: 500px;
         }
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .show {
-            opacity: 1 !important;
-        }
-        .message-box {
-            position: fixed;
-            bottom: 4rem;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1001;
-            transition: opacity 0.3s ease-out;
-        }
+        .show { opacity: 1 !important; transform: translate(-50%, 0) !important; }
     </style>
 </head>
 <body class="bg-gray-100 font-sans antialiased text-gray-800">
@@ -60,328 +42,296 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
 
+        // Supabase 설정
         const SUPABASE_URL = 'https://kzxdrwdfqhwpkqbswutr.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6eGRyd2RmcWh3cGtxYnN3dXRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY2NDQyMzcsImV4cCI6MjA3MjIyMDIzN30.pAjU3qCA7tkAoORn9-04HBNlt0N3u25nx0Y_uy0F3jc';
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        
-        const showMessage = (msg, setMessage, setIsMessageVisible) => {
-            setMessage(msg);
-            setIsMessageVisible(true);
-            setTimeout(() => {
-                setIsMessageVisible(false);
-            }, 3000);
-        };
 
         const App = () => {
             const [menus, setMenus] = useState([]);
+            const [categories, setCategories] = useState([]);
             const [editingMenu, setEditingMenu] = useState(null);
             const [isModalOpen, setIsModalOpen] = useState(false);
-            const [isLoading, setIsLoading] = useState(true);
-            const [orders, setOrders] = useState([]);
-            const [activeTab, setActiveTab] = useState('메뉴 관리');
             const [message, setMessage] = useState('');
             const [isMessageVisible, setIsMessageVisible] = useState(false);
-            const [imageFile, setImageFile] = useState(null);
-            const [previewUrl, setPreviewUrl] = useState('');
+            const [user, setUser] = useState(null);
+            const [email, setEmail] = useState('');
+            const [password, setPassword] = useState('');
+
+            const showMessage = (msg) => {
+                setMessage(msg);
+                setIsMessageVisible(true);
+                setTimeout(() => {
+                    setIsMessageVisible(false);
+                }, 3000);
+            };
 
             const fetchMenus = async () => {
-                const { data, error } = await supabase.from('ChayaMenus').select('*');
+                const { data: menuItems, error } = await supabase
+                    .from('ChayaMenus')
+                    .select('*');
                 if (error) {
-                    console.error("Error fetching menus:", error);
-                    showMessage("메뉴를 불러오는 데 실패했습니다.", setMessage, setIsMessageVisible);
+                    console.error("데이터 불러오기 오류:", error);
+                    showMessage("메뉴 데이터를 불러오는 데 실패했습니다.");
                 } else {
-                    setMenus(data);
+                    setMenus(menuItems);
+                    const uniqueCategories = [...new Set(menuItems.map(menu => menu.category))].sort();
+                    setCategories(uniqueCategories);
                 }
             };
 
-            const fetchOrders = async () => {
-                const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
-                if (error) {
-                    console.error("Error fetching orders:", error);
-                    showMessage("주문 내역을 불러오는 데 실패했습니다.", setMessage, setIsMessageVisible);
+            const checkUser = async () => {
+                const { data: { user }, error } = await supabase.auth.getUser();
+                if (user) {
+                    setUser(user);
+                    console.log("사용자 로그인 상태:", user);
                 } else {
-                    setOrders(data);
+                    setUser(null); // 사용자가 없는 상태로 설정
+                    console.log("사용자 로그인 상태: 로그아웃됨");
                 }
             };
-
+            
             useEffect(() => {
+                checkUser();
                 fetchMenus();
-                fetchOrders();
-                setIsLoading(false);
+                const { data: { subscription } = {} } = supabase.auth.onAuthStateChange((event, session) => {
+                    if (event === 'SIGNED_IN') {
+                        setUser(session.user);
+                    } else if (event === 'SIGNED_OUT') {
+                        setUser(null);
+                    }
+                });
+                return () => subscription?.unsubscribe();
             }, []);
 
-            useEffect(() => {
-                const orderSubscription = supabase
-                    .channel('public:orders')
-                    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, payload => {
-                        console.log('새로운 주문이 들어왔습니다:', payload.new);
-                        alert(`새로운 주문이 들어왔습니다! 총 ${payload.new.total_price.toLocaleString()}원`);
-                        setOrders(prev => [payload.new, ...prev]);
-                    })
-                    .subscribe();
-                
-                return () => {
-                    supabase.removeChannel(orderSubscription);
-                };
-            }, []);
+            const handleLogin = async (e) => {
+                e.preventDefault();
+                showMessage("로그인 시도 중...");
+                const { error } = await supabase.auth.signInWithPassword({ email, password });
+                if (error) {
+                    console.error("로그인 실패:", error);
+                    showMessage(`로그인 실패: ${error.message}`);
+                } else {
+                    showMessage("로그인 성공!");
+                }
+            };
+
+            const handleLogout = async () => {
+                showMessage("로그아웃 중...");
+                const { error } = await supabase.auth.signOut();
+                if (error) {
+                    console.error("로그아웃 실패:", error);
+                    showMessage("로그아웃 실패했습니다.");
+                } else {
+                    showMessage("로그아웃 성공!");
+                }
+            };
 
             const openModal = (menu = null) => {
-                setEditingMenu(menu ? { ...menu } : { name: '', description: '', price: 0, category: '', imageUrl: '' });
-                if (menu?.imageUrl) {
-                    setPreviewUrl(menu.imageUrl);
-                } else {
-                    setPreviewUrl('');
+                if (!user) {
+                    showMessage("로그인 후 메뉴를 추가/수정할 수 있습니다.");
+                    return;
                 }
-                setImageFile(null);
+                if (menu) {
+                    setEditingMenu({ ...menu });
+                } else {
+                    setEditingMenu({ name: '', price: '', category: '', description: '', imageUrl: '' });
+                }
                 setIsModalOpen(true);
             };
 
             const closeModal = () => {
                 setIsModalOpen(false);
                 setEditingMenu(null);
-                setImageFile(null);
-                setPreviewUrl('');
-            };
-
-            const handleImageChange = (e) => {
-                const file = e.target.files[0];
-                if (file) {
-                    setImageFile(file);
-                    setPreviewUrl(URL.createObjectURL(file));
-                }
             };
 
             const handleInputChange = (e) => {
                 const { name, value } = e.target;
-                setEditingMenu(prev => ({
-                    ...prev,
-                    [name]: value
-                }));
+                setEditingMenu(prev => ({ ...prev, [name]: value }));
+            };
+
+            const handleImageChange = async (e) => {
+                if (!e.target.files[0]) return;
+                const file = e.target.files[0];
+                const fileExtension = file.name.split('.').pop();
+                
+                showMessage("이미지 업로드 중...");
+                try {
+                    const filePath = `public/images/${crypto.randomUUID()}.${fileExtension}`;
+                    const { data, error } = await supabase
+                        .storage
+                        .from('menu-images')
+                        .upload(filePath, file);
+
+                    if (error) throw error;
+                    
+                    const publicURL = supabase
+                        .storage
+                        .from('menu-images')
+                        .getPublicUrl(filePath).data.publicUrl;
+
+                    setEditingMenu(prev => ({ ...prev, imageUrl: publicURL }));
+                    showMessage("이미지 업로드 성공!");
+                } catch (error) {
+                    console.error("이미지 업로드 실패:", error);
+                    showMessage("이미지 업로드에 실패했습니다.");
+                }
             };
 
             const handleSaveMenu = async () => {
-                setIsLoading(true);
-                let imageUrl = editingMenu.imageUrl;
-
-                if (imageFile) {
-                    const fileExt = imageFile.name.split('.').pop();
-                    const fileName = `${Date.now()}.${fileExt}`;
-                    const { data, error: uploadError } = await supabase.storage
-                        .from('chaya-menu-images')
-                        .upload(fileName, imageFile, { cacheControl: '3600', upsert: false });
-
-                    if (uploadError) {
-                        console.error("이미지 업로드 실패:", uploadError);
-                        showMessage("이미지 업로드에 실패했습니다.", setMessage, setIsMessageVisible);
-                        setIsLoading(false);
-                        return;
+                if (!editingMenu.name || !editingMenu.price || !editingMenu.category) {
+                    showMessage("이름, 가격, 카테고리를 입력해주세요.");
+                    return;
+                }
+                try {
+                    if (editingMenu.id) {
+                        const { data, error } = await supabase
+                            .from('ChayaMenus')
+                            .update({ ...editingMenu, updated_at: new Date() })
+                            .eq('id', editingMenu.id);
+                        if (error) throw error;
+                        showMessage("메뉴가 성공적으로 수정되었습니다.");
+                    } else {
+                        const { data, error } = await supabase
+                            .from('ChayaMenus')
+                            .insert([{ ...editingMenu }]);
+                        if (error) throw error;
+                        showMessage("메뉴가 성공적으로 추가되었습니다.");
                     }
-
-                    const { data: publicUrlData } = supabase.storage
-                        .from('chaya-menu-images')
-                        .getPublicUrl(fileName);
-                    imageUrl = publicUrlData.publicUrl;
-                }
-
-                let error = null;
-                let msg = '';
-
-                const menuData = { ...editingMenu, imageUrl };
-
-                if (menuData.id) {
-                    const { error: updateError } = await supabase
-                        .from('ChayaMenus')
-                        .update(menuData)
-                        .eq('id', menuData.id);
-                    error = updateError;
-                    msg = '메뉴가 수정되었습니다.';
-                } else {
-                    const { error: insertError } = await supabase
-                        .from('ChayaMenus')
-                        .insert(menuData);
-                    error = insertError;
-                    msg = '새 메뉴가 추가되었습니다.';
-                }
-
-                if (error) {
-                    console.error("메뉴 저장 오류:", error);
-                    showMessage("메뉴 저장에 실패했습니다.", setMessage, setIsMessageVisible);
-                } else {
-                    fetchMenus();
                     closeModal();
-                    showMessage(msg, setMessage, setIsMessageVisible);
+                    fetchMenus();
+                } catch (error) {
+                    console.error("메뉴 저장 실패:", error);
+                    showMessage("메뉴 저장에 실패했습니다.");
                 }
-                setIsLoading(false);
             };
 
             const handleDeleteMenu = async (id) => {
-                if (!window.confirm("정말 이 메뉴를 삭제하시겠습니까?")) {
-                    return;
-                }
-                const { error } = await supabase
-                    .from('ChayaMenus')
-                    .delete()
-                    .eq('id', id);
-
-                if (error) {
-                    console.error("메뉴 삭제 오류:", error);
-                    showMessage("메뉴 삭제에 실패했습니다.", setMessage, setIsMessageVisible);
-                } else {
+                try {
+                    const { error } = await supabase
+                        .from('ChayaMenus')
+                        .delete()
+                        .eq('id', id);
+                    if (error) throw error;
+                    showMessage("메뉴가 성공적으로 삭제되었습니다.");
                     fetchMenus();
-                    showMessage("메뉴가 삭제되었습니다.", setMessage, setIsMessageVisible);
+                } catch (error) {
+                    console.error("메뉴 삭제 실패:", error);
+                    showMessage("메뉴 삭제에 실패했습니다.");
                 }
             };
 
-            const handleDeleteOrder = async (id) => {
-                if (!window.confirm("정말 이 주문을 삭제하시겠습니까?")) {
-                    return;
+            const renderMenus = () => {
+                if (menus.length === 0) {
+                    return <p className="text-center text-gray-500 mt-10">아직 등록된 메뉴가 없습니다. 첫 메뉴를 추가해보세요!</p>;
                 }
-                const { error } = await supabase
-                    .from('orders')
-                    .delete()
-                    .eq('id', id);
-
-                if (error) {
-                    console.error("주문 삭제 오류:", error);
-                    showMessage("주문 삭제에 실패했습니다.", setMessage, setIsMessageVisible);
-                } else {
-                    fetchOrders();
-                    showMessage("주문이 삭제되었습니다.", setMessage, setIsMessageVisible);
-                }
-            };
-
-            const renderMenuManager = () => (
-                <div className="p-4 bg-white rounded-3xl shadow-lg">
-                    <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-2xl font-bold text-gray-800">메뉴 목록</h2>
-                        <button onClick={() => openModal()} className="bg-blue-600 text-white p-3 rounded-xl shadow-md hover:bg-blue-700 transition">
-                            메뉴 추가
-                        </button>
-                    </div>
-                    {isLoading ? (
-                        <p className="text-center text-gray-500">메뉴를 불러오는 중...</p>
-                    ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {menus.map(menu => (
-                                <div key={menu.id} className="bg-gray-50 p-4 rounded-xl shadow-sm flex items-center space-x-4">
-                                    {menu.imageUrl && <img src={menu.imageUrl} alt={menu.name} className="w-16 h-16 object-cover rounded-lg" />}
+                return categories.map(category => (
+                    <div key={category} className="mb-8">
+                        <h2 className="text-2xl font-bold text-gray-700 mb-4">{category}</h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                            {menus.filter(menu => menu.category === category).map(menu => (
+                                <div key={menu.id} className="bg-white rounded-xl shadow-lg overflow-hidden p-6 flex flex-col justify-between">
                                     <div className="flex-grow">
-                                        <h3 className="font-bold text-gray-800">{menu.name}</h3>
-                                        <p className="text-sm text-gray-600">{menu.price.toLocaleString()}원</p>
+                                        {menu.imageUrl && <img src={menu.imageUrl} alt={menu.name} className="w-full h-48 object-cover rounded-lg mb-4" />}
+                                        <h3 className="text-xl font-bold text-gray-800 truncate">{menu.name}</h3>
+                                        <p className="text-gray-600">{menu.price}원</p>
+                                        <p className="text-sm text-gray-400 mt-1 truncate">{menu.description}</p>
                                     </div>
-                                    <div className="flex space-x-2">
-                                        <button onClick={() => openModal(menu)} className="bg-yellow-400 p-2 rounded-lg text-sm text-white font-bold hover:bg-yellow-500 transition">수정</button>
-                                        <button onClick={() => handleDeleteMenu(menu.id)} className="bg-red-500 p-2 rounded-lg text-sm text-white font-bold hover:bg-red-600 transition">삭제</button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            );
-
-            const renderOrderList = () => (
-                <div className="p-4 bg-white rounded-3xl shadow-lg">
-                    <h2 className="text-2xl font-bold text-gray-800 mb-6">주문 내역</h2>
-                    {orders.length === 0 ? (
-                        <p className="text-center text-gray-500">아직 주문이 없습니다.</p>
-                    ) : (
-                        <div className="space-y-6">
-                            {orders.map(order => (
-                                <div key={order.id} className="p-4 rounded-xl bg-gray-50 shadow-sm">
-                                    <div className="flex justify-between items-center border-b pb-2 mb-2">
-                                        <p className="font-bold text-gray-700">주문 번호: <span className="text-blue-600">{order.id.slice(0, 8)}</span></p>
-                                        <p className="text-sm text-gray-500">주문 시간: {new Date(order.created_at).toLocaleTimeString('ko-KR')}</p>
-                                    </div>
-                                    <div className="space-y-2">
-                                        {order.items.map((item, index) => (
-                                            <div key={index} className="flex justify-between items-center text-gray-600">
-                                                <span>{item.name} ({item.quantity}개)</span>
-                                                <span className="font-semibold">{item.price.toLocaleString()}원</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-200">
-                                        <p className="font-bold text-lg text-gray-800">총 가격: {order.total_price.toLocaleString()}원</p>
-                                        <button onClick={() => handleDeleteOrder(order.id)} className="bg-red-500 p-2 rounded-lg text-sm text-white font-bold hover:bg-red-600 transition">주문 삭제</button>
+                                    <div className="flex space-x-2 mt-4">
+                                        <button onClick={() => openModal(menu)} className="flex-1 bg-yellow-500 text-white p-2 rounded-lg hover:bg-yellow-600 transition">수정</button>
+                                        <button onClick={() => handleDeleteMenu(menu.id)} className="flex-1 bg-red-500 text-white p-2 rounded-lg hover:bg-red-600 transition">삭제</button>
                                     </div>
                                 </div>
                             ))}
                         </div>
-                    )}
-                </div>
-            );
+                    </div>
+                ));
+            };
 
-            return (
-                <div className="min-h-screen bg-gray-100 p-4 sm:p-8">
-                    <div className="container mx-auto max-w-5xl">
-                        <header className="sticky top-0 bg-white z-20 py-4 mb-4 shadow-md rounded-b-xl">
-                            <h1 className="text-3xl font-bold text-gray-800 text-center no-select">CHAYA 관리자</h1>
-                        </header>
-
-                        <div className="flex justify-center bg-white rounded-xl shadow-md p-2 mb-6 space-x-2">
-                            <button
-                                onClick={() => setActiveTab('메뉴 관리')}
-                                className={`px-4 py-2 rounded-lg font-semibold transition ${activeTab === '메뉴 관리' ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-300'}`}
-                            >
-                                메뉴 관리
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('주문 내역')}
-                                className={`px-4 py-2 rounded-lg font-semibold transition ${activeTab === '주문 내역' ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-300'}`}
-                            >
-                                주문 내역
-                            </button>
+            const renderMainApp = () => {
+                if (!user) {
+                    return (
+                        <div className="flex flex-col items-center justify-center min-h-screen">
+                            <h2 className="text-2xl font-bold text-gray-800 mb-6">관리자 로그인</h2>
+                            <form onSubmit={handleLogin} className="bg-white p-8 rounded-xl shadow-lg w-full max-w-sm">
+                                <div className="mb-4">
+                                    <label htmlFor="email" className="block text-sm font-medium text-gray-700">이메일</label>
+                                    <input type="email" id="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="mt-1 block w-full border-gray-300 rounded-lg shadow-sm p-2" />
+                                </div>
+                                <div className="mb-6">
+                                    <label htmlFor="password" className="block text-sm font-medium text-gray-700">비밀번호</label>
+                                    <input type="password" id="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="mt-1 block w-full border-gray-300 rounded-lg shadow-sm p-2" />
+                                </div>
+                                <button type="submit" className="w-full bg-blue-600 text-white p-3 rounded-lg shadow-md hover:bg-blue-700 transition">로그인</button>
+                            </form>
                         </div>
-                        
-                        <main>
-                            {activeTab === '메뉴 관리' && renderMenuManager()}
-                            {activeTab === '주문 내역' && renderOrderList()}
-                        </main>
+                    );
+                }
 
+                return (
+                    <div className="bg-gray-100 font-sans min-h-screen relative p-4 sm:p-8">
+                        <div className="container mx-auto max-w-7xl">
+                            <div className="flex items-center justify-between mb-8">
+                                <div>
+                                    <h1 className="text-3xl font-bold text-gray-800">CHAYA 메뉴판 (관리자)</h1>
+                                    <p className="text-sm text-gray-500 mt-1">사용자 ID: <span className="font-mono bg-gray-200 px-2 py-1 rounded-md text-xs">{user ? user.id : '로그아웃됨'}</span></p>
+                                </div>
+                                <div className="flex space-x-2">
+                                    <button onClick={() => openModal()} className="bg-blue-600 text-white p-3 rounded-lg shadow-md hover:bg-blue-700 transition flex items-center space-x-2">
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
+                                        <span>메뉴 추가</span>
+                                    </button>
+                                    <button onClick={handleLogout} className="bg-gray-400 text-white p-3 rounded-lg shadow-md hover:bg-gray-500 transition flex items-center space-x-2">
+                                        <span>로그아웃</span>
+                                    </button>
+                                </div>
+                            </div>
+                            {renderMenus()}
+                        </div>
                         {isModalOpen && (
-                            <div className="modal-overlay" onClick={closeModal}>
-                                <div className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-lg mx-4 animate-fade-in-up" onClick={e => e.stopPropagation()}>
-                                    <h3 className="text-2xl font-bold text-gray-900 mb-4">{editingMenu?.id ? '메뉴 수정' : '메뉴 추가'}</h3>
+                            <div className="modal-overlay">
+                                <div className="modal-content">
+                                    <h2 className="text-2xl font-bold text-gray-800 mb-6">{editingMenu?.id ? '메뉴 수정' : '메뉴 추가'}</h2>
                                     <div className="space-y-4">
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700">이름</label>
-                                            <input type="text" name="name" value={editingMenu?.name} onChange={handleInputChange} className="mt-1 block w-full rounded-xl border-gray-300 shadow-sm p-2 focus:border-indigo-500 focus:ring-indigo-500" required />
+                                            <label htmlFor="name" className="block text-sm font-medium text-gray-700">이름</label>
+                                            <input type="text" id="name" name="name" value={editingMenu?.name || ''} onChange={handleInputChange} className="mt-1 block w-full border-gray-300 rounded-lg shadow-sm p-2" />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700">설명</label>
-                                            <textarea name="description" value={editingMenu?.description} onChange={handleInputChange} rows="3" className="mt-1 block w-full rounded-xl border-gray-300 shadow-sm p-2 focus:border-indigo-500 focus:ring-indigo-500"></textarea>
+                                            <label htmlFor="price" className="block text-sm font-medium text-gray-700">가격</label>
+                                            <input type="number" id="price" name="price" value={editingMenu?.price || ''} onChange={handleInputChange} className="mt-1 block w-full border-gray-300 rounded-lg shadow-sm p-2" />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700">가격</label>
-                                            <input type="number" name="price" value={editingMenu?.price} onChange={handleInputChange} className="mt-1 block w-full rounded-xl border-gray-300 shadow-sm p-2 focus:border-indigo-500 focus:ring-indigo-500" required />
+                                            <label htmlFor="category" className="block text-sm font-medium text-gray-700">카테고리</label>
+                                            <input type="text" id="category" name="category" value={editingMenu?.category || ''} onChange={handleInputChange} className="mt-1 block w-full border-gray-300 rounded-lg shadow-sm p-2" />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700">카테고리</label>
-                                            <input type="text" name="category" value={editingMenu?.category} onChange={handleInputChange} className="mt-1 block w-full rounded-xl border-gray-300 shadow-sm p-2 focus:border-indigo-500 focus:ring-indigo-500" required />
+                                            <label htmlFor="description" className="block text-sm font-medium text-gray-700">설명</label>
+                                            <textarea id="description" name="description" value={editingMenu?.description || ''} onChange={handleInputChange} rows="3" className="mt-1 block w-full border-gray-300 rounded-lg shadow-sm p-2"></textarea>
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700">메뉴 이미지</label>
-                                            <input type="file" onChange={handleImageChange} className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" accept="image/*" />
-                                            {previewUrl && (
-                                                <img src={previewUrl} alt="미리보기" className="w-24 h-24 object-cover rounded-lg mt-4" />
+                                            <label htmlFor="image" className="block text-sm font-medium text-gray-700">이미지</label>
+                                            <input type="file" id="image" onChange={handleImageChange} className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                                            {editingMenu?.imageUrl && (
+                                                <img src={editingMenu.imageUrl} alt="메뉴 이미지 미리보기" className="w-24 h-24 object-cover rounded-lg mt-4" />
                                             )}
                                         </div>
                                     </div>
                                     <div className="flex justify-end space-x-4 mt-6">
                                         <button onClick={closeModal} className="bg-gray-300 text-gray-800 p-3 rounded-lg hover:bg-gray-400 transition">취소</button>
-                                        <button onClick={handleSaveMenu} className="bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 transition">저장</button>
+                                        <button onClick={handleSaveMenu} className="bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 transition">
+                                            {editingMenu?.id ? '수정 완료' : '추가'}
+                                        </button>
                                     </div>
                                 </div>
                             </div>
                         )}
-
-                        <div className={`message-box text-center bg-gray-900 text-white text-sm px-4 py-2 rounded-lg shadow-xl opacity-0 ${isMessageVisible ? 'show' : ''}`}>
-                            {message}
-                        </div>
+                        <div className={`fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-sm px-4 py-2 rounded-lg shadow-xl opacity-0 transition-opacity duration-300 z-50 ${isMessageVisible ? 'show' : ''}`}>{message}</div>
                     </div>
-                </div>
-            );
+                );
+            };
+
+            return renderMainApp();
         };
         
         const root = ReactDOM.createRoot(document.getElementById('root'));
