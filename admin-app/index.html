@@ -152,12 +152,20 @@
             };
 
             const handleInputChange = (e) => {
-                const { name, value } = e.target;
-                setEditingMenu(prev => ({
-                    ...prev,
-                    [name]: value
-                }));
-            };
+    const { name, value } = e.target;
+    if (name === 'price') {
+        const numericValue = value.replace(/[^0-9]/g, ''); // 숫자 이외의 문자 제거
+        setEditingMenu(prev => ({
+            ...prev,
+            [name]: numericValue
+        }));
+    } else {
+        setEditingMenu(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    }
+};
 
             const handleSaveMenu = async () => {
                 setIsLoading(true);
@@ -350,7 +358,14 @@
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700">가격</label>
-                                            <input type="number" name="price" value={editingMenu?.price} onChange={handleInputChange} className="mt-1 block w-full rounded-xl border-gray-300 shadow-sm p-2 focus:border-indigo-500 focus:ring-indigo-500" required />
+                                           <input
+    type="text"
+    name="price"
+    value={editingMenu?.price ? Number(editingMenu.price).toLocaleString('ko-KR') : ''}
+    onChange={handleInputChange}
+    className="mt-1 block w-full rounded-xl border-gray-300 shadow-sm p-2 focus:border-indigo-500 focus:ring-indigo-500"
+    required
+/>
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700">카테고리</label>
