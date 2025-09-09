@@ -83,6 +83,8 @@
             const [isMessageVisible, setIsMessageVisible] = useState(false);
             const [imageFile, setImageFile] = useState(null);
             const [previewUrl, setPreviewUrl] = useState('');
+            const [categories, setCategories] = useState([]); // ✅ 카테고리 상태 추가
+	    const [isCustomCategory, setIsCustomCategory] = useState(false); // ✅ 새로운 상태 추가
 
             const fetchMenus = async () => {
                 const { data, error } = await supabase.from('ChayaMenus').select('*');
@@ -104,9 +106,36 @@
                 }
             };
 
+// ✅ 카테고리 목록을 불러오는 함수
+    const fetchCategories = async () => {
+        const { data, error } = await supabase.from('ChayaMenus').select('category');
+        if (error) {
+            console.error("Error fetching categories:", error);
+        } else {
+            // 중복을 제거하고 카테고리 목록을 만듭니다.
+            const uniqueCategories = [...new Set(data.map(item => item.category))];
+            setCategories(uniqueCategories.filter(c => c)); // 빈 값 제거
+        }
+    };
+
+ const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        if (name === 'category' && value === 'custom') {
+            setIsCustomCategory(true);
+            setEditingMenu(prev => ({ ...prev, category: '' }));
+        } else {
+            setIsCustomCategory(false);
+            setEditingMenu(prev => ({
+                ...prev,
+                [name]: value
+            }));
+        }
+    };
+
             useEffect(() => {
                 fetchMenus();
                 fetchOrders();
+                fetchCategories(); // ✅ 컴포넌트 로드 시 카테고리 불러오기
                 setIsLoading(false);
             }, []);
 
@@ -135,13 +164,16 @@
                 setImageFile(null);
                 setIsModalOpen(true);
             };
-
+ setIsCustomCategory(false); // 모달 열 때 직접 입력 상태 초기화
+    };
             const closeModal = () => {
                 setIsModalOpen(false);
                 setEditingMenu(null);
                 setImageFile(null);
                 setPreviewUrl('');
             };
+setIsCustomCategory(false); // 모달 닫을 때 직접 입력 상태 초기화
+    };
 
             const handleImageChange = (e) => {
                 const file = e.target.files[0];
@@ -153,7 +185,17 @@
 
             const handleInputChange = (e) => {
     const { name, value } = e.target;
-    if (name === 'price') {
+  
+  if (name === 'category') {
+            if (value === 'custom') {
+                setIsCustomCategory(true);
+                setEditingMenu(prev => ({ ...prev, category: '' }));
+            } else {
+                setIsCustomCategory(false);
+                setEditingMenu(prev => ({ ...prev, category: value }));
+            }
+
+  } else if (name === 'price') {
         const numericValue = value.replace(/[^0-9]/g, ''); // 숫자 이외의 문자 제거
         setEditingMenu(prev => ({
             ...prev,
@@ -368,9 +410,36 @@
 />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700">카테고리</label>
-                                            <input type="text" name="category" value={editingMenu?.category} onChange={handleInputChange} className="mt-1 block w-full rounded-xl border-gray-300 shadow-sm p-2 focus:border-indigo-500 focus:ring-indigo-500" required />
-                                        </div>
+    <label className="block text-sm font-medium text-gray-700">카테고리</label>
+    <select
+        name="category"
+        value={isCustomCategory ? 'custom' : editingMenu?.category}
+        onChange={handleInputChange}
+        className="mt-1 block w-full rounded-xl border-gray-300 shadow-sm p-2 focus:border-indigo-500 focus:ring-indigo-500"
+        required
+    >
+        <option value="">카테고리 선택</option>
+        {categories.map(cat => (
+            <option key={cat} value={cat}>{cat}</option>
+        ))}
+        <option value="custom">-- 직접 입력 --</option>
+    </select>
+</div>
+
+{isCustomCategory && (
+    <div className="mt-4">
+        <label className="block text-sm font-medium text-gray-700">새 카테고리 이름</label>
+        <input
+            type="text"
+            name="category"
+            value={editingMenu?.category}
+            onChange={handleInputChange}
+            className="mt-1 block w-full rounded-xl border-gray-300 shadow-sm p-2 focus:border-indigo-500 focus:ring-indigo-500"
+            required
+        />
+    </div>
+)}
+
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700">설명</label>
                                             <textarea name="description" value={editingMenu?.description} onChange={handleInputChange} rows="3" className="mt-1 block w-full rounded-xl border-gray-300 shadow-sm p-2 focus:border-indigo-500 focus:ring-indigo-500"></textarea>
