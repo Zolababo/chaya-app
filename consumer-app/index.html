@@ -312,8 +312,8 @@
                                             <h3 className="text-md font-bold text-gray-800 truncate">{menu.name}</h3>
                                         </div>
                                         <div className="flex items-center justify-between mt-2">
-                                            <p className="text-md font-bold text-gray-600">{menu.price.toLocaleString()}원</p>
-                                            <div className="flex items-center space-x-2">
+                                            <p className="text-md font-bold text-gray-600 whitespace-nowrap">{menu.price.toLocaleString()}원</p>
+                                            <div className="flex items-center space-x-2 flex-shrink-0">
                                                 <button onClick={(e) => { e.stopPropagation(); handleUpdateItem(menu, Math.max(0, quantity - 1)); }} className="bg-gray-200 text-gray-800 p-1 rounded-full w-7 h-7 flex items-center justify-center font-bold text-sm hover:bg-gray-300 transition">-</button>
                                                 <span className="text-lg font-bold w-6 text-center">{quantity}</span>
                                                 <button onClick={(e) => { e.stopPropagation(); handleUpdateItem(menu, quantity + 1); }} className="bg-gray-200 text-gray-800 p-1 rounded-full w-7 h-7 flex items-center justify-center font-bold text-sm hover:bg-gray-300 transition">+</button>
