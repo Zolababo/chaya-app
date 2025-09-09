@@ -167,7 +167,7 @@
                     const fileExt = imageFile.name.split('.').pop();
                     const fileName = `${Date.now()}.${fileExt}`;
                     const { data, error: uploadError } = await supabase.storage
-                        .from('chaya-menu-images')
+                        .from('menu-images')
                         .upload(fileName, imageFile, { cacheControl: '3600', upsert: false });
 
                     if (uploadError) {
@@ -178,7 +178,7 @@
                     }
 
                     const { data: publicUrlData } = supabase.storage
-                        .from('chaya-menu-images')
+                        .from('menu-images')
                         .getPublicUrl(fileName);
                     imageUrl = publicUrlData.publicUrl;
                 }
