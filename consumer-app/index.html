@@ -308,15 +308,15 @@
                                 <div key={menu.id} onClick={() => openItemModal(menu)} className={`rounded-3xl shadow-xl overflow-hidden flex flex-col cursor-pointer transition transform hover:scale-105 active:scale-95 duration-300 bg-white`}>
                                     {menu.imageUrl && <img src={menu.imageUrl} alt={menu.name} className="w-full h-32 object-cover" />}
                                     <div className="p-3 flex flex-col justify-between flex-grow">
-                                        <div>
-                                            <h3 className="text-md font-bold text-gray-800 truncate">{menu.name}</h3>
+                                        <div class="flex items-center justify-between">
+                                            <h3 class="text-md font-bold text-gray-800 truncate">{menu.name}</h3>
+                                            <p class="text-md font-bold text-gray-600 whitespace-nowrap">{menu.price.toLocaleString()}원</p>
                                         </div>
-                                        <div className="flex items-center mt-2 gap-2">
-                                            <p className="text-md font-bold text-gray-600 flex-grow whitespace-nowrap">{menu.price.toLocaleString()}원</p>
-                                            <div className="flex items-center space-x-2 flex-shrink-0">
-                                                <button onClick={(e) => { e.stopPropagation(); handleUpdateItem(menu, Math.max(0, quantity - 1)); }} className="bg-gray-200 text-gray-800 p-1 rounded-full w-7 h-7 flex items-center justify-center font-bold text-sm hover:bg-gray-300 transition">-</button>
-                                                <span className="text-lg font-bold w-6 text-center">{quantity}</span>
-                                                <button onClick={(e) => { e.stopPropagation(); handleUpdateItem(menu, quantity + 1); }} className="bg-gray-200 text-gray-800 p-1 rounded-full w-7 h-7 flex items-center justify-center font-bold text-sm hover:bg-gray-300 transition">+</button>
+                                        <div class="flex items-center justify-center mt-2">
+                                            <div class="flex items-center space-x-2">
+                                                <button onClick={(e) => { e.stopPropagation(); handleUpdateItem(menu, Math.max(0, quantity - 1)); }} class="bg-gray-200 text-gray-800 p-1 rounded-full w-7 h-7 flex items-center justify-center font-bold text-sm hover:bg-gray-300 transition">-</button>
+                                                <span class="text-lg font-bold w-6 text-center">{quantity}</span>
+                                                <button onClick={(e) => { e.stopPropagation(); handleUpdateItem(menu, quantity + 1); }} class="bg-gray-200 text-gray-800 p-1 rounded-full w-7 h-7 flex items-center justify-center font-bold text-sm hover:bg-gray-300 transition">+</button>
                                             </div>
                                         </div>
                                     </div>
