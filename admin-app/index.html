@@ -126,7 +126,7 @@
             }, []);
 
             const openModal = (menu = null) => {
-                setEditingMenu(menu ? { ...menu } : { name: '', description: '', price: 0, category: '', imageUrl: '' });
+                setEditingMenu(menu ? { ...menu } : { name: '', description: '', price: '', category: '', imageUrl: '' });
                 if (menu?.imageUrl) {
                     setPreviewUrl(menu.imageUrl);
                 } else {
