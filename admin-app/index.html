@@ -83,6 +83,7 @@
             const [isMessageVisible, setIsMessageVisible] = useState(false);
             const [imageFile, setImageFile] = useState(null);
             const [previewUrl, setPreviewUrl] = useState('');
+            const [categories, setCategories] = useState([]);
 
             const fetchMenus = async () => {
                 const { data, error } = await supabase.from('ChayaMenus').select('*');
@@ -103,10 +104,21 @@
                     setOrders(data);
                 }
             };
+            
+            const fetchCategories = async () => {
+                const { data, error } = await supabase.from('ChayaMenus').select('category');
+                if (error) {
+                    console.error("Error fetching categories:", error);
+                } else {
+                    const uniqueCategories = [...new Set(data.map(item => item.category))].filter(Boolean);
+                    setCategories(uniqueCategories);
+                }
+            };
 
             useEffect(() => {
                 fetchMenus();
                 fetchOrders();
+                fetchCategories();
                 setIsLoading(false);
             }, []);
 
@@ -141,6 +153,7 @@
                 setEditingMenu(null);
                 setImageFile(null);
                 setPreviewUrl('');
+                fetchCategories(); // 모달 닫을 때 카테고리 목록 새로고침
             };
 
             const handleImageChange = (e) => {
@@ -152,20 +165,26 @@
             };
 
             const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    if (name === 'price') {
-        const numericValue = value.replace(/[^0-9]/g, ''); // 숫자 이외의 문자 제거
-        setEditingMenu(prev => ({
-            ...prev,
-            [name]: numericValue
-        }));
-    } else {
-        setEditingMenu(prev => ({
-            ...prev,
-            [name]: value
-        }));
-    }
-};
+                const { name, value } = e.target;
+                if (name === 'price') {
+                    const numericValue = value.replace(/[^0-9]/g, '');
+                    setEditingMenu(prev => ({
+                        ...prev,
+                        [name]: numericValue
+                    }));
+                } else if (name === 'category' && value === '새 카테고리') {
+                    setEditingMenu(prev => ({
+                        ...prev,
+                        category: value,
+                        newCategory: '' // 새 카테고리 입력 필드 상태 초기화
+                    }));
+                } else {
+                    setEditingMenu(prev => ({
+                        ...prev,
+                        [name]: value
+                    }));
+                }
+            };
 
             const handleSaveMenu = async () => {
                 setIsLoading(true);
@@ -193,8 +212,12 @@
 
                 let error = null;
                 let msg = '';
+                
+                const finalCategory = editingMenu.category === '새 카테고리' && editingMenu.newCategory 
+                    ? editingMenu.newCategory 
+                    : editingMenu.category;
 
-                const menuData = { ...editingMenu, imageUrl };
+                const menuData = { ...editingMenu, imageUrl, category: finalCategory };
 
                 if (menuData.id) {
                     const { error: updateError } = await supabase
@@ -354,7 +377,7 @@
                                     <div className="space-y-4">
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700">이름</label>
-                                            <input type="text" name="name" value={editingMenu?.name} onChange={handleInputChange} className="mt-1 block w-full rounded-xl border-gray-300 shadow-sm p-2 focus:border-indigo-500 focus:ring-indigo-500" required />
+                                            <input type="text" name="name" value={editingMenu?.name || ''} onChange={handleInputChange} className="mt-1 block w-full rounded-xl border-gray-300 shadow-sm p-2 focus:border-indigo-500 focus:ring-indigo-500" required />
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700">가격</label>
@@ -369,11 +392,27 @@
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700">카테고리</label>
-                                            <input type="text" name="category" value={editingMenu?.category} onChange={handleInputChange} className="mt-1 block w-full rounded-xl border-gray-300 shadow-sm p-2 focus:border-indigo-500 focus:ring-indigo-500" required />
+                                            <select name="category" value={editingMenu?.category || ''} onChange={handleInputChange} className="mt-1 block w-full rounded-xl border-gray-300 shadow-sm p-2 focus:border-indigo-500 focus:ring-indigo-500" required>
+                                                <option value="" disabled>카테고리 선택</option>
+                                                {categories.map(cat => (
+                                                    <option key={cat} value={cat}>{cat}</option>
+                                                ))}
+                                                <option value="새 카테고리">새 카테고리 추가</option>
+                                            </select>
+                                            {editingMenu?.category === '새 카테고리' && (
+                                                <input
+                                                    type="text"
+                                                    name="newCategory"
+                                                    value={editingMenu.newCategory || ''}
+                                                    placeholder="새 카테고리 이름"
+                                                    onChange={handleInputChange}
+                                                    className="mt-2 block w-full rounded-xl border-gray-300 shadow-sm p-2 focus:border-indigo-500 focus:ring-indigo-500"
+                                                />
+                                            )}
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700">설명</label>
-                                            <textarea name="description" value={editingMenu?.description} onChange={handleInputChange} rows="3" className="mt-1 block w-full rounded-xl border-gray-300 shadow-sm p-2 focus:border-indigo-500 focus:ring-indigo-500"></textarea>
+                                            <textarea name="description" value={editingMenu?.description || ''} onChange={handleInputChange} rows="3" className="mt-1 block w-full rounded-xl border-gray-300 shadow-sm p-2 focus:border-indigo-500 focus:ring-indigo-500"></textarea>
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700">메뉴 이미지</label>
