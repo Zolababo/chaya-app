@@ -72,6 +72,61 @@
             }, 3000);
         };
 
+        // 👇 푸쉬 알림 구독 관련 함수
+        const VAPID_PUBLIC_KEY = BPts4uEcIvlMkthjh5a9-fJoHG3ZIdI3A7INqmDFB7d19KQQGiBXGipJGs4HO44ETAmHJ_nrzdFKfnUdllJKSro;
+
+        async function subscribeUserToPush() {
+            if (!('serviceWorker' in navigator)) {
+                console.log('서비스 워커를 지원하지 않는 브라우저입니다.');
+                return;
+            }
+
+            try {
+                const registration = await navigator.serviceWorker.register('/sw.js');
+                console.log('서비스 워커 등록 완료:', registration);
+
+                const permissionResult = await Notification.requestPermission();
+                if (permissionResult !== 'granted') {
+                    throw new Error('알림 권한이 허용되지 않았습니다.');
+                }
+
+                const subscription = await registration.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+                });
+
+                console.log('푸쉬 구독 정보:', JSON.stringify(subscription));
+
+                const { data, error } = await supabase
+                    .from('push_subscriptions')
+                    .insert({ endpoint: subscription.endpoint, p256dh: subscription.toJSON().keys.p256dh, auth: subscription.toJSON().keys.auth });
+
+                if (error) {
+                    console.error("구독 정보 저장 실패:", error);
+                    showMessage("알림 구독 정보 저장에 실패했습니다.", setMessage, setIsMessageVisible);
+                } else {
+                    console.log("구독 정보 저장 성공!");
+                    showMessage("새로운 주문 알림을 받도록 설정되었습니다.", setMessage, setIsMessageVisible);
+                }
+
+            } catch (err) {
+                console.error('푸쉬 알림 구독 실패:', err);
+                showMessage("알림 구독에 실패했습니다.", setMessage, setIsMessageVisible);
+            }
+        }
+
+        function urlBase64ToUint8Array(base64String) {
+            const padding = '='.repeat((4 - base64String.length % 4) % 4);
+            const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+            const rawData = window.atob(base64);
+            const outputArray = new Uint8Array(rawData.length);
+            for (let i = 0; i < rawData.length; ++i) {
+                outputArray[i] = rawData.charCodeAt(i);
+            }
+            return outputArray;
+        }
+        // 👆 푸쉬 알림 구독 관련 함수 끝
+
         const App = () => {
             const [menus, setMenus] = useState([]);
             const [editingMenu, setEditingMenu] = useState(null);
@@ -120,6 +175,7 @@
                 fetchOrders();
                 fetchCategories();
                 setIsLoading(false);
+                subscribeUserToPush(); // 앱 시작 시 푸쉬 알림 구독 요청
             }, []);
 
             useEffect(() => {
