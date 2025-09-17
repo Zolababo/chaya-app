@@ -200,7 +200,7 @@
                 const total_price = orderedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
                 
                 const { error } = await supabase.from('orders').insert([{
-                    items: orderedItems,
+                    items: JSON.stringify(orderedItems), // ← 배열을 JSON 문자열로 변환
                     total_price: total_price
                 }]);
 
