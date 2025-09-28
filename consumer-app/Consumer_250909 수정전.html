@@ -208,23 +208,7 @@
                     console.error("주문 실패:", error);
                     showMessage("주문 전송에 실패했습니다. 다시 시도해주세요.");
                 } else {
-                    
-        try {
-            const response = await fetch("https://kzxdrwdfqhwpkqbswutr.supabase.co/functions/v1/send-notification", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6eGRyd2RmcWh3cGtxYnN3dXRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY2NDQyMzcsImV4cCI6MjA3MjIyMDIzN30.pAjU3qCA7tkAoORn9-04HBNlt0N3u25nx0Y_uy0F3jc"
-                },
-                body: JSON.stringify({ message: "새로운 주문이 접수되었습니다!", items: orderedItems })
-            });
-            const result = await response.text();
-            console.log("Edge Function 응답:", result);
-        } catch (err) {
-            console.error("알림 전송 실패:", err);
-        }
-
-        showMessage("주문이 성공적으로 접수되었습니다!");
+                    showMessage("주문이 성공적으로 접수되었습니다!");
                     setOrderItems({});
                     setIsCartOpen(false);
                 }
@@ -265,14 +249,12 @@
                             </div>
                         </div>
 
-                        {itemQuantity > 0 && (
-    <div className="flex justify-end space-x-4">
-        <button onClick={closeItemModal} className="bg-gray-300 text-gray-800 p-3 rounded-lg hover:bg-gray-400 transition">취소</button>
-        <button onClick={handleUpdateItemInModal} className="bg-teal-600 text-white p-3 rounded-lg hover:bg-teal-700 transition">
-            {itemQuantity}개 담기
-        </button>
-    </div>
-)}
+                        <div className="flex justify-end space-x-4">
+                            <button onClick={closeItemModal} className="bg-gray-300 text-gray-800 p-3 rounded-lg hover:bg-gray-400 transition">취소</button>
+                            <button onClick={handleUpdateItemInModal} className="bg-teal-600 text-white p-3 rounded-lg hover:bg-teal-700 transition">
+                                {itemQuantity > 0 ? `${itemQuantity}개 담기` : '삭제'}
+                            </button>
+                        </div>
                     </div>
                 </div>
             );
@@ -326,15 +308,15 @@
                                 <div key={menu.id} onClick={() => openItemModal(menu)} className={`rounded-3xl shadow-xl overflow-hidden flex flex-col cursor-pointer transition transform hover:scale-105 active:scale-95 duration-300 bg-white`}>
                                     {menu.imageUrl && <img src={menu.imageUrl} alt={menu.name} className="w-full h-32 object-cover" />}
                                     <div className="p-3 flex flex-col justify-between flex-grow">
-                                        <div class="flex items-center justify-between">
-                                            <h3 class="text-md font-bold text-gray-800 truncate">{menu.name}</h3>
-                                            <p class="text-md font-bold text-gray-600 whitespace-nowrap">{menu.price.toLocaleString()}원</p>
+                                        <div>
+                                            <h3 className="text-md font-bold text-gray-800 truncate">{menu.name}</h3>
                                         </div>
-                                        <div class="flex items-center justify-center mt-2">
-                                            <div class="flex items-center space-x-2">
-                                                <button onClick={(e) => { e.stopPropagation(); handleUpdateItem(menu, Math.max(0, quantity - 1)); }} class="bg-gray-200 text-gray-800 p-1 rounded-full w-7 h-7 flex items-center justify-center font-bold text-sm hover:bg-gray-300 transition">-</button>
-                                                <span class="text-lg font-bold w-6 text-center">{quantity}</span>
-                                                <button onClick={(e) => { e.stopPropagation(); handleUpdateItem(menu, quantity + 1); }} class="bg-gray-200 text-gray-800 p-1 rounded-full w-7 h-7 flex items-center justify-center font-bold text-sm hover:bg-gray-300 transition">+</button>
+                                        <div className="flex items-center justify-between mt-2">
+                                            <p className="text-md font-bold text-gray-600">{menu.price.toLocaleString()}원</p>
+                                            <div className="flex items-center space-x-2">
+                                                <button onClick={(e) => { e.stopPropagation(); handleUpdateItem(menu, Math.max(0, quantity - 1)); }} className="bg-gray-200 text-gray-800 p-1 rounded-full w-7 h-7 flex items-center justify-center font-bold text-sm hover:bg-gray-300 transition">-</button>
+                                                <span className="text-lg font-bold w-6 text-center">{quantity}</span>
+                                                <button onClick={(e) => { e.stopPropagation(); handleUpdateItem(menu, quantity + 1); }} className="bg-gray-200 text-gray-800 p-1 rounded-full w-7 h-7 flex items-center justify-center font-bold text-sm hover:bg-gray-300 transition">+</button>
                                             </div>
                                         </div>
                                     </div>

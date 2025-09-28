@@ -82,7 +82,7 @@
             }
 
             try {
-                const registration = await navigator.serviceWorker.register('/admin/sw.js', { scope: '/admin/' });
+                const registration = await navigator.serviceWorker.register('/sw.js');
                 console.log('서비스 워커 등록 완료:', registration);
 
                 const permissionResult = await Notification.requestPermission();
@@ -499,14 +499,5 @@
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>
-
-<script>
-if ("Notification" in window) {
-  Notification.requestPermission().then((permission) => {
-    console.log("Notification permission:", permission);
-  });
-}
-</script>
-
 </body>
 </html>

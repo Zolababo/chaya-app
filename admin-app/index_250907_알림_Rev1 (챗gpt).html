@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CHAYA 관리자</title>
+  <!-- Tailwind (CDN) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- React (CDN + Babel) -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- Supabase -->
+  <script src="https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+</head>
+<body class="bg-slate-100">
+  <div id="root" class="max-w-3xl mx-auto p-4"></div>
+
+  <script type="text/babel">
+    // ================== 환경변수 ==================
+    const SUPABASE_URL = "https://YOUR_PROJECT_REF.supabase.co"; // ← 수정
+    const SUPABASE_ANON_KEY = "YOUR_ANON_KEY";                   // ← 수정
+
+    // 버킷/경로 상수 (실제 콘솔과 100% 동일해야 함)
+    const BUCKET = "menu-images";
+    const DIR = "images"; // 버킷 내부 폴더
+
+    // ================== Supabase 초기화 ==================
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // object path 생성
+    const makeObjectPath = (filename) => `${DIR}/${filename}`;
+
+    // 공개 URL 생성
+    const getPublicUrl = (objectPath) => {
+      const { data } = supabase.storage.from(BUCKET).getPublicUrl(objectPath);
+      return data.publicUrl;
+    };
+
+    // ================== UI ==================
+    const { useEffect, useState, useMemo } = React;
+
+    function App() {
+      const [session, setSession] = useState(null);
+      const [tab, setTab] = useState("menus"); // menus | orders
+      const [menus, setMenus] = useState([]);
+      const [loading, setLoading] = useState(false);
+
+      const [modalOpen, setModalOpen] = useState(false);
+      const emptyMenu = { id: null, name: "", price: "", category: "", description: "", imageUrl: "" };
+      const [editingMenu, setEditingMenu] = useState(emptyMenu);
+      const [imageFile, setImageFile] = useState(null);
+      const [imagePreview, setImagePreview] = useState("");
+
+      // --- 인증 ---
+      useEffect(() => {
+        (async () => {
+          const { data: { session } } = await supabase.auth.getSession();
+          setSession(session);
+        })();
+        const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
+        return () => sub.subscription.unsubscribe();
+      }, []);
+
+      const signedIn = !!session;
+
+      const signIn = async () => {
+        await supabase.auth.signInWithOAuth({ provider: "github", options: { redirectTo: window.location.href } });
+      };
+      const signOut = async () => {
+        await supabase.auth.signOut();
+        window.location.reload();
+      };
+
+      // --- 메뉴 로드 ---
+      const fetchMenus = async () => {
+        setLoading(true);
+        const { data, error } = await supabase.from("ChayaMenus").select("*").order("created_at", { ascending: true });
+        if (error) {
+          console.error("[LOAD] menus error:", error);
+          alert("메뉴 로드 실패: " + error.message);
+        } else {
+          setMenus(data || []);
+        }
+        setLoading(false);
+      };
+
+      useEffect(() => { fetchMenus(); }, []);
+
+      // --- 이미지 선택 ---
+      const onSelectImage = (file) => {
+        setImageFile(file || null);
+        if (file) {
+          const url = URL.createObjectURL(file);
+          setImagePreview(url);
+        } else {
+          setImagePreview("");
+        }
+      };
+
+      // --- 메뉴 추가/수정 오픈 ---
+      const openCreate = () => {
+        setEditingMenu(emptyMenu);
+        setImageFile(null);
+        setImagePreview("");
+        setModalOpen(true);
+      };
+      const openEdit = (menu) => {
+        setEditingMenu({ ...menu });
+        setImageFile(null);
+        setImagePreview(menu.imageUrl || "");
+        setModalOpen(true);
+      };
+
+      // --- 업로드 + URL ---
+      const uploadIfNeededAndGetUrl = async () => {
+        if (!imageFile) {
+          // 새 파일 없으면 기존 URL 유지
+          return editingMenu.imageUrl || "";
+        }
+        const ext = (imageFile.name.split(".").pop() || "png").toLowerCase();
+        const filename = `${crypto.randomUUID()}.${ext}`;
+        const objectPath = makeObjectPath(filename);
+
+        const { error: upErr } = await supabase.storage.from(BUCKET).upload(objectPath, imageFile, { upsert: true });
+        if (upErr) {
+          console.error("[UPLOAD] error:", upErr);
+          throw upErr;
+        }
+        return getPublicUrl(objectPath);
+      };
+
+      // --- 저장 ---
+      const handleSave = async () => {
+        if (!signedIn) {
+          alert("먼저 로그인하세요.");
+          return;
+        }
+        try {
+          setLoading(true);
+          // 숫자 변환 (빈값 방지)
+          const priceNum = Number(editingMenu.price ?? 0);
+          if (Number.isNaN(priceNum)) {
+            alert("가격은 숫자만 입력하세요.");
+            setLoading(false);
+            return;
+          }
+
+          const imageUrl = await uploadIfNeededAndGetUrl();
+
+          const payload = {
+            name: editingMenu.name?.trim() || "",
+            price: priceNum,
+            category: editingMenu.category?.trim() || "",
+            description: editingMenu.description?.trim() || "",
+            imageUrl, // 컬럼명과 일치
+          };
+
+          if (editingMenu.id) {
+            // UPDATE
+            const { error } = await supabase
+              .from("ChayaMenus")
+              .update(payload)
+              .eq("id", editingMenu.id);
+            if (error) throw error;
+          } else {
+            // INSERT
+            const { error } = await supabase
+              .from("ChayaMenus")
+              .insert([payload]);
+            if (error) throw error;
+          }
+
+          setModalOpen(false);
+          await fetchMenus();
+        } catch (e) {
+          console.error("[SAVE] error:", e);
+          alert("저장 실패: " + (e?.message || e));
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      // --- 삭제 ---
+      const handleDelete = async (id) => {
+        if (!signedIn) {
+          alert("먼저 로그인하세요.");
+          return;
+        }
+        if (!confirm("정말 삭제하시겠습니까?")) return;
+        setLoading(true);
+        const { error } = await supabase.from("ChayaMenus").delete().eq("id", id);
+        if (error) {
+          console.error("[DELETE] error:", error);
+          alert("삭제 실패: " + error.message);
+        } else {
+          await fetchMenus();
+        }
+        setLoading(false);
+      };
+
+      return (
+        <div className="py-6">
+          {/* 헤더 */}
+          <div className="bg-white rounded-2xl shadow p-5 flex items-center justify-between">
+            <h1 className="text-2xl font-bold">CHAYA 관리자</h1>
+            <div className="space-x-2">
+              {!signedIn ? (
+                <button onClick={signIn} className="px-3 py-1 rounded bg-slate-900 text-white">GitHub 로그인</button>
+              ) : (
+                <button onClick={signOut} className="px-3 py-1 rounded bg-slate-200 text-slate-800">로그아웃</button>
+              )}
+            </div>
+          </div>
+
+          {/* 탭 */}
+          <div className="bg-white rounded-2xl shadow p-3 mt-4">
+            <div className="inline-flex rounded-xl overflow-hidden">
+              <button
+                className={`px-4 py-2 ${tab==='menus'?'bg-slate-900 text-white':'bg-slate-100 text-slate-700'}`}
+                onClick={() => setTab('menus')}
+              >
+                메뉴 관리
+              </button>
+              <button
+                className={`px-4 py-2 ${tab==='orders'?'bg-slate-900 text-white':'bg-slate-100 text-slate-700'}`}
+                onClick={() => setTab('orders')}
+              >
+                주문 내역
+              </button>
+            </div>
+          </div>
+
+          {/* 컨텐츠 */}
+          <div className="bg-white rounded-2xl shadow p-5 mt-4">
+            {tab === 'menus' && (
+              <>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-semibold">메뉴 목록</h2>
+                  <button
+                    className="px-4 py-2 rounded-full bg-blue-600 text-white disabled:opacity-50"
+                    onClick={openCreate}
+                    disabled={!signedIn}
+                    title={!signedIn ? "로그인 필요" : ""}
+                  >
+                    메뉴 추가
+                  </button>
+                </div>
+
+                {loading && <div className="text-slate-500 mb-3">로딩 중…</div>}
+
+                <div className="space-y-3">
+                  {menus.map(m => (
+                    <div key={m.id} className="flex items-center justify-between p-3 rounded-2xl bg-slate-50">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={m.imageUrl || ""}
+                          onError={(e)=>{e.currentTarget.style.display='none';}}
+                          alt=""
+                          className="w-16 h-16 rounded object-cover bg-white border"
+                        />
+                        <div>
+                          <div className="font-semibold">{m.name}</div>
+                          <div className="text-slate-600 text-sm">{m.price?.toLocaleString?.() ?? m.price}원</div>
+                          <div className="text-slate-400 text-xs">{m.category}</div>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          className="px-3 py-1 rounded bg-amber-400 text-white disabled:opacity-50"
+                          onClick={() => openEdit(m)}
+                          disabled={!signedIn}
+                          title={!signedIn ? "로그인 필요" : ""}
+                        >
+                          수정
+                        </button>
+                        <button
+                          className="px-3 py-1 rounded bg-rose-500 text-white disabled:opacity-50"
+                          onClick={() => handleDelete(m.id)}
+                          disabled={!signedIn}
+                          title={!signedIn ? "로그인 필요" : ""}
+                        >
+                          삭제
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  {menus.length === 0 && !loading && (
+                    <div className="text-slate-500">등록된 메뉴가 없습니다.</div>
+                  )}
+                </div>
+              </>
+            )}
+
+            {tab === 'orders' && (
+              <div className="text-slate-500">주문 내역 화면은 추후 연결 예정</div>
+            )}
+          </div>
+
+          {/* 모달 */}
+          {modalOpen && (
+            <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+              <div className="bg-white w-[92%] max-w-xl rounded-2xl shadow p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="text-lg font-semibold">{editingMenu.id ? "메뉴 수정" : "메뉴 추가"}</div>
+                  <button className="px-3 py-1 rounded bg-slate-200" onClick={()=>setModalOpen(false)}>닫기</button>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3">
+                  <label className="grid gap-1">
+                    <span className="text-sm text-slate-600">이름</span>
+                    <input className="px-3 py-2 border rounded-lg"
+                           value={editingMenu.name}
+                           onChange={e=>setEditingMenu({...editingMenu, name:e.target.value})}/>
+                  </label>
+
+                  <label className="grid gap-1">
+                    <span className="text-sm text-slate-600">가격</span>
+                    <input className="px-3 py-2 border rounded-lg"
+                           inputMode="numeric"
+                           value={editingMenu.price}
+                           onChange={e=>setEditingMenu({...editingMenu, price:e.target.value})}/>
+                  </label>
+
+                  <label className="grid gap-1">
+                    <span className="text-sm text-slate-600">카테고리</span>
+                    <input className="px-3 py-2 border rounded-lg"
+                           value={editingMenu.category}
+                           onChange={e=>setEditingMenu({...editingMenu, category:e.target.value})}/>
+                  </label>
+
+                  <label className="grid gap-1">
+                    <span className="text-sm text-slate-600">설명</span>
+                    <textarea className="px-3 py-2 border rounded-lg"
+                              rows="3"
+                              value={editingMenu.description}
+                              onChange={e=>setEditingMenu({...editingMenu, description:e.target.value})}/>
+                  </label>
+
+                  <div className="grid gap-2">
+                    <span className="text-sm text-slate-600">이미지</span>
+                    {imagePreview && (
+                      <img src={imagePreview} alt="" className="w-full h-40 object-cover rounded border" />
+                    )}
+                    <input type="file" accept="image/*"
+                           onChange={(e)=>onSelectImage(e.target.files?.[0])}/>
+                    {editingMenu.imageUrl && !imagePreview && (
+                      <div className="text-xs text-slate-500 break-all">기존: {editingMenu.imageUrl}</div>
+                    )}
+                  </div>
+
+                  <div className="flex justify-end gap-2 mt-2">
+                    <button className="px-4 py-2 rounded bg-slate-200" onClick={()=>setModalOpen(false)}>취소</button>
+                    <button className="px-4 py-2 rounded bg-blue-600 text-white disabled:opacity-50"
+                            disabled={!signedIn || loading}
+                            onClick={handleSave}>
+                      {editingMenu.id ? "수정 저장" : "추가 저장"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>

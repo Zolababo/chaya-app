@@ -1,0 +1,325 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CHAYA 메뉴판 (관리자)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 2.5rem;
+            border-radius: 1rem;
+            max-width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: fadeIn 0.3s ease-in-out;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+        const { initializeApp } = firebase;
+        const { getFirestore, collection, addDoc, getDocs, doc, setDoc, deleteDoc, onSnapshot, query, orderBy } = firebase.firestore;
+        const { getAuth, signInWithCustomToken, signInAnonymously } = firebase.auth;
+
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const __initial_auth_token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        const App = () => {
+            const [menus, setMenus] = useState([]);
+            const [showModal, setShowModal] = useState(false);
+            const [editingMenu, setEditingMenu] = useState(null);
+            const [isLoading, setIsLoading] = useState(true);
+            const [userId, setUserId] = useState(null);
+            const [message, setMessage] = useState('');
+            const [isMessageVisible, setIsMessageVisible] = useState(false);
+            const [activeCategory, setActiveCategory] = useState('all');
+
+            const menuCollectionRef = collection(db, 'artifacts', appId, 'public/data', 'menu');
+
+            useEffect(() => {
+                const unsubscribeAuth = auth.onAuthStateChanged(async (user) => {
+                    if (user) {
+                        setUserId(user.uid);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                });
+
+                return () => unsubscribeAuth();
+            }, []);
+
+            useEffect(() => {
+                if (!userId) return;
+
+                const q = query(menuCollectionRef);
+
+                const unsubscribeSnapshot = onSnapshot(q, (snapshot) => {
+                    const menuList = snapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }));
+                    setMenus(menuList);
+                    setIsLoading(false);
+                }, (error) => {
+                    console.error("Error fetching menus: ", error);
+                    setIsLoading(false);
+                });
+
+                return () => unsubscribeSnapshot();
+            }, [userId]);
+
+            const showTemporaryMessage = (msg) => {
+                setMessage(msg);
+                setIsMessageVisible(true);
+                setTimeout(() => {
+                    setIsMessageVisible(false);
+                }, 3000);
+            };
+
+            const handleAddMenu = () => {
+                setEditingMenu({ name: '', price: '', description: '', imageUrl: '', category: '커피' });
+                setShowModal(true);
+            };
+
+            const handleEditMenu = (menu) => {
+                setEditingMenu({ ...menu });
+                setShowModal(true);
+            };
+
+            const handleDeleteMenu = async (menuId) => {
+                if (!window.confirm("정말로 이 메뉴를 삭제하시겠습니까?")) return;
+                try {
+                    await deleteDoc(doc(menuCollectionRef, menuId));
+                    showTemporaryMessage('메뉴가 삭제되었습니다.');
+                } catch (e) {
+                    console.error("Error deleting document: ", e);
+                    showTemporaryMessage('메뉴 삭제 실패.');
+                }
+            };
+
+            const handleSaveMenu = async () => {
+                if (!editingMenu?.name || !editingMenu?.price || !editingMenu?.category) {
+                    showTemporaryMessage('메뉴 이름, 가격, 카테고리는 필수 입력 항목입니다.');
+                    return;
+                }
+
+                try {
+                    const menuToSave = {
+                        name: editingMenu.name,
+                        price: Number(editingMenu.price),
+                        description: editingMenu.description,
+                        imageUrl: editingMenu.imageUrl,
+                        category: editingMenu.category
+                    };
+                    if (editingMenu.id) {
+                        const menuDocRef = doc(menuCollectionRef, editingMenu.id);
+                        await setDoc(menuDocRef, menuToSave);
+                        showTemporaryMessage('메뉴가 성공적으로 수정되었습니다.');
+                    } else {
+                        await addDoc(menuCollectionRef, menuToSave);
+                        showTemporaryMessage('새 메뉴가 성공적으로 추가되었습니다.');
+                    }
+                    setShowModal(false);
+                } catch (e) {
+                    console.error("Error adding/updating document: ", e);
+                    showTemporaryMessage('메뉴 추가/수정 실패.');
+                }
+            };
+
+            const filteredMenus = activeCategory === 'all'
+                ? menus
+                : menus.filter(menu => menu.category === activeCategory);
+            
+            const categories = ['all', ...new Set(menus.map(menu => menu.category))];
+
+            return (
+                <div className="min-h-screen bg-gray-100 p-4 sm:p-8">
+                    <header className="flex flex-col sm:flex-row justify-between items-center mb-6 sm:mb-8">
+                        <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4 sm:mb-0">CHAYA 관리자</h1>
+                        <button
+                            onClick={handleAddMenu}
+                            className="bg-indigo-600 text-white p-3 rounded-xl shadow-md hover:bg-indigo-700 transition"
+                        >
+                            + 메뉴 추가하기
+                        </button>
+                    </header>
+
+                    <nav className="flex flex-wrap justify-center sm:justify-start space-x-2 sm:space-x-4 mb-8">
+                        {categories.map(category => (
+                            <button
+                                key={category}
+                                onClick={() => setActiveCategory(category)}
+                                className={`
+                                    py-2 px-4 rounded-full font-medium transition
+                                    ${activeCategory === category
+                                        ? 'bg-indigo-600 text-white shadow-lg'
+                                        : 'bg-white text-gray-700 hover:bg-gray-200'
+                                    }
+                                `}
+                            >
+                                {category === 'all' ? '전체' : category}
+                            </button>
+                        ))}
+                    </nav>
+
+                    {isLoading ? (
+                        <div className="flex justify-center items-center h-64">
+                            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600"></div>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                            {filteredMenus.length > 0 ? (
+                                filteredMenus.map(menu => (
+                                    <div key={menu.id} className="bg-white rounded-2xl shadow-xl overflow-hidden transform hover:scale-105 transition duration-300">
+                                        <div className="p-4 flex flex-col items-center">
+                                            {menu.imageUrl && (
+                                                <img src={menu.imageUrl} alt={menu.name} className="w-full h-48 object-cover rounded-lg mb-4" />
+                                            )}
+                                            <h2 className="text-xl font-bold text-gray-800 mb-1 text-center">{menu.name}</h2>
+                                            <p className="text-sm font-medium text-gray-500 mb-2">{menu.category}</p>
+                                            <p className="text-2xl font-extrabold text-indigo-600 mb-4">{menu.price}원</p>
+                                            <p className="text-center text-sm text-gray-600 mb-4 break-words">{menu.description}</p>
+                                        </div>
+                                        <div className="flex justify-between items-center p-4 bg-gray-50">
+                                            <button
+                                                onClick={() => handleEditMenu(menu)}
+                                                className="flex-1 text-center bg-blue-500 text-white py-2 rounded-xl shadow-md hover:bg-blue-600 transition mr-2"
+                                            >
+                                                수정
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeleteMenu(menu.id)}
+                                                className="flex-1 text-center bg-red-500 text-white py-2 rounded-xl shadow-md hover:bg-red-600 transition"
+                                            >
+                                                삭제
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <p className="text-center text-gray-500 col-span-full">메뉴가 없습니다. 메뉴를 추가해 보세요!</p>
+                            )}
+                        </div>
+                    )}
+
+                    {showModal && (
+                        <div className="modal-overlay">
+                            <div className="modal-content w-full md:w-2/3 lg:w-1/2">
+                                <h2 className="text-3xl font-bold mb-6 text-center">{editingMenu?.id ? '메뉴 수정하기' : '새 메뉴 추가'}</h2>
+                                <div className="space-y-4">
+                                    <div>
+                                        <label htmlFor="name" className="block text-sm font-medium text-gray-700">메뉴 이름</label>
+                                        <input
+                                            type="text"
+                                            id="name"
+                                            value={editingMenu.name}
+                                            onChange={(e) => setEditingMenu({ ...editingMenu, name: e.target.value })}
+                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label htmlFor="price" className="block text-sm font-medium text-gray-700">가격</label>
+                                        <input
+                                            type="number"
+                                            id="price"
+                                            value={editingMenu.price}
+                                            onChange={(e) => setEditingMenu({ ...editingMenu, price: e.target.value })}
+                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label htmlFor="description" className="block text-sm font-medium text-gray-700">설명 (선택사항)</label>
+                                        <textarea
+                                            id="description"
+                                            value={editingMenu.description}
+                                            onChange={(e) => setEditingMenu({ ...editingMenu, description: e.target.value })}
+                                            rows="3"
+                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border"
+                                        ></textarea>
+                                    </div>
+                                    <div>
+                                        <label htmlFor="category" className="block text-sm font-medium text-gray-700">카테고리</label>
+                                        <select
+                                            id="category"
+                                            value={editingMenu.category}
+                                            onChange={(e) => setEditingMenu({ ...editingMenu, category: e.target.value })}
+                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border"
+                                        >
+                                            <option value="커피">커피</option>
+                                            <option value="음료">음료</option>
+                                            <option value="디저트">디저트</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label htmlFor="imageUrl" className="block text-sm font-medium text-gray-700">이미지 URL (선택사항)</label>
+                                        <input
+                                            type="url"
+                                            id="imageUrl"
+                                            value={editingMenu.imageUrl}
+                                            onChange={(e) => setEditingMenu({ ...editingMenu, imageUrl: e.target.value })}
+                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border"
+                                        />
+                                        {editingMenu.imageUrl && (
+                                            <img src={editingMenu.imageUrl} alt="메뉴 이미지 미리보기" className="w-24 h-24 object-cover rounded-lg mt-4" />
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="flex justify-end space-x-4 mt-6">
+                                    <button onClick={() => setShowModal(false)} className="bg-gray-300 text-gray-800 p-3 rounded-lg hover:bg-gray-400 transition">취소</button>
+                                    <button onClick={handleSaveMenu} className="bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 transition">
+                                        {editingMenu?.id ? '수정 완료' : '추가'}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    <div className={`fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-sm px-4 py-2 rounded-lg shadow-xl opacity-0 transition-opacity duration-300 z-50 ${isMessageVisible ? 'opacity-100' : 'hidden'}`}>{message}</div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

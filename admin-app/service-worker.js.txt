@@ -1,0 +1,18 @@
+// service-worker.js
+
+// 'push' 이벤트는 푸시 알림이 도착했을 때 발생합니다.
+self.addEventListener('push', (event) => {
+    // 서버로부터 받은 알림 데이터를 JSON 형식으로 파싱합니다.
+    const data = event.data.json();
+    
+    // 알림에 표시할 제목과 내용을 설정합니다.
+    const title = data.title;
+    const options = {
+        body: data.body,
+        // 알림에 표시될 아이콘 이미지 URL을 설정하세요.
+        icon: 'https://cdn-icons-png.flaticon.com/512/3670/3670188.png' 
+    };
+    
+    // 알림을 화면에 표시합니다.
+    event.waitUntil(self.registration.showNotification(title, options));
+});

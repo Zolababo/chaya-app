@@ -72,61 +72,6 @@
             }, 3000);
         };
 
-        // 👇 푸쉬 알림 구독 관련 함수
-        const VAPID_PUBLIC_KEY = "BPts4uEcIvlMkthjh5a9-fJoHG3ZIdI3A7INqmDFB7d19KQQGiBXGipJGs4HO44ETAmHJ_nrzdFKfnUdllJKSro";
-
-        async function subscribeUserToPush() {
-            if (!('serviceWorker' in navigator)) {
-                console.log('서비스 워커를 지원하지 않는 브라우저입니다.');
-                return;
-            }
-
-            try {
-                const registration = await navigator.serviceWorker.register('/admin/sw.js', { scope: '/admin/' });
-                console.log('서비스 워커 등록 완료:', registration);
-
-                const permissionResult = await Notification.requestPermission();
-                if (permissionResult !== 'granted') {
-                    throw new Error('알림 권한이 허용되지 않았습니다.');
-                }
-
-                const subscription = await registration.pushManager.subscribe({
-                    userVisibleOnly: true,
-                    applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-                });
-
-                console.log('푸쉬 구독 정보:', JSON.stringify(subscription));
-
-                const { data, error } = await supabase
-                    .from('push_subscriptions')
-                    .insert({ endpoint: subscription.endpoint, p256dh: subscription.toJSON().keys.p256dh, auth: subscription.toJSON().keys.auth });
-
-                if (error) {
-                    console.error("구독 정보 저장 실패:", error);
-                    showMessage("알림 구독 정보 저장에 실패했습니다.", setMessage, setIsMessageVisible);
-                } else {
-                    console.log("구독 정보 저장 성공!");
-                    showMessage("새로운 주문 알림을 받도록 설정되었습니다.", setMessage, setIsMessageVisible);
-                }
-
-            } catch (err) {
-                console.error('푸쉬 알림 구독 실패:', err);
-                showMessage("알림 구독에 실패했습니다.", setMessage, setIsMessageVisible);
-            }
-        }
-
-        function urlBase64ToUint8Array(base64String) {
-            const padding = '='.repeat((4 - base64String.length % 4) % 4);
-            const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
-            const rawData = window.atob(base64);
-            const outputArray = new Uint8Array(rawData.length);
-            for (let i = 0; i < rawData.length; ++i) {
-                outputArray[i] = rawData.charCodeAt(i);
-            }
-            return outputArray;
-        }
-        // 👆 푸쉬 알림 구독 관련 함수 끝
-
         const App = () => {
             const [menus, setMenus] = useState([]);
             const [editingMenu, setEditingMenu] = useState(null);
@@ -138,7 +83,6 @@
             const [isMessageVisible, setIsMessageVisible] = useState(false);
             const [imageFile, setImageFile] = useState(null);
             const [previewUrl, setPreviewUrl] = useState('');
-            const [categories, setCategories] = useState([]);
 
             const fetchMenus = async () => {
                 const { data, error } = await supabase.from('ChayaMenus').select('*');
@@ -159,23 +103,11 @@
                     setOrders(data);
                 }
             };
-            
-            const fetchCategories = async () => {
-                const { data, error } = await supabase.from('ChayaMenus').select('category');
-                if (error) {
-                    console.error("Error fetching categories:", error);
-                } else {
-                    const uniqueCategories = [...new Set(data.map(item => item.category))].filter(Boolean);
-                    setCategories(uniqueCategories);
-                }
-            };
 
             useEffect(() => {
                 fetchMenus();
                 fetchOrders();
-                fetchCategories();
                 setIsLoading(false);
-                subscribeUserToPush(); // 앱 시작 시 푸쉬 알림 구독 요청
             }, []);
 
             useEffect(() => {
@@ -209,7 +141,6 @@
                 setEditingMenu(null);
                 setImageFile(null);
                 setPreviewUrl('');
-                fetchCategories(); // 모달 닫을 때 카테고리 목록 새로고침
             };
 
             const handleImageChange = (e) => {
@@ -221,26 +152,20 @@
             };
 
             const handleInputChange = (e) => {
-                const { name, value } = e.target;
-                if (name === 'price') {
-                    const numericValue = value.replace(/[^0-9]/g, '');
-                    setEditingMenu(prev => ({
-                        ...prev,
-                        [name]: numericValue
-                    }));
-                } else if (name === 'category' && value === '새 카테고리') {
-                    setEditingMenu(prev => ({
-                        ...prev,
-                        category: value,
-                        newCategory: '' // 새 카테고리 입력 필드 상태 초기화
-                    }));
-                } else {
-                    setEditingMenu(prev => ({
-                        ...prev,
-                        [name]: value
-                    }));
-                }
-            };
+    const { name, value } = e.target;
+    if (name === 'price') {
+        const numericValue = value.replace(/[^0-9]/g, ''); // 숫자 이외의 문자 제거
+        setEditingMenu(prev => ({
+            ...prev,
+            [name]: numericValue
+        }));
+    } else {
+        setEditingMenu(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    }
+};
 
             const handleSaveMenu = async () => {
                 setIsLoading(true);
@@ -268,12 +193,8 @@
 
                 let error = null;
                 let msg = '';
-                
-                const finalCategory = editingMenu.category === '새 카테고리' && editingMenu.newCategory 
-                    ? editingMenu.newCategory 
-                    : editingMenu.category;
 
-                const menuData = { ...editingMenu, imageUrl, category: finalCategory };
+                const menuData = { ...editingMenu, imageUrl };
 
                 if (menuData.id) {
                     const { error: updateError } = await supabase
@@ -378,9 +299,7 @@
                                 <div key={order.id} className="p-4 rounded-xl bg-gray-50 shadow-sm">
                                     <div className="flex justify-between items-center border-b pb-2 mb-2">
                                         <p className="font-bold text-gray-700">주문 번호: <span className="text-blue-600">{order.id.slice(0, 8)}</span></p>
-                                        <p className="text-sm text-gray-500">
-                                            주문 시간: {new Date(order.created_at).toLocaleDateString('ko-KR')} {new Date(order.created_at).toLocaleTimeString('ko-KR')}
-                                        </p>
+                                        <p className="text-sm text-gray-500">주문 시간: {new Date(order.created_at).toLocaleTimeString('ko-KR')}</p>
                                     </div>
                                     <div className="space-y-2">
                                         {order.items.map((item, index) => (
@@ -435,7 +354,7 @@
                                     <div className="space-y-4">
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700">이름</label>
-                                            <input type="text" name="name" value={editingMenu?.name || ''} onChange={handleInputChange} className="mt-1 block w-full rounded-xl border-gray-300 shadow-sm p-2 focus:border-indigo-500 focus:ring-indigo-500" required />
+                                            <input type="text" name="name" value={editingMenu?.name} onChange={handleInputChange} className="mt-1 block w-full rounded-xl border-gray-300 shadow-sm p-2 focus:border-indigo-500 focus:ring-indigo-500" required />
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700">가격</label>
@@ -450,27 +369,11 @@
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700">카테고리</label>
-                                            <select name="category" value={editingMenu?.category || ''} onChange={handleInputChange} className="mt-1 block w-full rounded-xl border-gray-300 shadow-sm p-2 focus:border-indigo-500 focus:ring-indigo-500" required>
-                                                <option value="" disabled>카테고리 선택</option>
-                                                {categories.map(cat => (
-                                                    <option key={cat} value={cat}>{cat}</option>
-                                                ))}
-                                                <option value="새 카테고리">새 카테고리 추가</option>
-                                            </select>
-                                            {editingMenu?.category === '새 카테고리' && (
-                                                <input
-                                                    type="text"
-                                                    name="newCategory"
-                                                    value={editingMenu.newCategory || ''}
-                                                    placeholder="새 카테고리 이름"
-                                                    onChange={handleInputChange}
-                                                    className="mt-2 block w-full rounded-xl border-gray-300 shadow-sm p-2 focus:border-indigo-500 focus:ring-indigo-500"
-                                                />
-                                            )}
+                                            <input type="text" name="category" value={editingMenu?.category} onChange={handleInputChange} className="mt-1 block w-full rounded-xl border-gray-300 shadow-sm p-2 focus:border-indigo-500 focus:ring-indigo-500" required />
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700">설명</label>
-                                            <textarea name="description" value={editingMenu?.description || ''} onChange={handleInputChange} rows="3" className="mt-1 block w-full rounded-xl border-gray-300 shadow-sm p-2 focus:border-indigo-500 focus:ring-indigo-500"></textarea>
+                                            <textarea name="description" value={editingMenu?.description} onChange={handleInputChange} rows="3" className="mt-1 block w-full rounded-xl border-gray-300 shadow-sm p-2 focus:border-indigo-500 focus:ring-indigo-500"></textarea>
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700">메뉴 이미지</label>
@@ -499,14 +402,5 @@
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>
-
-<script>
-if ("Notification" in window) {
-  Notification.requestPermission().then((permission) => {
-    console.log("Notification permission:", permission);
-  });
-}
-</script>
-
 </body>
 </html>
