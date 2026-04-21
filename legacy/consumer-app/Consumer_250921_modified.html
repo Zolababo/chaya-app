@@ -200,6 +200,7 @@
                 const total_price = orderedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
                 
                 const { error } = await supabase.from('orders').insert([{
+		    store_id: 'chaya_main',   // ← 추가
                     items: orderedItems,
                     total_price: total_price
                 }]);

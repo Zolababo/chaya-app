@@ -1,0 +1,6 @@
+{
+  "name": "@chaya/db",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Supabase 클라이언트 팩토리 server-only / browser 분리 (추가 예정)"
+}

@@ -1,114 +1,52 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-<meta charset="UTF-8">
-<title>N개 영상 전환 데모</title>
-<style>
-  body {
-    margin: 0; background: #000;
-    display: flex; justify-content: center; align-items: center;
-    height: 100vh;
+// supabase/functions/send-notification/index.ts
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
+serve(async (req) => {
+  // ---- 안전한 JSON 파싱 ----
+  const text = await req.text();
+  let data: { record?: any } | null = null; // 타입 힌트 추가
+
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch (err) {
+    console.error("JSON parse error:", err);
   }
-  #stage {
-    position: relative;
-    width: 80%; max-width: 900px; aspect-ratio: 16/9;
-    background: #111; overflow: hidden;
+
+  if (!data) {
+    console.log("❌ Invalid or empty JSON body");
+    return new Response(JSON.stringify({
+      error: "Invalid JSON body"
+    }), {
+      status: 400,
+      headers: {
+        "Content-Type": "application/json"
+      }
+    });
   }
-  video {
-    position: absolute; inset: 0;
-    width: 100%; height: 100%;
-    object-fit: contain;
+
+  // ---- 🛠️ 패치 코드: 'record' 데이터를 안전하게 추출하여 TypeError 방지 ----
+  const newOrder = data?.record; 
+
+  if (!newOrder) {
+    console.log("❌ 주문 데이터(record)가 Body에서 누락되었습니다. (DB는 성공, JS코드에서 데이터 누락)");
+    return new Response(JSON.stringify({ message: "No 'record' data found, but request succeeded." }), {
+      status: 200, 
+      headers: { "Content-Type": "application/json" },
+    });
   }
-  .hidden { display: none; }
+  // ---- 패치 코드 끝 ----
 
-  /* PIP 작은 화면 */
-  #pip {
-    position: absolute; right: 20px; bottom: 20px;
-    width: 25%; aspect-ratio: 16/9;
-    border: 2px solid #fff;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.7);
-    background: #000;
-    z-index: 10;
-  }
-</style>
-</head>
-<body>
-  <div id="stage">
-    <!-- 여러 영상 준비 -->
-    <video src="video1.mp4"></video>
-    <video src="video2.mp4" class="hidden"></video>
-    <video src="video3.mp4" class="hidden"></video>
-    <div id="pip" class="hidden"></div>
-  </div>
+  // ---- 받은 데이터 확인 (수정됨) ----
+  console.log("✅ 성공적으로 받은 새로운 주문 데이터:", newOrder);
+  
+  // (여기에 푸시 알림 전송 로직을 newOrder를 사용해서 추가)
 
-<script>
-const stage = document.getElementById("stage");
-const videos = stage.querySelectorAll("video");
-const pipBox = document.getElementById("pip");
-
-let current = 0;
-videos[current].play();
-
-// 현재 영상만 오디오 켜기
-function updateAudio(){
-  videos.forEach((v,i)=> v.muted = (i !== current));
-}
-
-// 다음 인덱스
-function nextIndex(){ return (current+1) % videos.length; }
-
-// PIP 표시
-function showPip(){
-  const n = nextIndex();
-  pipBox.innerHTML = "";
-  const pipVid = document.createElement("video");
-  pipVid.src = videos[n].src;
-  pipVid.muted = true;
-  pipVid.autoplay = true;
-  pipVid.loop = true;
-  pipBox.appendChild(pipVid);
-  pipBox.classList.remove("hidden");
-}
-
-// PIP 숨기기
-function hidePip(){
-  pipBox.classList.add("hidden");
-  pipBox.innerHTML = "";
-}
-
-// 전환
-function switchToNext(){
-  videos[current].classList.add("hidden");
-  videos[current].pause();
-  current = nextIndex();
-  videos[current].classList.remove("hidden");
-  videos[current].play();
-  updateAudio();
-}
-
-// 일반 화면: 누르면 PIP, 떼면 원복, 클릭하면 전환
-stage.addEventListener("mousedown", e=>{
-  if(document.fullscreenElement) return;
-  showPip();
+  return new Response(JSON.stringify({
+    message: "Notification function executed successfully"
+  }), {
+    status: 200,
+    headers: {
+      "Content-Type": "application/json"
+    }
+  });
 });
-stage.addEventListener("mouseup", e=>{
-  if(document.fullscreenElement) return;
-  hidePip();
-});
-stage.addEventListener("click", e=>{
-  if(document.fullscreenElement) return;
-  switchToNext();
-});
-
-// 전체화면: 클릭하면 다음 영상으로 전환
-stage.addEventListener("click", e=>{
-  if(document.fullscreenElement){
-    switchToNext();
-  }
-});
-
-// 초기 오디오 세팅
-updateAudio();
-</script>
-</body>
-</html>

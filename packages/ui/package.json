@@ -1,0 +1,6 @@
+{
+  "name": "@chaya/ui",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Radix + Tailwind 기반 접근 가능 컴포넌트 (추가 예정)"
+}
