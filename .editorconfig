@@ -1,0 +1,11 @@
+# 줄바꿈·인코딩 통일로 CRLF/LF 충돌과 리뷰 노이즈를 줄임 (동작 변경 없음)
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{md,yml,yaml}]
+trim_trailing_whitespace = false

@@ -62,3 +62,4 @@
 
 - [ARCHITECTURE.md](./ARCHITECTURE.md)
 - [QR_AND_GUEST_ORDERS.md](./QR_AND_GUEST_ORDERS.md)
+- [안정성·보안 강화 순서](./HARDENING_ORDER.md)

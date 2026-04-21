@@ -5,6 +5,10 @@ import path from "path";
 const workspaceRoot = path.resolve(__dirname, "..", "..");
 
 const nextConfig: NextConfig = {
+  /** 스택 지문 노출 완화 (동작 동일) */
+  poweredByHeader: false,
+  /** 개발 시 이펙트 이중 실행 등으로 부작용 조기 발견 */
+  reactStrictMode: true,
   turbopack: {
     root: workspaceRoot,
   },
