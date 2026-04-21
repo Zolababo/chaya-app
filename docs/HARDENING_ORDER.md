@@ -19,6 +19,8 @@
 
 ## 2단계 — 의존성·CI
 
+**현재 저장소에 반영된 것:** Dependabot(주간), CI에서 정보성 `pnpm audit` (`continue-on-error`), `pnpm run audit` 스크립트, `main`에서 CI 성공 후 Vercel 배포 워크플로( Secrets 없으면 건너뜀 — `docs/DEPLOY_VERCEL.md`).
+
 | 항목 | 효과 |
 |------|------|
 | `pnpm audit` 주기 실행, 심각도 높은 것만 업데이트 | 알려진 취약점 완화 |

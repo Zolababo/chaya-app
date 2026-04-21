@@ -31,3 +31,8 @@ jobs:
 
       - name: Lint and build
         run: pnpm run verify
+
+      # HARDENING_ORDER 2단계: 알려진 취약점 표시 (차단 없음 — 추후 severity 조정 가능)
+      - name: Dependency audit (informational)
+        continue-on-error: true
+        run: pnpm audit --audit-level=moderate

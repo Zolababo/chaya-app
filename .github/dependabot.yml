@@ -1,0 +1,13 @@
+# HARDENING_ORDER 2단계: 의존성 변경을 작은 PR로 나눠 검토
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      turbo-and-tooling:
+        patterns:
+          - "turbo"
+          - "@types/*"

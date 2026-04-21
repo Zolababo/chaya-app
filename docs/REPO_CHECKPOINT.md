@@ -46,7 +46,9 @@
 
 ## 5. CI (GitHub)
 
-- **`.github/workflows/ci.yml`** — `main` push/PR 시 `pnpm install --frozen-lockfile`, `build`, `lint` 를 실행한다. `pnpm-lock.yaml` 은 항상 커밋해 lockfile이 흐트러지지 않게 한다.
+- **`.github/workflows/ci.yml`** — `main` push/PR 시 `pnpm install --frozen-lockfile`, `verify`, 정보성 `pnpm audit` 를 실행한다. `pnpm-lock.yaml` 은 항상 커밋해 lockfile이 흐트러지지 않게 한다.
+- **`.github/workflows/deploy-vercel.yml`** — `main` 에서 CI 성공 후 `apps/consumer-menu` 를 Vercel 프로덕션 배포. Secrets 설정은 [DEPLOY_VERCEL.md](./DEPLOY_VERCEL.md).
+- **`.github/dependabot.yml`** — 루트 npm/pnpm 의존성 주간 PR.
 
 ---
 

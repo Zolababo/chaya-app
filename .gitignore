@@ -12,3 +12,6 @@ supabase/.temp/
 
 .DS_Store
 Thumbs.db
+
+# Vercel CLI 로컬 연결 (CI는 임시 생성)
+**/.vercel/

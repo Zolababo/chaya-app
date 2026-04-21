@@ -1,0 +1,57 @@
+# CI(main) 성공 후 consumer-menu 프로덕션 배포
+# GitHub 저장소 Secrets에 VERCEL_* 가 없으면 건너뜀 (실패 아님)
+name: Deploy Vercel
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types:
+      - completed
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # PR CI 완료가 아니라 main 브랜치 파이프라인만 배포
+    if: >-
+      ${{ github.event.workflow_run.conclusion == 'success' &&
+          github.event.workflow_run.head_branch == 'main' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Deploy consumer-menu (production)
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          set -e
+          if [ -z "${VERCEL_TOKEN:-}" ]; then
+            echo "::notice title=Vercel skipped::VERCEL_TOKEN 이 없어 배포를 건넜습니다. docs/DEPLOY_VERCEL.md 를 참고해 Secrets 를 설정하세요."
+            exit 0
+          fi
+          if [ -z "${VERCEL_ORG_ID:-}" ] || [ -z "${VERCEL_PROJECT_ID:-}" ]; then
+            echo "::notice title=Vercel skipped::VERCEL_ORG_ID 또는 VERCEL_PROJECT_ID 가 없어 배포를 건넜습니다."
+            exit 0
+          fi
+          mkdir -p apps/consumer-menu/.vercel
+          node -e "const fs=require('fs'); fs.mkdirSync('apps/consumer-menu/.vercel',{recursive:true}); fs.writeFileSync('apps/consumer-menu/.vercel/project.json', JSON.stringify({projectId:process.env.VERCEL_PROJECT_ID, orgId:process.env.VERCEL_ORG_ID}));"
+          npm install -g vercel@latest
+          cd apps/consumer-menu
+          vercel deploy --prod --yes --token "$VERCEL_TOKEN"
