@@ -1,0 +1,9 @@
+/** useSearchParams 대기 시 레이아웃 밀림 방지용 최소 높이 */
+export function SessionHeaderFallback() {
+  return (
+    <div
+      className="sticky top-0 z-40 h-16 w-full border-b-2 border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950"
+      aria-hidden
+    />
+  );
+}

@@ -37,16 +37,24 @@
 
 ## 4. 도구
 
-- 루트 **`pnpm install`** 이 성공해야 모노레포 스크립트가 동작한다 (`package.json` 의 `packageManager` 버전 참고).
+- **Node.js 20.9+** (루트 `package.json` 의 `engines` 참고).
+- **pnpm 9** — `packageManager` 필드와 맞춘다. (로컬에 pnpm이 없으면 `corepack enable` 후 `corepack prepare pnpm@9.15.0 --activate` 또는 `npx pnpm@9.15.0 install` 도 가능하다.)
+- 루트에서 **`pnpm install` → `pnpm run build` → `pnpm run lint`** 가 모두 통과하면, 엔지니어링 “기본 안정성”은 확보된 것으로 본다.
+- `apps/consumer-menu/.env.local` 은 Supabase에 붙일 때만 생성하고, **이름만** `apps/consumer-menu/.env.example` 에 둔다.
 
 ---
 
-## 5. 다음 개발 순서 (요약)
+## 5. CI (GitHub)
 
-1. `pnpm install`
-2. `apps/consumer-menu` 에 **Next.js 등** 스캐폴드
-3. `docs/STITCH_TO_APP_MAP.md` 기준 라우트 뼈대
-4. Supabase 연동은 **RLS 초안 이후**
+- **`.github/workflows/ci.yml`** — `main` push/PR 시 `pnpm install --frozen-lockfile`, `build`, `lint` 를 실행한다. `pnpm-lock.yaml` 은 항상 커밋해 lockfile이 흐트러지지 않게 한다.
+
+---
+
+## 6. 다음 개발 순서 (요약)
+
+1. (완료) 루트 `pnpm` 워크스페이스, `apps/consumer-menu` — Next.js 15, `build`/`lint`·보안 HTTP 헤더
+2. (완료) `docs/STITCH_TO_APP_MAP.md` 기준 **라우트** — `/t/[tenant]`, `/t/[tenant]/menu/[itemId]`, `/t/[tenant]/cart`, `/t/[tenant]/orders/[orderId]`, 공통 `SessionHeader`·`BottomNav` (UI는 플레이스홀더, 루트 `/`는 `/t/demo` 리다이렉트)
+3. Supabase 연동은 **RLS 초안 이후** (서비스 롤 키는 서버·엣지에서만)
 
 ---
 
