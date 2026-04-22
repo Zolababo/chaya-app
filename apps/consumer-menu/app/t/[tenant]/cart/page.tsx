@@ -14,14 +14,14 @@ export default async function CartPage({ params }: Props) {
         </p>
       </div>
 
-      <div className="rounded-xl border-2 border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-950">
+      <div className="rounded-xl border border-chaya-border bg-chaya-surface p-4 dark:border-zinc-700 dark:bg-zinc-950">
         <p className="text-sm text-zinc-500">테넌트: {tenant}</p>
         <p className="mt-2 font-medium">CartLineItem · OrderSummary · SplitBillPanel</p>
       </div>
 
       <button
         type="button"
-        className="w-full rounded-2xl bg-orange-800 py-4 text-lg font-bold text-white dark:bg-orange-700"
+        className="w-full rounded-2xl bg-chaya-primary py-4 text-lg font-bold text-chaya-on-primary opacity-90"
         disabled
       >
         SEND ORDER TO KITCHEN (준비 중)

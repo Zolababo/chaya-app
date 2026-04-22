@@ -18,8 +18,8 @@ export default async function OrderStatusPage({ params }: Props) {
         </p>
       </div>
 
-      <div className="rounded-xl border-2 border-zinc-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-950">
-        <p className="text-center font-medium text-orange-800 dark:text-orange-400">
+      <div className="rounded-xl border border-chaya-border bg-chaya-surface p-6 dark:border-zinc-700 dark:bg-zinc-950">
+        <p className="text-center font-medium text-chaya-primary dark:text-orange-400">
           진행 단계 · 예상 대기 시간 UI (OrderProgressSteps)
         </p>
       </div>

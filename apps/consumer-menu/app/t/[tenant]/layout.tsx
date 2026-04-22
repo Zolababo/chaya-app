@@ -14,7 +14,7 @@ export default async function TenantLayout({
   const { tenant } = await params;
 
   return (
-    <div className="flex min-h-dvh flex-col bg-zinc-50 pb-28 text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100">
+    <div className="flex min-h-dvh flex-col bg-chaya-bg pb-28 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
       <Suspense fallback={<SessionHeaderFallback />}>
         <SessionHeader tenant={tenant} />
       </Suspense>

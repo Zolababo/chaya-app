@@ -18,6 +18,12 @@
 - 사람이 읽기 쉬운 가게 식별자(영문·숫자·하이픈). QR 인쇄물·홍보에 재사용하기 좋다.
 - DB의 `tenants` 테이블에 **유니크**로 둔다.
 
+**메뉴 테이블(`ChayaMenus`)과의 연결 (현재 구현)**
+
+- 소비자 앱은 `/t/{tenant_slug}` 의 `{tenant_slug}` 와 동일한 값이 **`ChayaMenus.tenant_slug`** 에 들어 있는 행만 조회한다.
+- 마이그레이션: `supabase/migrations/20260415130000_chaya_menus_tenant_slug.sql` 를 적용하면 기존 행은 기본값 `demo` 로 채워진다. 새 매장은 행마다 해당 가게 slug 로 `tenant_slug` 를 맞춘다.
+- 로컬에 Supabase env 가 없으면 앱은 기존처럼 **데모 목록**으로 동작한다 (`NEXT_PUBLIC_SUPABASE_*`).
+
 **`short_code`** (선택)
 
 - QR 데이터량을 줄이려면 **6~10자 정도의 짧은 코드**만 인쇄하고, 서버/앱에서 `short_code → tenant_id`로 조회한다.

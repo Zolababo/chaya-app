@@ -1,26 +1,36 @@
 @import "tailwindcss";
 
+/* CHAYA consumer menu — Stitch-aligned tokens (light-first; dark uses zinc surfaces). */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fcf9f8;
+  --foreground: #1c1917;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #18181b;
+    --foreground: #fafafa;
+  }
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-chaya-bg: #fcf9f8;
+  --color-chaya-surface: #ffffff;
+  --color-chaya-primary: #a43700;
+  --color-chaya-primary-hover: #862e00;
+  --color-chaya-on-primary: #ffffff;
+  --color-chaya-muted: #71717a;
+  --color-chaya-border: #e4e4e7;
+  --color-chaya-info: #0072e4;
+  --color-chaya-info-hover: #005bbf;
+
+  --font-sans: var(--font-chaya-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
 }
