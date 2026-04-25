@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { MenuItemAddToCart } from "@/components/menu-item-add-to-cart";
 import { formatKrw, getMenuById } from "@/lib/menus/queries";
 
 type Props = {
@@ -51,21 +52,10 @@ export default async function MenuItemPage({ params }: Props) {
             {formatKrw(item.price)}
           </p>
           <p className="mt-3 text-zinc-600 dark:text-zinc-400">{item.description ?? ""}</p>
-          <div className="mt-6 rounded-2xl border border-chaya-border bg-chaya-surface p-4 dark:border-zinc-700 dark:bg-zinc-950">
-            <p className="text-sm font-medium">수량</p>
-            <p className="mt-2 text-sm text-zinc-500">QuantityStepper 자리</p>
-          </div>
         </div>
       </div>
 
-      <div className="fixed bottom-28 left-0 right-0 z-30 flex justify-center px-4">
-        <Link
-          href={`/t/${tenant}/cart`}
-          className="w-full max-w-md rounded-2xl bg-chaya-primary px-6 py-4 text-center text-lg font-bold text-chaya-on-primary shadow-md"
-        >
-          장바구니에 담기
-        </Link>
-      </div>
+      <MenuItemAddToCart tenant={tenant} item={item} />
     </div>
   );
 }

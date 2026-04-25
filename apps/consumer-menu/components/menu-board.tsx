@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
+import { addLine } from "@/lib/cart/local-cart";
 import type { ChayaMenuRow } from "@/lib/menus/types";
 import { formatKrw } from "@/lib/menus/queries";
 
@@ -75,10 +76,20 @@ export function MenuBoard({ tenant, items, categories }: Props) {
               <p className="mt-1 line-clamp-2 text-sm text-chaya-muted dark:text-zinc-400">
                 {item.description ?? ""}
               </p>
-              <div className="mt-4 flex items-center justify-between gap-2">
-                <span className="text-lg font-semibold text-chaya-primary dark:text-orange-400">
+              <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
+                <span className="mr-auto text-lg font-semibold text-chaya-primary dark:text-orange-400">
                   {formatKrw(item.price)}
                 </span>
+                <button
+                  type="button"
+                  title="1개 장바구니에 담기"
+                  className="rounded-2xl border border-chaya-border bg-chaya-surface px-4 py-3 text-sm font-semibold text-zinc-800 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100"
+                  onClick={() => {
+                    addLine(tenant, item, 1, null);
+                  }}
+                >
+                  담기
+                </button>
                 <Link
                   href={`/t/${tenant}/menu/${encodeURIComponent(item.id)}`}
                   className="rounded-2xl bg-zinc-900 px-4 py-3 text-sm font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900"

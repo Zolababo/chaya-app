@@ -14,7 +14,7 @@ export function BottomNav({ tenant }: Props) {
 
   const onMenu = pathname === base || pathname === `${base}/`;
   const onCart = pathname.startsWith(`${base}/cart`);
-  const onOrders = pathname.includes(`${base}/orders`);
+  const onOrders = pathname.startsWith(`${base}/orders`);
 
   const itemClass = (active: boolean) =>
     [
@@ -44,7 +44,7 @@ export function BottomNav({ tenant }: Props) {
         <span>Cart</span>
       </Link>
       <Link
-        href={`${base}/orders/demo`}
+        href={`${base}/orders`}
         className={itemClass(onOrders)}
         aria-current={onOrders ? "page" : undefined}
       >
