@@ -1,5 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { folderSafeTenant } from "./storage-tenant-folder";
+
 const MAX_BYTES = 5 * 1024 * 1024;
 
 const MIME_TO_EXT: Record<string, string> = {
@@ -8,16 +10,6 @@ const MIME_TO_EXT: Record<string, string> = {
   "image/webp": "webp",
   "image/gif": "gif",
 };
-
-function folderSafeTenant(slug: string): string {
-  const s = slug
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9-]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 48);
-  return s || "tenant";
-}
 
 /**
  * FormData 의 `file` 필드가 있으면 Storage 에 올리고 공개 URL 을 돌려줍니다.

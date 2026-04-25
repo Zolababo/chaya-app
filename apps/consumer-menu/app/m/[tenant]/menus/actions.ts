@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 
 import { getMerchantTokenForAction } from "@/lib/merchant/get-merchant-token-for-action";
+import { tryRemoveMenuImageForTenant } from "@/lib/menus/remove-menu-image-from-url";
 import { pickUploadedMenuImageUrl } from "@/lib/menus/upload-menu-image";
 import { createServiceSupabase } from "@/lib/supabase/create-service-client";
 
@@ -33,6 +34,8 @@ function trimStr(raw: FormDataEntryValue | null, max: number): string | null {
 }
 
 const MAX_SORT = 2_000_000;
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function parseSortOrder(raw: FormDataEntryValue | null): number {
   if (raw == null) return 0;
@@ -103,15 +106,29 @@ export async function updateMenuFromForm(formData: FormData): Promise<void> {
   const menuId = String(formData.get("menu_id") ?? "").trim();
   const name = trimStr(formData.get("name"), MAX_NAME);
   const price = parsePrice(formData.get("price"));
-  if (!tenant || !menuId || !name || price == null) redirectMenus(tenant || "_", "bad_input");
+  if (!tenant || !menuId || !UUID_RE.test(menuId) || !name || price == null) {
+    redirectMenus(tenant || "_", "bad_input");
+  }
 
   const client = createServiceSupabase();
   if (!client) redirectMenus(tenant, "no_service");
+
+  const { data: existing } = await client
+    .from("ChayaMenus")
+    .select("imageUrl")
+    .eq("id", menuId)
+    .eq("tenant_slug", tenant)
+    .maybeSingle();
 
   const upload = await pickUploadedMenuImageUrl(client, formData, tenant);
   if (!upload.ok) redirectMenus(tenant, "upload");
   const imageUrl = upload.url ?? trimStr(formData.get("imageUrl"), MAX_URL);
   const sort_order = parseSortOrder(formData.get("sort_order"));
+
+  const prevUrl =
+    existing && typeof existing === "object" && "imageUrl" in existing
+      ? (existing as { imageUrl?: string | null }).imageUrl
+      : null;
 
   const { error } = await client
     .from("ChayaMenus")
@@ -127,6 +144,11 @@ export async function updateMenuFromForm(formData: FormData): Promise<void> {
     .eq("tenant_slug", tenant);
 
   if (error) redirectMenus(tenant, "db");
+
+  if (prevUrl && prevUrl !== imageUrl) {
+    await tryRemoveMenuImageForTenant(client, tenant, prevUrl);
+  }
+
   redirectMenus(tenant);
 }
 
@@ -136,13 +158,28 @@ export async function deleteMenuFromForm(formData: FormData): Promise<void> {
 
   const tenant = String(formData.get("tenant_slug") ?? "").trim();
   const menuId = String(formData.get("menu_id") ?? "").trim();
-  if (!tenant || !menuId) redirectMenus(tenant || "_", "bad_input");
+  if (!tenant || !menuId || !UUID_RE.test(menuId)) redirectMenus(tenant || "_", "bad_input");
 
   const client = createServiceSupabase();
   if (!client) redirectMenus(tenant, "no_service");
 
+  const { data: existing } = await client
+    .from("ChayaMenus")
+    .select("imageUrl")
+    .eq("id", menuId)
+    .eq("tenant_slug", tenant)
+    .maybeSingle();
+
+  const prevUrl =
+    existing && typeof existing === "object" && "imageUrl" in existing
+      ? (existing as { imageUrl?: string | null }).imageUrl
+      : null;
+
   const { error } = await client.from("ChayaMenus").delete().eq("id", menuId).eq("tenant_slug", tenant);
 
   if (error) redirectMenus(tenant, "db");
+
+  await tryRemoveMenuImageForTenant(client, tenant, prevUrl);
+
   redirectMenus(tenant);
 }
