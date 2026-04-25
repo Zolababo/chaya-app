@@ -1,0 +1,47 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+
+type Props = {
+  /** 자동 새로고침 간격(ms). `prefers-reduced-motion: reduce` 이면 사용하지 않습니다. */
+  intervalMs?: number;
+};
+
+export function OrderStatusRefresh({ intervalMs = 20_000 }: Props) {
+  const router = useRouter();
+  const [reducedMotion, setReducedMotion] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReducedMotion(mq.matches);
+    const onChange = () => setReducedMotion(mq.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
+  useEffect(() => {
+    if (reducedMotion) return;
+    const id = window.setInterval(() => {
+      router.refresh();
+    }, intervalMs);
+    return () => window.clearInterval(id);
+  }, [router, intervalMs, reducedMotion]);
+
+  return (
+    <div className="flex flex-col items-center gap-2 sm:flex-row sm:justify-center sm:gap-4">
+      <button
+        type="button"
+        onClick={() => router.refresh()}
+        className="rounded-xl border border-chaya-border px-4 py-2 text-sm font-semibold text-chaya-primary dark:border-zinc-700"
+      >
+        최신 상태로 새로고침
+      </button>
+      <p className="text-center text-xs text-zinc-500">
+        {reducedMotion
+          ? "자동 갱신은 꺼져 있습니다. 위 버튼으로 확인해 주세요."
+          : `약 ${Math.round(intervalMs / 1000)}초마다 자동으로 갱신합니다.`}
+      </p>
+    </div>
+  );
+}

@@ -1,5 +1,8 @@
+import { OrderStatusRefresh } from "@/components/order-status-refresh";
 import { fetchGuestOrder } from "@/lib/orders/fetch-guest-order";
 import { orderStatusLabel } from "@/lib/orders/order-status-label";
+
+export const dynamic = "force-dynamic";
 
 type Props = {
   params: Promise<{ tenant: string; orderId: string }>;
@@ -88,7 +91,9 @@ export default async function OrderStatusPage({ params }: Props) {
         </div>
       </div>
 
-      <p className="text-center text-sm text-zinc-500">상태는 매장에서 갱신되면 이 화면에 반영됩니다.</p>
+      <OrderStatusRefresh />
+
+      <p className="text-center text-sm text-zinc-500">상태는 매장에서 DB를 갱신하면 위 간격으로 반영됩니다.</p>
 
       <div className="flex justify-center">
         <a
