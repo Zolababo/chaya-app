@@ -1,12 +1,13 @@
 import { createConsumerSupabase } from "@/lib/supabase/create-consumer-client";
 
-export type GuestOrderLine = {
-  id: string;
-  name: string;
-  price: number;
-  quantity: number;
-  notes?: string | null;
-};
+import type { GuestOrderLine } from "./guest-order-validation";
+import {
+  sanitizeGuestOrderLines,
+  sanitizeGuestSessionId,
+  sanitizeTenantSlug,
+} from "./guest-order-validation";
+
+export type { GuestOrderLine } from "./guest-order-validation";
 
 export type SubmitGuestOrderResult =
   | { ok: true; orderId: string }
@@ -22,21 +23,17 @@ export async function submitGuestOrder(input: {
   tableNo?: string | null;
   guestNote?: string | null;
 }): Promise<SubmitGuestOrderResult> {
-  const slug = input.tenant.trim();
-  if (!slug) {
-    return { ok: false, message: "유효한 가게 정보가 없습니다." };
+  const tenantCheck = sanitizeTenantSlug(input.tenant);
+  if (!tenantCheck.ok) {
+    return { ok: false, message: tenantCheck.message };
   }
-  if (input.lines.length === 0) {
-    return { ok: false, message: "담은 메뉴가 없습니다." };
-  }
+  const slug = tenantCheck.slug;
 
-  const orderedItems = input.lines.map((item) => ({
-    id: item.id,
-    name: item.name,
-    price: item.price,
-    quantity: item.quantity,
-    notes: item.notes ?? null,
-  }));
+  const linesCheck = sanitizeGuestOrderLines(input.lines);
+  if (!linesCheck.ok) {
+    return { ok: false, message: linesCheck.message };
+  }
+  const orderedItems = linesCheck.items;
 
   const total_price = orderedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   if (!Number.isFinite(total_price) || total_price < 0) {
@@ -54,7 +51,8 @@ export async function submitGuestOrder(input: {
     tenant_slug: slug,
     status: "pending",
   };
-  const sid = input.guestSessionId?.trim();
+
+  const sid = sanitizeGuestSessionId(input.guestSessionId ?? null);
   if (sid) {
     row.guest_session_id = sid;
   }
@@ -72,7 +70,11 @@ export async function submitGuestOrder(input: {
   const { data, error } = await client.from("orders").insert(row).select("id").single();
 
   if (error) {
-    return { ok: false, message: error.message };
+    console.error("[submitGuestOrder]", error.code ?? "", error.message);
+    return {
+      ok: false,
+      message: "주문을 접수하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    };
   }
   const id = data && typeof data === "object" && "id" in data ? (data as { id: unknown }).id : null;
   if (id == null) {

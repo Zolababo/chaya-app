@@ -1,9 +1,12 @@
 "use server";
 
-import { submitGuestOrder, type GuestOrderLine } from "@/lib/orders/submit-guest-order";
+import type { GuestOrderLine } from "@/lib/orders/guest-order-validation";
+import { GUEST_ORDER_LIMITS } from "@/lib/orders/guest-order-validation";
+import { submitGuestOrder } from "@/lib/orders/submit-guest-order";
 
 function parseLines(raw: unknown): GuestOrderLine[] | null {
   if (!Array.isArray(raw)) return null;
+  if (raw.length > GUEST_ORDER_LIMITS.maxLineItems) return null;
   const out: GuestOrderLine[] = [];
   for (const entry of raw) {
     if (!entry || typeof entry !== "object") return null;
@@ -28,6 +31,8 @@ function parseLines(raw: unknown): GuestOrderLine[] | null {
   return out;
 }
 
+const MAX_LINES_JSON_CHARS = 2_000_000;
+
 export async function submitGuestOrderAction(
   tenant: string,
   linesJson: string,
@@ -38,6 +43,10 @@ export async function submitGuestOrderAction(
   | { ok: true; orderId: string }
   | { ok: false; message: string }
 > {
+  if (linesJson.length > MAX_LINES_JSON_CHARS) {
+    return { ok: false, message: "주문 데이터가 너무 큽니다." };
+  }
+
   let parsed: unknown;
   try {
     parsed = JSON.parse(linesJson) as unknown;

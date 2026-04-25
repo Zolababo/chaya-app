@@ -44,6 +44,8 @@ export function CartCheckoutClient({ tenant, initialLines }: Props) {
   const [guestNote, setGuestNote] = useState("");
   const serverFallback = useRef(initialLines);
   serverFallback.current = initialLines;
+  /** 연속 클릭·빠른 더블 탭으로 동일 주문이 두 번 나가지 않도록 */
+  const submitLock = useRef(false);
 
   useEffect(() => {
     const stored = readCart(tenant);
@@ -71,30 +73,36 @@ export function CartCheckoutClient({ tenant, initialLines }: Props) {
   };
 
   const submit = () => {
+    if (submitLock.current || lines.length === 0) return;
+    submitLock.current = true;
     setError(null);
     ensureGuestSession();
     const guestSessionId =
       typeof window !== "undefined" ? localStorage.getItem(SESSION_KEY) : null;
 
     startTransition(async () => {
-      const res = await submitGuestOrderAction(
-        tenant,
-        JSON.stringify(lines),
-        guestSessionId,
-        tableNo.trim() || null,
-        guestNote.trim() || null,
-      );
-      if (!res.ok) {
-        setError(res.message);
-        return;
-      }
       try {
-        localStorage.setItem(LAST_ORDER_KEY, res.orderId);
-      } catch {
-        /* ignore quota / private mode */
+        const res = await submitGuestOrderAction(
+          tenant,
+          JSON.stringify(lines),
+          guestSessionId,
+          tableNo.trim() || null,
+          guestNote.trim() || null,
+        );
+        if (!res.ok) {
+          setError(res.message);
+          return;
+        }
+        try {
+          localStorage.setItem(LAST_ORDER_KEY, res.orderId);
+        } catch {
+          /* ignore quota / private mode */
+        }
+        clearCart(tenant);
+        router.push(`/t/${tenant}/orders/${res.orderId}`);
+      } finally {
+        submitLock.current = false;
       }
-      clearCart(tenant);
-      router.push(`/t/${tenant}/orders/${res.orderId}`);
     });
   };
 
@@ -207,7 +215,7 @@ export function CartCheckoutClient({ tenant, initialLines }: Props) {
       <button
         type="button"
         className="w-full rounded-2xl bg-chaya-primary py-4 text-lg font-bold text-chaya-on-primary shadow-sm transition hover:opacity-95 disabled:opacity-60"
-        disabled={pending}
+        disabled={pending || lines.length === 0}
         onClick={submit}
       >
         {pending ? "주문 전송 중…" : "주문 보내기"}
