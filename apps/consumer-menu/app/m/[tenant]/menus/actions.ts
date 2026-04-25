@@ -32,6 +32,33 @@ function trimStr(raw: FormDataEntryValue | null, max: number): string | null {
   return s ? s : null;
 }
 
+const MAX_SORT = 2_000_000;
+
+function parseSortOrder(raw: FormDataEntryValue | null): number {
+  if (raw == null) return 0;
+  const s = String(raw).trim();
+  if (!s) return 0;
+  const n = Math.trunc(Number(s));
+  if (!Number.isFinite(n)) return 0;
+  return Math.max(0, Math.min(n, MAX_SORT));
+}
+
+async function nextSortOrder(
+  client: NonNullable<ReturnType<typeof createServiceSupabase>>,
+  tenant: string,
+): Promise<number> {
+  const { data, error } = await client
+    .from("ChayaMenus")
+    .select("sort_order")
+    .eq("tenant_slug", tenant)
+    .order("sort_order", { ascending: false })
+    .limit(1);
+  if (error || !data?.length) return 0;
+  const row = data[0] as { sort_order?: number };
+  const v = row.sort_order;
+  return typeof v === "number" && Number.isFinite(v) ? v + 1 : 0;
+}
+
 export async function createMenuFromForm(formData: FormData): Promise<void> {
   const token = await getMerchantTokenForAction(formData);
   if (!token) redirect("/m/forbidden");
@@ -48,6 +75,12 @@ export async function createMenuFromForm(formData: FormData): Promise<void> {
   if (!upload.ok) redirectMenus(tenant, "upload");
   const imageUrl = upload.url ?? trimStr(formData.get("imageUrl"), MAX_URL);
 
+  const rawSort = formData.get("sort_order");
+  const sort_order =
+    rawSort == null || String(rawSort).trim() === ""
+      ? await nextSortOrder(client, tenant)
+      : parseSortOrder(rawSort);
+
   const { error } = await client.from("ChayaMenus").insert({
     tenant_slug: tenant,
     name,
@@ -55,6 +88,7 @@ export async function createMenuFromForm(formData: FormData): Promise<void> {
     category: trimStr(formData.get("category"), MAX_CAT),
     description: trimStr(formData.get("description"), MAX_DESC),
     imageUrl,
+    sort_order,
   });
 
   if (error) redirectMenus(tenant, "db");
@@ -77,6 +111,7 @@ export async function updateMenuFromForm(formData: FormData): Promise<void> {
   const upload = await pickUploadedMenuImageUrl(client, formData, tenant);
   if (!upload.ok) redirectMenus(tenant, "upload");
   const imageUrl = upload.url ?? trimStr(formData.get("imageUrl"), MAX_URL);
+  const sort_order = parseSortOrder(formData.get("sort_order"));
 
   const { error } = await client
     .from("ChayaMenus")
@@ -86,6 +121,7 @@ export async function updateMenuFromForm(formData: FormData): Promise<void> {
       category: trimStr(formData.get("category"), MAX_CAT),
       description: trimStr(formData.get("description"), MAX_DESC),
       imageUrl,
+      sort_order,
     })
     .eq("id", menuId)
     .eq("tenant_slug", tenant);

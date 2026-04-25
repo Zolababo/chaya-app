@@ -10,6 +10,7 @@ const DEMO_ITEMS: ChayaMenuRow[] = [
     price: 12000,
     category: "Korean Food",
     imageUrl: null,
+    sortOrder: 0,
   },
 ];
 
@@ -27,6 +28,15 @@ function normalizeRow(raw: Record<string, unknown>): ChayaMenuRow | null {
         : NaN;
   if (!Number.isFinite(price)) return null;
 
+  const sortRaw = raw.sort_order ?? raw.sortOrder;
+  const sortOrder =
+    typeof sortRaw === "number"
+      ? sortRaw
+      : typeof sortRaw === "string"
+        ? Number(sortRaw)
+        : 0;
+  const sortOrderNorm = Number.isFinite(sortOrder) ? Math.trunc(sortOrder) : 0;
+
   return {
     id: String(id),
     name,
@@ -34,6 +44,7 @@ function normalizeRow(raw: Record<string, unknown>): ChayaMenuRow | null {
     price,
     category: typeof raw.category === "string" ? raw.category : null,
     imageUrl: typeof raw.imageUrl === "string" ? raw.imageUrl : null,
+    sortOrder: sortOrderNorm,
   };
 }
 
@@ -56,9 +67,9 @@ export async function listMenusForTenant(tenant: string): Promise<MenuListResult
 
   const { data, error } = await client
     .from("ChayaMenus")
-    .select("id,name,description,price,category,imageUrl")
+    .select("id,name,description,price,category,imageUrl,sort_order")
     .eq("tenant_slug", slug)
-    .order("category", { ascending: true })
+    .order("sort_order", { ascending: true })
     .order("name", { ascending: true });
 
   if (error) {
@@ -104,7 +115,7 @@ export async function getMenuById(tenant: string, itemId: string): Promise<Chaya
 
   const { data, error } = await client
     .from("ChayaMenus")
-    .select("id,name,description,price,category,imageUrl")
+    .select("id,name,description,price,category,imageUrl,sort_order")
     .eq("id", itemId)
     .eq("tenant_slug", slug)
     .maybeSingle();

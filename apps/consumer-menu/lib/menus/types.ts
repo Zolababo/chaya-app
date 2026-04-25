@@ -6,6 +6,8 @@ export type ChayaMenuRow = {
   price: number;
   category: string | null;
   imageUrl: string | null;
+  /** 같은 가게 내 정렬. 작을수록 먼저 표시. */
+  sortOrder: number;
 };
 
 export type MenuListResult = {

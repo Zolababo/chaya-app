@@ -125,6 +125,22 @@ export default async function MerchantMenusPage({ params, searchParams }: Props)
                   className="mt-1 w-full rounded-lg border border-chaya-border bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
                 />
               </div>
+              <div>
+                <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400" htmlFor="new-sort">
+                  표시 순서
+                </label>
+                <input
+                  id="new-sort"
+                  name="sort_order"
+                  type="number"
+                  min={0}
+                  max={2000000}
+                  inputMode="numeric"
+                  placeholder="비우면 맨 뒤"
+                  className="mt-1 w-full rounded-lg border border-chaya-border bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
+                />
+                <p className="mt-1 text-xs text-zinc-500">숫자가 작을수록 손님 화면에서 먼저 나옵니다.</p>
+              </div>
               <div className="sm:col-span-2">
                 <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400" htmlFor="new-desc">
                   설명
@@ -186,7 +202,10 @@ export default async function MerchantMenusPage({ params, searchParams }: Props)
                   >
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <div>
-                        <p className="font-semibold">{item.name}</p>
+                        <p className="font-semibold">
+                          {item.name}
+                          <span className="ml-2 font-mono text-xs font-normal text-zinc-500">#{item.sortOrder}</span>
+                        </p>
                         <p className="text-sm text-chaya-primary dark:text-orange-400">
                           {item.price.toLocaleString("ko-KR")}원
                           {item.category ? (
@@ -244,6 +263,19 @@ export default async function MerchantMenusPage({ params, searchParams }: Props)
                             name="category"
                             maxLength={120}
                             defaultValue={item.category ?? ""}
+                            className="mt-1 w-full rounded-lg border border-chaya-border bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">표시 순서</label>
+                          <input
+                            name="sort_order"
+                            type="number"
+                            min={0}
+                            max={2000000}
+                            inputMode="numeric"
+                            required
+                            defaultValue={String(item.sortOrder)}
                             className="mt-1 w-full rounded-lg border border-chaya-border bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
                           />
                         </div>

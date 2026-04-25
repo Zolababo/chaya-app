@@ -18,6 +18,11 @@ function parseLine(raw: unknown): CartLine | null {
   const q = Math.floor(quantity);
   if (q < 1 || q > 99) return null;
   const notes = o.notes;
+  const so = o.sortOrder ?? o.sort_order;
+  const sortOrder =
+    typeof so === "number" ? so : typeof so === "string" ? Number(so) : 0;
+  const sortOrderNorm = Number.isFinite(sortOrder) ? Math.trunc(sortOrder) : 0;
+
   return {
     id: o.id,
     name: o.name,
@@ -27,6 +32,7 @@ function parseLine(raw: unknown): CartLine | null {
     description: typeof o.description === "string" ? o.description : null,
     category: typeof o.category === "string" ? o.category : null,
     imageUrl: typeof o.imageUrl === "string" ? o.imageUrl : null,
+    sortOrder: sortOrderNorm,
   };
 }
 
