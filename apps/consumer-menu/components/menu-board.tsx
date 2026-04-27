@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { addLine } from "@/lib/cart/local-cart";
 import type { ChayaMenuRow } from "@/lib/menus/types";
@@ -31,6 +31,20 @@ function MenuCardImage({ imageUrl }: { imageUrl: string | null }) {
 
 export function MenuBoard({ tenant, items, categories }: Props) {
   const [active, setActive] = useState<string | null>(categories[0] ?? null);
+  const [addedToast, setAddedToast] = useState(false);
+  const toastHide = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (toastHide.current) clearTimeout(toastHide.current);
+    };
+  }, []);
+
+  const flashAdded = () => {
+    setAddedToast(true);
+    if (toastHide.current) clearTimeout(toastHide.current);
+    toastHide.current = setTimeout(() => setAddedToast(false), 2200);
+  };
 
   const filtered = useMemo(() => {
     if (!active || categories.length <= 1) return items;
@@ -39,6 +53,18 @@ export function MenuBoard({ tenant, items, categories }: Props) {
 
   return (
     <>
+      <div
+        className={`fixed inset-x-0 bottom-24 z-40 flex justify-center px-4 transition-all duration-200 ${
+          addedToast ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-2 opacity-0"
+        }`}
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        <div className="rounded-2xl border border-chaya-border bg-chaya-surface px-5 py-3 text-sm font-semibold text-zinc-800 shadow-lg dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100">
+          장바구니에 담았어요
+        </div>
+      </div>
+
       {categories.length > 1 ? (
         <nav
           className="flex gap-2 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
@@ -86,6 +112,7 @@ export function MenuBoard({ tenant, items, categories }: Props) {
                   className="rounded-2xl border border-chaya-border bg-chaya-surface px-4 py-3 text-sm font-semibold text-zinc-800 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100"
                   onClick={() => {
                     addLine(tenant, item, 1, null);
+                    flashAdded();
                   }}
                 >
                   담기

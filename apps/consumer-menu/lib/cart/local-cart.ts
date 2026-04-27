@@ -4,8 +4,27 @@ export type CartLine = ChayaMenuRow & { quantity: number; notes: string | null }
 
 const PREFIX = "chaya_cart_v1:";
 
+/** 같은 탭에서 장바구니를 읽는 컴포넌트가 갱신되도록 브로드캐스트합니다. */
+export const CHAYA_CART_CHANGED_EVENT = "chaya-cart-changed";
+
 function storageKey(tenant: string): string {
   return `${PREFIX}${encodeURIComponent(tenant.trim())}`;
+}
+
+let cartNotifyTimer: ReturnType<typeof setTimeout> | null = null;
+let cartNotifyTenant = "";
+
+function scheduleCartChanged(tenant: string): void {
+  if (typeof window === "undefined") return;
+  const slug = tenant.trim();
+  cartNotifyTenant = slug;
+  if (cartNotifyTimer) clearTimeout(cartNotifyTimer);
+  cartNotifyTimer = setTimeout(() => {
+    cartNotifyTimer = null;
+    window.dispatchEvent(
+      new CustomEvent(CHAYA_CART_CHANGED_EVENT, { detail: { tenant: cartNotifyTenant } }),
+    );
+  }, 48);
 }
 
 function parseLine(raw: unknown): CartLine | null {
@@ -59,9 +78,11 @@ export function writeCart(tenant: string, lines: CartLine[]): void {
   try {
     if (lines.length === 0) {
       localStorage.removeItem(storageKey(tenant));
+      scheduleCartChanged(tenant);
       return;
     }
     localStorage.setItem(storageKey(tenant), JSON.stringify(lines));
+    scheduleCartChanged(tenant);
   } catch {
     /* quota / private mode */
   }
@@ -99,4 +120,9 @@ export function addLine(
   }
   writeCart(tenant, next);
   return next;
+}
+
+/** 장바구니에 담긴 총 수량(줄 수가 아니라 품목 개수 합). */
+export function cartTotalQty(tenant: string): number {
+  return readCart(tenant).reduce((sum, line) => sum + line.quantity, 0);
 }

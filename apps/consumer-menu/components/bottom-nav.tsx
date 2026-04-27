@@ -3,6 +3,9 @@
 import { ClipboardList, Menu, ShoppingCart } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
+
+import { CHAYA_CART_CHANGED_EVENT, cartTotalQty } from "@/lib/cart/local-cart";
 
 type Props = {
   tenant: string;
@@ -10,7 +13,35 @@ type Props = {
 
 export function BottomNav({ tenant }: Props) {
   const pathname = usePathname();
+  const slug = tenant.trim();
+  const [cartCount, setCartCount] = useState(0);
   const base = `/t/${tenant}`;
+
+  const refreshCartCount = useCallback(() => {
+    setCartCount(cartTotalQty(slug));
+  }, [slug]);
+
+  useEffect(() => {
+    refreshCartCount();
+  }, [refreshCartCount]);
+
+  useEffect(() => {
+    const onChanged = (ev: Event) => {
+      const detail = (ev as CustomEvent<{ tenant?: string }>).detail;
+      if (detail?.tenant === slug) refreshCartCount();
+    };
+    const onStorage = (ev: StorageEvent) => {
+      if (!ev.key) return;
+      const expected = `chaya_cart_v1:${encodeURIComponent(slug)}`;
+      if (ev.key === expected) refreshCartCount();
+    };
+    window.addEventListener(CHAYA_CART_CHANGED_EVENT, onChanged);
+    window.addEventListener("storage", onStorage);
+    return () => {
+      window.removeEventListener(CHAYA_CART_CHANGED_EVENT, onChanged);
+      window.removeEventListener("storage", onStorage);
+    };
+  }, [slug, refreshCartCount]);
 
   const onMenu = pathname === base || pathname === `${base}/`;
   const onCart = pathname.startsWith(`${base}/cart`);
@@ -39,8 +70,19 @@ export function BottomNav({ tenant }: Props) {
         href={`${base}/cart`}
         className={itemClass(onCart)}
         aria-current={onCart ? "page" : undefined}
+        aria-label={cartCount > 0 ? `장바구니, 품목 ${cartCount}개` : "장바구니"}
       >
-        <ShoppingCart className={`size-6 ${iconClass(onCart)}`} aria-hidden strokeWidth={2} />
+        <span className="relative inline-flex">
+          <ShoppingCart className={`size-6 ${iconClass(onCart)}`} aria-hidden strokeWidth={2} />
+          {cartCount > 0 ? (
+            <span
+              className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white shadow-sm"
+              aria-hidden
+            >
+              {cartCount > 99 ? "99+" : cartCount}
+            </span>
+          ) : null}
+        </span>
         <span>Cart</span>
       </Link>
       <Link

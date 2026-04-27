@@ -3,12 +3,14 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { ORDER_STATUS_POLL_MS } from "@/lib/orders/status-poll";
+
 type Props = {
   /** 자동 새로고침 간격(ms). `prefers-reduced-motion: reduce` 이면 사용하지 않습니다. */
   intervalMs?: number;
 };
 
-export function OrderStatusRefresh({ intervalMs = 20_000 }: Props) {
+export function OrderStatusRefresh({ intervalMs = ORDER_STATUS_POLL_MS }: Props) {
   const router = useRouter();
   const [reducedMotion, setReducedMotion] = useState(false);
 

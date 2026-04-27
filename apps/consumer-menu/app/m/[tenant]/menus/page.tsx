@@ -66,7 +66,7 @@ export default async function MerchantMenusPage({ params, searchParams }: Props)
       <MerchantSubnav tenant={tenant} />
 
       <div className="mb-6">
-        <OrderStatusRefresh intervalMs={30000} />
+        <OrderStatusRefresh />
       </div>
 
       {errMsg ? (

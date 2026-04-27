@@ -1,13 +1,19 @@
+import { PREF_TABLE_MAX } from "@/lib/cart/table-pref";
 import { listMenusForTenant } from "@/lib/menus/queries";
 
 import { CartCheckoutClient } from "./cart-checkout-client";
 
 type Props = {
   params: Promise<{ tenant: string }>;
+  searchParams: Promise<{ table?: string | string[] }>;
 };
 
-export default async function CartPage({ params }: Props) {
+export default async function CartPage({ params, searchParams }: Props) {
   const { tenant } = await params;
+  const sp = await searchParams;
+  const tableRaw = sp.table;
+  const tableFromUrl =
+    typeof tableRaw === "string" ? tableRaw.trim().slice(0, PREF_TABLE_MAX) : "";
   const menu = await listMenusForTenant(tenant);
 
   return (
@@ -25,7 +31,12 @@ export default async function CartPage({ params }: Props) {
         </p>
       ) : null}
 
-      <CartCheckoutClient key={tenant} tenant={tenant} initialLines={[]} />
+      <CartCheckoutClient
+        key={tenant}
+        tenant={tenant}
+        initialLines={[]}
+        initialTableHint={tableFromUrl || null}
+      />
     </div>
   );
 }

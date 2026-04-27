@@ -9,24 +9,27 @@ import {
   writeCart,
   type CartLine,
 } from "@/lib/cart/local-cart";
+import { PREF_TABLE_MAX, readTablePref } from "@/lib/cart/table-pref";
+
+import { GUEST_SESSION_STORAGE_KEY } from "@/lib/guest-session/constants";
 
 import { submitGuestOrderAction } from "./actions";
-
-const SESSION_KEY = "chaya_guest_session";
 const LAST_ORDER_KEY = "chaya_last_order_id";
 
 type Props = {
   tenant: string;
   initialLines: CartLine[];
+  /** `/cart?table=` 또는 이전 페이지에서 저장된 QR 테이블 힌트 */
+  initialTableHint?: string | null;
 };
 
 function ensureGuestSession(): string {
   if (typeof window === "undefined") return "";
   try {
-    let s = localStorage.getItem(SESSION_KEY);
+    let s = localStorage.getItem(GUEST_SESSION_STORAGE_KEY);
     if (!s || s.length < 8) {
       s = crypto.randomUUID();
-      localStorage.setItem(SESSION_KEY, s);
+      localStorage.setItem(GUEST_SESSION_STORAGE_KEY, s);
     }
     return s;
   } catch {
@@ -34,24 +37,42 @@ function ensureGuestSession(): string {
   }
 }
 
-export function CartCheckoutClient({ tenant, initialLines }: Props) {
+export function CartCheckoutClient({ tenant, initialLines, initialTableHint }: Props) {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [lines, setLines] = useState<CartLine[]>([]);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [tableNo, setTableNo] = useState("");
+  const [tableNo, setTableNo] = useState(
+    () => (initialTableHint?.trim() ?? "").slice(0, PREF_TABLE_MAX),
+  );
   const [guestNote, setGuestNote] = useState("");
   const serverFallback = useRef(initialLines);
   serverFallback.current = initialLines;
   /** 연속 클릭·빠른 더블 탭으로 동일 주문이 두 번 나가지 않도록 */
   const submitLock = useRef(false);
+  const tablePrefSeeded = useRef(false);
 
   useEffect(() => {
     const stored = readCart(tenant);
     setLines(stored.length > 0 ? stored : serverFallback.current);
     setMounted(true);
   }, [tenant]);
+
+  useEffect(() => {
+    const hint = (initialTableHint?.trim() ?? "").slice(0, PREF_TABLE_MAX);
+    if (hint) setTableNo(hint);
+  }, [initialTableHint]);
+
+  useEffect(() => {
+    if (!mounted || tablePrefSeeded.current) return;
+    tablePrefSeeded.current = true;
+    setTableNo((prev) => {
+      if (prev.trim()) return prev;
+      const fromStore = readTablePref(tenant);
+      return fromStore || prev;
+    });
+  }, [mounted, tenant]);
 
   useEffect(() => {
     if (!mounted) return;
@@ -78,7 +99,7 @@ export function CartCheckoutClient({ tenant, initialLines }: Props) {
     setError(null);
     ensureGuestSession();
     const guestSessionId =
-      typeof window !== "undefined" ? localStorage.getItem(SESSION_KEY) : null;
+      typeof window !== "undefined" ? localStorage.getItem(GUEST_SESSION_STORAGE_KEY) : null;
 
     startTransition(async () => {
       try {
@@ -181,7 +202,7 @@ export function CartCheckoutClient({ tenant, initialLines }: Props) {
             id="cart-table-no"
             type="text"
             inputMode="numeric"
-            maxLength={30}
+            maxLength={PREF_TABLE_MAX}
             autoComplete="off"
             className="mt-1 w-full rounded-lg border border-chaya-border bg-white px-3 py-2 text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
             placeholder="예: 12"

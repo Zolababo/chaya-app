@@ -81,7 +81,7 @@ export default async function MerchantOrdersPage({ params, searchParams }: Props
       <MerchantSubnav tenant={tenant} />
 
       <div className="mb-6">
-        <OrderStatusRefresh intervalMs={15000} />
+        <OrderStatusRefresh />
       </div>
 
       <div className="mb-4 flex flex-wrap gap-2" aria-label="주문 상태 필터">

@@ -1,6 +1,5 @@
-import { OrderStatusRefresh } from "@/components/order-status-refresh";
+import { GuestOrderStatusLive } from "@/components/guest-order-status-live";
 import { fetchGuestOrder } from "@/lib/orders/fetch-guest-order";
-import { orderStatusLabel } from "@/lib/orders/order-status-label";
 
 export const dynamic = "force-dynamic";
 
@@ -48,9 +47,7 @@ export default async function OrderStatusPage({ params }: Props) {
             {new Date(order.created_at).toLocaleString("ko-KR")}
           </p>
         ) : null}
-        <p className="mt-3 inline-flex rounded-full bg-zinc-200 px-4 py-1 text-sm font-medium text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200">
-          {orderStatusLabel(order.status)}
-        </p>
+        <GuestOrderStatusLive tenant={tenant} orderId={order.id} initialStatus={order.status} />
       </div>
 
       {(order.table_no || order.guest_note) && (
@@ -90,10 +87,6 @@ export default async function OrderStatusPage({ params }: Props) {
           <span className="tabular-nums">{order.total_price.toLocaleString("ko-KR")}원</span>
         </div>
       </div>
-
-      <OrderStatusRefresh />
-
-      <p className="text-center text-sm text-zinc-500">상태는 매장에서 DB를 갱신하면 위 간격으로 반영됩니다.</p>
 
       <div className="flex justify-center">
         <a
