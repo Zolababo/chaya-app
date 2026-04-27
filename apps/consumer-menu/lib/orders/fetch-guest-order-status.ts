@@ -1,8 +1,13 @@
 import { createConsumerSupabase } from "@/lib/supabase/create-consumer-client";
 
+import { fetchGuestOrder } from "./fetch-guest-order";
+
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** RPC `get_order_status_for_guest` — 없거나 오류면 null */
+/**
+ * `get_order_status_for_guest` 를 먼저 씁니다.
+ * RPC 미배포·스키마 불일치 등으로 실패하면 `get_order_for_guest` 한 건에서 status 를 읽습니다.
+ */
 export async function fetchGuestOrderStatusOnly(
   tenant: string,
   orderId: string,
@@ -20,12 +25,19 @@ export async function fetchGuestOrderStatusOnly(
     p_tenant_slug: slug,
   });
 
-  if (error) {
-    console.error("[fetchGuestOrderStatusOnly]", error.code ?? "", error.message);
+  if (!error) {
+    if (data == null) return null;
+    if (typeof data !== "string") return null;
+    const s = data.trim();
+    if (s.length > 0) return s;
     return null;
   }
-  if (data == null) return null;
-  if (typeof data !== "string") return null;
-  const s = data.trim();
-  return s.length > 0 ? s : null;
+
+  console.warn(
+    "[fetchGuestOrderStatusOnly] status RPC → fallback",
+    error.code ?? "",
+    error.message,
+  );
+  const full = await fetchGuestOrder(tenant, orderId);
+  return full?.status ?? null;
 }
