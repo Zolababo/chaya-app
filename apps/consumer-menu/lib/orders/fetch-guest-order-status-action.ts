@@ -6,8 +6,9 @@ import { fetchGuestOrderStatusOnly } from "./fetch-guest-order-status";
 export async function fetchGuestOrderStatusAction(
   tenant: string,
   orderId: string,
+  guestSessionId: string | null,
 ): Promise<{ ok: true; status: string } | { ok: false }> {
-  const status = await fetchGuestOrderStatusOnly(tenant, orderId);
+  const status = await fetchGuestOrderStatusOnly(tenant, orderId, guestSessionId);
   if (status == null) return { ok: false };
   return { ok: true, status };
 }

@@ -64,8 +64,11 @@
 4. `20260428120000_list_orders_for_guest_rpc.sql` — 비회원 주문 목록
 5. `20260428123000_idx_orders_tenant_guest_created.sql` — 목록 조회 인덱스
 6. `20260428140000_get_order_status_for_guest_rpc.sql` — 상태 문자열만 (가벼운 폴링)
+7. `20260505140000_get_order_status_for_guest_session_match.sql` — `guest_session_id` 가 있는 주문은 같은 세션 문자열로만 상태 조회 (폴링 보강)
 
 로컬: `supabase db push` 또는 대시보드 SQL Editor로 동일 내용 적용.
+
+**배포 순서(세션 검증 적용 시)** — `20260505140000_*` 마이그레이션을 먼저 적용한 뒤 앱을 배포하면, 구 클라이언트(상태 RPC에 인자 2개만 보냄)도 세 번째 인자 기본값으로 동작합니다. 반대로 앱만 먼저 올리면 구 RPC 서명과 맞지 않을 수 있습니다.
 
 **배포 후 확인 (SQL Editor)** — 아래가 3행이면 anon용 손님 RPC가 등록된 것이다.
 

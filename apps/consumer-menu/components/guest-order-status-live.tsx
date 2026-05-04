@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
+import { GUEST_SESSION_STORAGE_KEY } from "@/lib/guest-session/constants";
 import { fetchGuestOrderStatusAction } from "@/lib/orders/fetch-guest-order-status-action";
 import { orderStatusLabel } from "@/lib/orders/order-status-label";
 import { ORDER_STATUS_POLL_MS } from "@/lib/orders/status-poll";
@@ -24,9 +25,15 @@ export function GuestOrderStatusLive({ tenant, orderId, initialStatus }: Props) 
   }, [initialStatus]);
 
   const pull = useCallback(async () => {
+    let guestSessionId: string | null = null;
+    try {
+      guestSessionId = localStorage.getItem(GUEST_SESSION_STORAGE_KEY);
+    } catch {
+      guestSessionId = null;
+    }
     setPending(true);
     try {
-      const res = await fetchGuestOrderStatusAction(tenant, orderId);
+      const res = await fetchGuestOrderStatusAction(tenant, orderId, guestSessionId);
       if (res.ok) setStatus(res.status);
     } finally {
       setPending(false);
