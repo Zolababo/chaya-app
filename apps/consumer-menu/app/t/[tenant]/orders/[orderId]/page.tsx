@@ -20,11 +20,12 @@ export default async function OrderStatusPage({ params }: Props) {
           주문을 찾을 수 없습니다
         </h1>
         <p className="text-zinc-600 dark:text-zinc-400">
-          주문 번호가 올바른지, 가게 경로(`/t/…`)가 주문할 때와 같은지 확인해 주세요. Supabase RPC
-          <code className="mx-1 rounded bg-zinc-200 px-1 font-mono text-sm dark:bg-zinc-800">
-            get_order_for_guest
-          </code>
-          마이그레이션을 적용했는지도 확인해 주세요.
+          주문 번호가 올바른지, 가게 경로(`/t/…`)가 주문할 때와 같은지 확인해 주세요. 다른 폰이나 시크릿 창·데이터 삭제 후에는 같은 주문이 안 보일 수 있습니다.
+        </p>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+          Supabase RPC{" "}
+          <code className="rounded bg-zinc-200 px-1 font-mono text-xs dark:bg-zinc-800">get_order_for_guest</code>{" "}
+          마이그레이션 적용 여부도 확인해 주세요.
         </p>
         <Link
           href={`/t/${tenant}/cart`}
