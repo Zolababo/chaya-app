@@ -1,4 +1,6 @@
-# CI(main) 성공 후 consumer-menu 프로덕션 배포
+# CI(main) 성공 후 프로덕션 배포 (앱: apps/consumer-menu)
+# Secrets의 VERCEL_PROJECT_ID 는 반드시 단일 프로젝트 (권장 이름: chaya-app) 의 ID여야 함.
+# 다른 프로젝트 ID를 넣으면 consumer-menu.vercel.app 등으로 잘못 배포될 수 있음.
 # GitHub 저장소 Secrets에 VERCEL_* 가 없으면 건너뜀 (실패 아님)
 name: Deploy Vercel
 

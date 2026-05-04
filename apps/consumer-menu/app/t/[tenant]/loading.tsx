@@ -1,6 +1,12 @@
 export default function TenantMenuLoading() {
   return (
-    <div className="space-y-6" aria-busy="true" aria-label="메뉴를 불러오는 중">
+    <div
+      className="space-y-6"
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+      aria-label="메뉴를 불러오는 중"
+    >
       <div className="h-4 w-3/4 max-w-md animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {[1, 2, 3, 4, 5, 6].map((i) => (

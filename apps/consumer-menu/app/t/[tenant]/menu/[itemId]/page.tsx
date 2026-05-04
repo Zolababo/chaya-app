@@ -21,7 +21,8 @@ export default async function MenuItemPage({ params }: Props) {
       <div className="flex items-center gap-3">
         <Link
           href={`/t/${tenant}`}
-          className="rounded-full border border-chaya-border bg-chaya-surface px-3 py-2 text-sm font-semibold dark:border-zinc-700 dark:bg-zinc-950"
+          className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-chaya-border bg-chaya-surface px-4 py-2 text-sm font-semibold dark:border-zinc-700 dark:bg-zinc-950"
+          aria-label="메뉴판으로 돌아가기"
         >
           ← 메뉴
         </Link>
@@ -33,7 +34,7 @@ export default async function MenuItemPage({ params }: Props) {
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={item.imageUrl}
-              alt=""
+              alt={`${item.name} 사진`}
               className="aspect-square w-full object-cover"
             />
           ) : (

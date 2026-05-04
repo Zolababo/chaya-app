@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { MenuBoard } from "@/components/menu-board";
 import { collectCategories, listMenusForTenant } from "@/lib/menus/queries";
 
@@ -12,9 +14,13 @@ export default async function MenuHomePage({ params }: Props) {
 
   return (
     <div className="space-y-6">
+      <h1 id="menu-home-heading" className="sr-only">
+        메뉴판
+      </h1>
       {result.notice ? (
         <p
           role={result.ok ? "status" : "alert"}
+          aria-live={result.ok ? "polite" : "assertive"}
           className={
             result.ok
               ? "rounded-xl border border-chaya-border bg-chaya-surface px-4 py-3 text-sm text-zinc-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300"
@@ -25,9 +31,22 @@ export default async function MenuHomePage({ params }: Props) {
         </p>
       ) : null}
 
+      <p className="text-center text-sm text-chaya-muted dark:text-zinc-400">
+        글 위주 목록으로 보고 싶을 때만:{" "}
+        <Link
+          href={`/t/${tenant}/barrier-free`}
+          className="inline-flex min-h-[44px] items-center justify-center font-semibold text-chaya-primary underline-offset-4 hover:underline dark:text-orange-400"
+          aria-label="목록형 메뉴로 이동. 일반 메뉴와 같은 장바구니를 씁니다."
+        >
+          목록형 메뉴
+        </Link>
+        <span className="sr-only"> (같은 장바구니와 연결됩니다)</span>
+      </p>
+
       <section
         className="rounded-2xl bg-chaya-info p-4 text-white shadow-md"
         aria-labelledby="info-heading"
+        lang="en"
       >
         <h2 id="info-heading" className="text-lg font-semibold leading-tight">
           Self-Bar Location

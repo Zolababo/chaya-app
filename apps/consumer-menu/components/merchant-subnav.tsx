@@ -14,19 +14,20 @@ export function MerchantSubnav({ tenant }: Props) {
     >
       <Link
         href={`/m/${t}/orders`}
-        className="rounded-lg px-3 py-2 text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900"
+        className="inline-flex min-h-[44px] items-center rounded-lg px-3 py-2 text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900"
       >
         주문 큐
       </Link>
       <Link
         href={`/m/${t}/menus`}
-        className="rounded-lg px-3 py-2 text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900"
+        className="inline-flex min-h-[44px] items-center rounded-lg px-3 py-2 text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900"
       >
         메뉴 관리
       </Link>
       <Link
         href="/m/logout"
-        className="ml-auto rounded-lg px-3 py-2 text-zinc-500 underline-offset-2 hover:underline dark:text-zinc-500"
+        className="ml-auto inline-flex min-h-[44px] items-center rounded-lg px-3 py-2 text-zinc-500 underline-offset-2 hover:underline dark:text-zinc-500"
+        aria-label="점주 세션 로그아웃"
       >
         로그아웃
       </Link>

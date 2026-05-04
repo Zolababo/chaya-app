@@ -129,7 +129,11 @@ export function CartCheckoutClient({ tenant, initialLines, initialTableHint }: P
 
   if (!mounted) {
     return (
-      <p className="rounded-xl border border-chaya-border bg-chaya-surface px-4 py-6 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:bg-zinc-950">
+      <p
+        role="status"
+        aria-live="polite"
+        className="rounded-xl border border-chaya-border bg-chaya-surface px-4 py-6 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:bg-zinc-950"
+      >
         장바구니 불러오는 중…
       </p>
     );
@@ -144,7 +148,8 @@ export function CartCheckoutClient({ tenant, initialLines, initialTableHint }: P
         </p>
         <a
           href={`/t/${tenant}`}
-          className="mt-4 inline-block font-semibold text-chaya-primary underline-offset-4 hover:underline"
+          className="mt-4 inline-block min-h-[44px] min-w-[44px] py-3 font-semibold text-chaya-primary underline-offset-4 hover:underline"
+          aria-label="메뉴판으로 돌아가기"
         >
           메뉴로 돌아가기
         </a>
@@ -154,13 +159,19 @@ export function CartCheckoutClient({ tenant, initialLines, initialTableHint }: P
 
   return (
     <div className="space-y-6">
-      <ul className="divide-y divide-chaya-border rounded-xl border border-chaya-border dark:divide-zinc-800 dark:border-zinc-700">
+      <ul
+        className="divide-y divide-chaya-border rounded-xl border border-chaya-border dark:divide-zinc-800 dark:border-zinc-700"
+        aria-label="담긴 메뉴 목록"
+      >
         {lines.map((line) => (
           <li key={line.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="font-semibold">{line.name}</p>
               <p className="text-sm text-zinc-500">
-                단가 {(line.price * line.quantity).toLocaleString("ko-KR")}원
+                품목 합계 {(line.price * line.quantity).toLocaleString("ko-KR")}원{" "}
+                <span className="text-zinc-400">
+                  (단가 {line.price.toLocaleString("ko-KR")}원 × {line.quantity}개)
+                </span>
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
@@ -170,15 +181,17 @@ export function CartCheckoutClient({ tenant, initialLines, initialTableHint }: P
               <input
                 id={`qty-${line.id}`}
                 type="number"
+                inputMode="numeric"
                 min={1}
                 max={99}
-                className="w-20 rounded-lg border border-chaya-border bg-white px-2 py-1 text-center dark:border-zinc-700 dark:bg-zinc-900"
+                className="min-h-[44px] w-24 rounded-lg border border-chaya-border bg-white px-2 py-2 text-center text-base dark:border-zinc-700 dark:bg-zinc-900"
                 value={line.quantity}
                 onChange={(e) => setQty(line.id, Number(e.target.value))}
               />
               <button
                 type="button"
-                className="text-sm font-semibold text-red-600 underline-offset-2 hover:underline dark:text-red-400"
+                className="min-h-[44px] rounded-lg px-3 text-sm font-semibold text-red-600 underline-offset-2 hover:underline dark:text-red-400"
+                aria-label={`${line.name} 줄 장바구니에서 삭제`}
                 onClick={() => removeLine(line.id)}
               >
                 삭제
@@ -204,7 +217,7 @@ export function CartCheckoutClient({ tenant, initialLines, initialTableHint }: P
             inputMode="numeric"
             maxLength={PREF_TABLE_MAX}
             autoComplete="off"
-            className="mt-1 w-full rounded-lg border border-chaya-border bg-white px-3 py-2 text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+            className="mt-1 min-h-[44px] w-full rounded-lg border border-chaya-border bg-white px-3 py-2 text-base text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
             placeholder="예: 12"
             value={tableNo}
             onChange={(e) => setTableNo(e.target.value)}
@@ -218,25 +231,30 @@ export function CartCheckoutClient({ tenant, initialLines, initialTableHint }: P
             id="cart-guest-note"
             rows={3}
             maxLength={500}
-            className="mt-1 w-full resize-y rounded-lg border border-chaya-border bg-white px-3 py-2 text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+            aria-describedby="cart-guest-note-count"
+            className="mt-1 min-h-[88px] w-full resize-y rounded-lg border border-chaya-border bg-white px-3 py-2 text-base text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
             placeholder="알레르기, 덜 맵게 등"
             value={guestNote}
             onChange={(e) => setGuestNote(e.target.value)}
           />
-          <p className="mt-1 text-right text-xs text-zinc-400">{guestNote.length}/500</p>
+          <p id="cart-guest-note-count" className="mt-1 text-right text-xs text-zinc-400">
+            {guestNote.length}/500자
+          </p>
         </div>
       </div>
 
       {error ? (
-        <p className="text-sm font-medium text-red-600 dark:text-red-400" role="alert">
+        <p className="text-sm font-medium text-red-600 dark:text-red-400" role="alert" aria-live="assertive">
           {error}
         </p>
       ) : null}
 
       <button
         type="button"
-        className="w-full rounded-2xl bg-chaya-primary py-4 text-lg font-bold text-chaya-on-primary shadow-sm transition hover:opacity-95 disabled:opacity-60"
+        className="min-h-[48px] w-full rounded-2xl bg-chaya-primary py-4 text-lg font-bold text-chaya-on-primary shadow-sm transition hover:opacity-95 disabled:opacity-60"
         disabled={pending || lines.length === 0}
+        aria-busy={pending}
+        aria-label={pending ? "주문 전송 중" : `총 ${total.toLocaleString("ko-KR")}원 주문 보내기`}
         onClick={submit}
       >
         {pending ? "주문 전송 중…" : "주문 보내기"}

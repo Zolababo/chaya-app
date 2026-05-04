@@ -13,7 +13,7 @@ type Props = {
   categories: string[];
 };
 
-function MenuCardImage({ imageUrl }: { imageUrl: string | null }) {
+function MenuCardImage({ imageUrl, name }: { imageUrl: string | null; name: string }) {
   if (!imageUrl?.trim()) {
     return (
       <div
@@ -25,7 +25,7 @@ function MenuCardImage({ imageUrl }: { imageUrl: string | null }) {
   return (
     // 외부 스토리지 URL은 프로젝트마다 다르므로 네이티브 img 사용
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={imageUrl} alt="" className="h-40 w-full object-cover" />
+    <img src={imageUrl} alt={`${name} 사진`} className="h-40 w-full object-cover" />
   );
 }
 
@@ -77,10 +77,11 @@ export function MenuBoard({ tenant, items, categories }: Props) {
                 key={cat}
                 type="button"
                 onClick={() => setActive(cat)}
+                aria-pressed={selected}
                 className={
                   selected
-                    ? "shrink-0 rounded-full bg-chaya-primary px-5 py-3 text-sm font-semibold text-chaya-on-primary shadow-sm"
-                    : "shrink-0 rounded-full border border-chaya-border bg-chaya-surface px-5 py-3 text-sm font-semibold text-zinc-600 shadow-sm dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300"
+                    ? "min-h-[44px] shrink-0 rounded-full bg-chaya-primary px-5 py-3 text-sm font-semibold text-chaya-on-primary shadow-sm"
+                    : "min-h-[44px] shrink-0 rounded-full border border-chaya-border bg-chaya-surface px-5 py-3 text-sm font-semibold text-zinc-600 shadow-sm dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300"
                 }
               >
                 {cat}
@@ -96,7 +97,7 @@ export function MenuBoard({ tenant, items, categories }: Props) {
             key={item.id}
             className="overflow-hidden rounded-3xl border border-chaya-border bg-chaya-surface shadow-sm dark:border-zinc-700 dark:bg-zinc-950"
           >
-            <MenuCardImage imageUrl={item.imageUrl} />
+            <MenuCardImage imageUrl={item.imageUrl} name={item.name} />
             <div className="p-4">
               <h3 className="text-lg font-semibold">{item.name}</h3>
               <p className="mt-1 line-clamp-2 text-sm text-chaya-muted dark:text-zinc-400">
@@ -109,7 +110,8 @@ export function MenuBoard({ tenant, items, categories }: Props) {
                 <button
                   type="button"
                   title="1개 장바구니에 담기"
-                  className="rounded-2xl border border-chaya-border bg-chaya-surface px-4 py-3 text-sm font-semibold text-zinc-800 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100"
+                  aria-label={`${item.name} 1개 장바구니에 담기`}
+                  className="min-h-[44px] min-w-[44px] rounded-2xl border border-chaya-border bg-chaya-surface px-4 py-3 text-sm font-semibold text-zinc-800 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100"
                   onClick={() => {
                     addLine(tenant, item, 1, null);
                     flashAdded();
@@ -119,7 +121,8 @@ export function MenuBoard({ tenant, items, categories }: Props) {
                 </button>
                 <Link
                   href={`/t/${tenant}/menu/${encodeURIComponent(item.id)}`}
-                  className="rounded-2xl bg-zinc-900 px-4 py-3 text-sm font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900"
+                  className="min-h-[44px] min-w-[44px] rounded-2xl bg-zinc-900 px-4 py-3 text-sm font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900"
+                  aria-label={`${item.name} 상세 페이지`}
                 >
                   상세
                 </Link>

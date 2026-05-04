@@ -59,7 +59,7 @@ export default async function MerchantOrdersPage({ params, searchParams }: Props
     s ? `/m/${tEnc}/orders?status=${encodeURIComponent(s)}` : `/m/${tEnc}/orders`;
   const chip = (active: boolean) =>
     [
-      "rounded-full px-4 py-2 text-sm font-semibold transition-colors",
+      "inline-flex min-h-[44px] items-center justify-center rounded-full px-4 py-2 text-sm font-semibold transition-colors",
       active
         ? "bg-chaya-primary text-chaya-on-primary shadow-sm"
         : "border border-chaya-border bg-chaya-surface text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900",
@@ -96,7 +96,11 @@ export default async function MerchantOrdersPage({ params, searchParams }: Props
       </div>
 
       {errMsg ? (
-        <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900 dark:border-red-900 dark:bg-red-950/40 dark:text-red-100">
+        <p
+          role="alert"
+          aria-live="assertive"
+          className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900 dark:border-red-900 dark:bg-red-950/40 dark:text-red-100"
+        >
           {errMsg}
         </p>
       ) : null}

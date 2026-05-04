@@ -70,13 +70,21 @@ export default async function MerchantMenusPage({ params, searchParams }: Props)
       </div>
 
       {errMsg ? (
-        <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900 dark:border-red-900 dark:bg-red-950/40 dark:text-red-100">
+        <p
+          role="alert"
+          aria-live="assertive"
+          className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900 dark:border-red-900 dark:bg-red-950/40 dark:text-red-100"
+        >
           {errMsg}
         </p>
       ) : null}
 
       {!list.ok ? (
-        <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
+        <p
+          role="status"
+          aria-live="polite"
+          className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100"
+        >
           {list.message}
         </p>
       ) : (

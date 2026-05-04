@@ -84,30 +84,39 @@ export function GuestOrdersHub({ tenant }: Props) {
 
   if (orders === null) {
     return (
-      <p className="rounded-xl border border-chaya-border bg-chaya-surface px-4 py-6 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:bg-zinc-950">
+      <p
+        role="status"
+        aria-live="polite"
+        aria-busy={pending}
+        className="rounded-xl border border-chaya-border bg-chaya-surface px-4 py-6 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:bg-zinc-950"
+      >
         {pending ? "주문 내역 불러오는 중…" : "준비 중…"}
       </p>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <section className="space-y-6" aria-label="주문 목록과 안내">
       {loadError ? (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-100">
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-100"
+        >
           <p>{loadError}</p>
           <button
             type="button"
             onClick={() => load()}
-            className="mt-2 font-semibold underline-offset-2 hover:underline"
+            className="mt-2 min-h-[44px] font-semibold underline-offset-2 hover:underline"
           >
-            다시 시도
+            목록 다시 불러오기
           </button>
         </div>
       ) : null}
 
       {!loadError && !noSession && orders !== null && orders.length > 0 && !reducedMotion ? (
-        <p className="text-center text-xs text-zinc-500">
-          약 {Math.round(ORDER_STATUS_POLL_MS / 1000)}초마다 상태를 다시 불러옵니다. 접근성 설정에서 동작 줄이기를 켜 두면
+        <p className="text-center text-xs text-zinc-500" role="status" aria-live="polite">
+          약 {Math.round(ORDER_STATUS_POLL_MS / 1000)}초마다 목록 상태를 다시 불러옵니다. 접근성 설정에서 동작 줄이기를 켜 두면
           자동 갱신은 꺼집니다.
         </p>
       ) : null}
@@ -128,12 +137,18 @@ export function GuestOrdersHub({ tenant }: Props) {
       ) : null}
 
       {orders.length > 0 ? (
-        <ul className="divide-y divide-chaya-border rounded-xl border border-chaya-border dark:divide-zinc-800 dark:border-zinc-700">
+        <ul
+          className="divide-y divide-chaya-border rounded-xl border border-chaya-border dark:divide-zinc-800 dark:border-zinc-700"
+          aria-label="이 가게 비회원 주문 목록"
+        >
           {orders.map((o) => (
             <li key={o.id}>
               <Link
                 href={`/t/${tenant}/orders/${o.id}`}
-                className="flex flex-col gap-1 px-4 py-4 transition hover:bg-zinc-50 dark:hover:bg-zinc-900/60 sm:flex-row sm:items-center sm:justify-between"
+                aria-label={`주문 번호 앞 여덟 자리 ${o.id.slice(0, 8)}, ${orderStatusLabel(o.status)}, ${o.total_price.toLocaleString(
+                  "ko-KR",
+                )}원, 상세 페이지로 이동`}
+                className="flex min-h-[44px] flex-col gap-1 px-4 py-4 transition hover:bg-zinc-50 dark:hover:bg-zinc-900/60 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div>
                   <p className="font-mono text-sm font-semibold text-zinc-800 dark:text-zinc-200">
@@ -159,20 +174,29 @@ export function GuestOrdersHub({ tenant }: Props) {
         </ul>
       ) : null}
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+      <nav className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-center" aria-label="다른 메뉴로 이동">
         <Link
           href={`/t/${tenant}`}
-          className="rounded-xl border border-chaya-border py-3 text-center font-semibold text-chaya-primary dark:border-zinc-700"
+          className="flex min-h-[48px] items-center justify-center rounded-xl border border-chaya-border px-4 py-3 text-center font-semibold text-chaya-primary dark:border-zinc-700"
+          aria-label="메뉴판으로"
         >
           메뉴로
         </Link>
         <Link
           href={`/t/${tenant}/cart`}
-          className="rounded-xl bg-chaya-primary py-3 text-center font-semibold text-chaya-on-primary"
+          className="flex min-h-[48px] items-center justify-center rounded-xl bg-chaya-primary px-4 py-3 text-center font-semibold text-chaya-on-primary"
+          aria-label="장바구니로"
         >
           장바구니
         </Link>
-      </div>
-    </div>
+        <Link
+          href={`/t/${tenant}/barrier-free`}
+          className="flex min-h-[48px] items-center justify-center rounded-xl border border-chaya-border px-4 py-3 text-center font-semibold text-chaya-primary dark:border-zinc-700"
+          aria-label="목록형 메뉴로. 같은 장바구니와 연결됩니다."
+        >
+          목록형 메뉴
+        </Link>
+      </nav>
+    </section>
   );
 }

@@ -31,15 +31,20 @@ export function OrderStatusRefresh({ intervalMs = ORDER_STATUS_POLL_MS }: Props)
   }, [router, intervalMs, reducedMotion]);
 
   return (
-    <div className="flex flex-col items-center gap-2 sm:flex-row sm:justify-center sm:gap-4">
+    <div
+      className="flex flex-col items-center gap-2 sm:flex-row sm:justify-center sm:gap-4"
+      role="region"
+      aria-label="목록 새로고침"
+    >
       <button
         type="button"
         onClick={() => router.refresh()}
-        className="rounded-xl border border-chaya-border px-4 py-2 text-sm font-semibold text-chaya-primary dark:border-zinc-700"
+        aria-label="서버에서 최신 목록으로 새로고침"
+        className="min-h-[44px] rounded-xl border border-chaya-border px-4 py-2 text-sm font-semibold text-chaya-primary dark:border-zinc-700"
       >
         최신 상태로 새로고침
       </button>
-      <p className="text-center text-xs text-zinc-500">
+      <p className="text-center text-xs text-zinc-500" role="status" aria-live="polite">
         {reducedMotion
           ? "자동 갱신은 꺼져 있습니다. 위 버튼으로 확인해 주세요."
           : `약 ${Math.round(intervalMs / 1000)}초마다 자동으로 갱신합니다.`}

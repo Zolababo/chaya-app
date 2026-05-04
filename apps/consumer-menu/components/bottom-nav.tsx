@@ -62,9 +62,14 @@ export function BottomNav({ tenant }: Props) {
       className="fixed bottom-0 left-0 z-50 flex w-full justify-around border-t border-chaya-border bg-chaya-surface pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-4px_24px_rgba(0,0,0,0.06)] dark:border-zinc-800 dark:bg-zinc-950"
       aria-label="주요 메뉴"
     >
-      <Link href={base} className={itemClass(onMenu)} aria-current={onMenu ? "page" : undefined}>
+      <Link
+        href={base}
+        className={itemClass(onMenu)}
+        aria-current={onMenu ? "page" : undefined}
+        aria-label="메뉴판"
+      >
         <Menu className={`size-6 ${iconClass(onMenu)}`} aria-hidden strokeWidth={2} />
-        <span>Menu</span>
+        <span aria-hidden>Menu</span>
       </Link>
       <Link
         href={`${base}/cart`}
@@ -72,26 +77,24 @@ export function BottomNav({ tenant }: Props) {
         aria-current={onCart ? "page" : undefined}
         aria-label={cartCount > 0 ? `장바구니, 품목 ${cartCount}개` : "장바구니"}
       >
-        <span className="relative inline-flex">
+        <span className="relative inline-flex" aria-hidden>
           <ShoppingCart className={`size-6 ${iconClass(onCart)}`} aria-hidden strokeWidth={2} />
           {cartCount > 0 ? (
-            <span
-              className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white shadow-sm"
-              aria-hidden
-            >
+            <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white shadow-sm">
               {cartCount > 99 ? "99+" : cartCount}
             </span>
           ) : null}
         </span>
-        <span>Cart</span>
+        <span aria-hidden>Cart</span>
       </Link>
       <Link
         href={`${base}/orders`}
         className={itemClass(onOrders)}
         aria-current={onOrders ? "page" : undefined}
+        aria-label="주문 현황"
       >
         <ClipboardList className={`size-6 ${iconClass(onOrders)}`} aria-hidden strokeWidth={2} />
-        <span>Order Status</span>
+        <span aria-hidden>Orders</span>
       </Link>
     </nav>
   );
