@@ -59,6 +59,8 @@
 - 생성: **암호학적으로 안전한 난수**(예: 128bit 이상), `localStorage` 또는 1st-party 쿠키에 저장.
 - Supabase `orders`(또는 별도 `guest_sessions`)에 **`guest_session_id`**(또는 해시 저장)를 기록해 **주문과 연결**한다.
 
+**레포에 포함된 마이그레이션 적용 순서(파일명·RLS·RPC)**는 한 문서에 모아 두었다: [배리어프리 진행·손님 주문 RPC 적용 순서](./BARRIER_FREE_NEXT_STEPS.md) 의 「Supabase 손님 주문」절. (`apps/consumer-menu/.env.example` 주석과 동일 계열.)
+
 **한계**
 
 - 시크릿 모드·쿠키 삭제·기기 변경 시 세션은 끊긴다 → 이 경우 **“과거 주문 찾기”는 전화·주문번호·영수증 코드** 같은 **2채널 인증**으로 보완하는 식으로 단계적으로 넣을 수 있다.

@@ -156,6 +156,7 @@ chaya-app/
 ## 관련 문서
 
 - [QR 접근·테넌트 식별 & 비회원 주문](./QR_AND_GUEST_ORDERS.md)  
+- [배리어프리 진행·손님 주문 RPC 적용 순서](./BARRIER_FREE_NEXT_STEPS.md) — 소비자 앱 접근성 체크리스트 및 `supabase/migrations` 적용 목록  
 - [스티치 화면 → 라우트·컴포넌트 매핑](./STITCH_TO_APP_MAP.md)  
 - [저장소 시작 체크포인트](./REPO_CHECKPOINT.md)  
 - [안정성·보안 강화 순서](./HARDENING_ORDER.md)  

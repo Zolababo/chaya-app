@@ -50,6 +50,7 @@
 - [x] 메뉴 상세·주문 상세 로딩: `role="status"` + `aria-live="polite"`
 - [x] 페이지 랜드마크: 장바구니·주문 허브·목록형 메뉴 최상단을 `aria-labelledby`로 묶고, 메뉴·편한 메뉴 API 안내에 `aria-live` 반영; 스킵 링크 `aria-label` 보강
 - [x] 전역 404(`app/not-found.tsx`)·점주 `/m/*` 보조: 새로고침 영역·필터 칩 터치·오류 `aria-live`, 장바구니 요청사항 글자 수 `aria-describedby`
+- [ ] **프로덕션 Supabase**에 위 마이그레이션 순서 적용 + SQL Editor로 RPC 3개 존재 확인
 - [ ] 수동 접근성 점검 체크리스트 (아래 항목을 실제 기기에서 확인)
 - [x] 스킵 링크: 클릭 시 `#` 대신 `main`에 포커스·스크롤 (`SkipToMainLink` 클라이언트 컴포넌트)
 
@@ -65,6 +66,21 @@
 6. `20260428140000_get_order_status_for_guest_rpc.sql` — 상태 문자열만 (가벼운 폴링)
 
 로컬: `supabase db push` 또는 대시보드 SQL Editor로 동일 내용 적용.
+
+**배포 후 확인 (SQL Editor)** — 아래가 3행이면 anon용 손님 RPC가 등록된 것이다.
+
+```sql
+SELECT p.proname
+FROM pg_proc p
+JOIN pg_namespace n ON n.oid = p.pronamespace
+WHERE n.nspname = 'public'
+  AND p.proname IN (
+    'get_order_for_guest',
+    'list_orders_for_guest',
+    'get_order_status_for_guest'
+  )
+ORDER BY 1;
+```
 
 ### 수동 점검 체크리스트 (TalkBack / VoiceOver + 모바일 Chrome·Safari)
 
