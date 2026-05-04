@@ -50,7 +50,8 @@
 - [x] 메뉴 상세·주문 상세 로딩: `role="status"` + `aria-live="polite"`
 - [x] 페이지 랜드마크: 장바구니·주문 허브·목록형 메뉴 최상단을 `aria-labelledby`로 묶고, 메뉴·편한 메뉴 API 안내에 `aria-live` 반영; 스킵 링크 `aria-label` 보강
 - [x] 전역 404(`app/not-found.tsx`)·점주 `/m/*` 보조: 새로고침 영역·필터 칩 터치·오류 `aria-live`, 장바구니 요청사항 글자 수 `aria-describedby`
-- [ ] **프로덕션 Supabase**에 위 마이그레이션 순서 적용 + SQL Editor로 RPC 3개 존재 확인
+- [x] **프로덕션 Supabase**: `get_order_status_for_guest` 세션 검증(`20260505140000_*`) 적용·시그니처 `uuid, text, text`·주문 현황 동작 확인
+- [ ] **프로덕션 Supabase**: 아래 목록 **1~6**을 아직 안 올린 DB는 순서대로 적용 + SQL Editor로 RPC 3개 존재 확인
 - [ ] 수동 접근성 점검 체크리스트 (아래 항목을 실제 기기에서 확인)
 - [x] 스킵 링크: 클릭 시 `#` 대신 `main`에 포커스·스크롤 (`SkipToMainLink` 클라이언트 컴포넌트)
 
@@ -84,6 +85,20 @@ WHERE n.nspname = 'public'
   )
 ORDER BY 1;
 ```
+
+### 현재 보안 경계 (요약)
+
+| RPC | 역할 | 세션(`guest_session_id`) |
+|-----|------|---------------------------|
+| `get_order_status_for_guest` | 상태 문자열만 폴링 | 주문 행에 세션이 있으면 **같은 값을 넘겨야** 조회됨 (적용됨). |
+| `list_orders_for_guest` | 이 기기 주문 목록 | **항상** tenant + 세션 필요 (기존). |
+| `get_order_for_guest` | 주문 상세 JSON(첫 화면·폴백) | **아직** 주문 UUID + tenant만 맞으면 반환. 공유 링크·SMS 직링크를 허용하려는 설계이며, URL만 아는 제3자 이론상 조회 가능 — 막으려면 쿠키·서명 토큰·짧은 조회 코드 등 **별도 설계**가 필요하다. |
+
+### 제품·운영 쪽 다음 후보 (선택)
+
+1. **실기기**로 아래 「수동 점검 체크리스트」 실행 (TalkBack / VoiceOver).
+2. **`get_order_for_guest` 강화**를 검토할 때: 첫 서버 렌더와 SMS 직링크(쿠키 없음)까지 맞출 UX를 함께 정한 뒤 마이그레이션·앱을 같이 바꾼다.
+3. 매장 안내 문구: 주문 링크는 **같은 폰·같은 브라우저**에서 여는 것이 안전하다는 한 줄(선택).
 
 ### 수동 점검 체크리스트 (TalkBack / VoiceOver + 모바일 Chrome·Safari)
 
