@@ -51,10 +51,24 @@
 - [x] 페이지 랜드마크: 장바구니·주문 허브·목록형 메뉴 최상단을 `aria-labelledby`로 묶고, 메뉴·편한 메뉴 API 안내에 `aria-live` 반영; 스킵 링크 `aria-label` 보강
 - [x] 전역 404(`app/not-found.tsx`)·점주 `/m/*` 보조: 새로고침 영역·필터 칩 터치·오류 `aria-live`, 장바구니 요청사항 글자 수 `aria-describedby`
 - [ ] 수동 접근성 점검 체크리스트 (아래 항목을 실제 기기에서 확인)
+- [x] 스킵 링크: 클릭 시 `#` 대신 `main`에 포커스·스크롤 (`SkipToMainLink` 클라이언트 컴포넌트)
+
+### Supabase 손님 주문 (RPC·RLS) 적용 순서
+
+프로덕션 DB에 아래 마이그레이션이 **순서대로** 반영돼 있어야 손님 주문·목록·상태 폴링이 동작합니다. (`apps/consumer-menu`는 `get_order_status_for_guest` 실패 시 `get_order_for_guest`로 폴백합니다.)
+
+1. `20260425140000_orders_tenant_guest_rls.sql` — `guest_session_id`, RLS
+2. `20260425153000_get_order_for_guest_rpc.sql` — 주문 상세 JSON
+3. `20260425160000_orders_table_note_status.sql` — `guest_note` 등
+4. `20260428120000_list_orders_for_guest_rpc.sql` — 비회원 주문 목록
+5. `20260428123000_idx_orders_tenant_guest_created.sql` — 목록 조회 인덱스
+6. `20260428140000_get_order_status_for_guest_rpc.sql` — 상태 문자열만 (가벼운 폴링)
+
+로컬: `supabase db push` 또는 대시보드 SQL Editor로 동일 내용 적용.
 
 ### 수동 점검 체크리스트 (TalkBack / VoiceOver + 모바일 Chrome·Safari)
 
-1. **본문으로 바로가기**: 첫 포커스에서 링크가 보이고, 활성화 시 본문으로 이동하는지.
+1. **본문으로 바로가기**: 첫 포커스에서 링크가 보이고, 활성화 시 본문으로 이동·**포커스가 본문(`main`)으로 옮겨지는지** (키보드·스크린리더).
 2. **하단 내비**: 세 탭이 각각 「메뉴판」「장바구니」「주문 현황」으로 읽히는지, 장바구니에 품목이 있을 때 개수가 안내에 포함되는지.
 3. **메뉴판**: 카테고리 토글 `aria-pressed`, 담기 후 「장바구니에 담았어요」가 `aria-live`로 읽히는지.
 4. **장바구니**: 줄별 삭제·수량·주문 보내기 라벨, 오류·로딩 메시지가 읽히는지.
