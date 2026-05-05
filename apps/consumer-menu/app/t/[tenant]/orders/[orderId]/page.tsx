@@ -62,6 +62,9 @@ export default async function OrderStatusPage({ params }: Props) {
             {new Date(order.created_at).toLocaleString("ko-KR")}
           </p>
         ) : null}
+        <p className="mx-auto mt-3 max-w-md text-sm text-zinc-600 dark:text-zinc-400">
+          나중에 이 화면을 다시 보려면 <strong className="font-medium text-zinc-800 dark:text-zinc-200">이 폰·이 브라우저</strong>에서 하단 「주문 현황」이나 방금 받은 링크를 사용해 주세요.
+        </p>
         <GuestOrderStatusLive tenant={tenant} orderId={order.id} initialStatus={order.status} />
       </div>
 
