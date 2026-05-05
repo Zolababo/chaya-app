@@ -7,6 +7,7 @@
 --   • ② 에서 list_orders_for_guest 는 args = text, text, integer
 --   • ③ orders 행이 있으면 tenant_slug·guest_session_id 등 컬럼 존재 확인
 --   • ④ orders 에 RLS 켜짐(relrowsecurity = true)
+--   • ⑤ anon(및 마이그레이션에 따라 authenticated)에 각 RPC EXECUTE 행이 보이는지
 
 -- ① anon 손님용 RPC 3종 등록 여부
 SELECT p.proname
@@ -55,3 +56,15 @@ JOIN pg_namespace n ON n.oid = c.relnamespace
 WHERE n.nspname = 'public'
   AND c.relkind = 'r'
   AND c.relname = 'orders';
+
+-- ⑤ 손님 RPC EXECUTE 권한(오버로드마다 행이 나올 수 있음)
+SELECT routine_name, grantee, privilege_type
+FROM information_schema.routine_privileges
+WHERE routine_schema = 'public'
+  AND routine_name IN (
+    'get_order_for_guest',
+    'list_orders_for_guest',
+    'get_order_status_for_guest'
+  )
+  AND grantee IN ('anon', 'authenticated', 'public')
+ORDER BY routine_name, grantee, privilege_type;
