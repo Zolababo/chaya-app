@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { CopyCurrentOrderUrlButton } from "@/components/copy-current-order-url-button";
 import { GuestOrderDetailSessionRetry } from "@/components/guest-order-detail-session-retry";
 import { GuestOrderStatusLive } from "@/components/guest-order-status-live";
 import { fetchGuestOrder } from "@/lib/orders/fetch-guest-order";
@@ -65,6 +66,7 @@ export default async function OrderStatusPage({ params }: Props) {
         <p className="mx-auto mt-3 max-w-md text-sm text-zinc-600 dark:text-zinc-400">
           나중에 이 화면을 다시 보려면 <strong className="font-medium text-zinc-800 dark:text-zinc-200">이 폰·이 브라우저</strong>에서 하단 「주문 현황」이나 방금 받은 링크를 사용해 주세요.
         </p>
+        <CopyCurrentOrderUrlButton />
         <GuestOrderStatusLive tenant={tenant} orderId={order.id} initialStatus={order.status} />
       </div>
 

@@ -70,7 +70,7 @@
 
 로컬: `supabase db push` 또는 대시보드 SQL Editor로 동일 내용 적용.
 
-**한 번에 점검:** `supabase/scripts/verify_guest_order_rpcs.sql` 을 SQL Editor에 붙여넣어 RPC 이름·시그니처·`orders` 컬럼·RLS 여부를 확인합니다.
+**한 번에 점검:** `supabase/scripts/verify_guest_order_rpcs.sql` 을 SQL Editor에 붙여넣어 RPC 이름·시그니처·`orders` 컬럼·RLS·EXECUTE 권한을 확인합니다. 통과 후에는 배포된 앱에서 **주문 → 목록·상세·상태·「이 주문 주소 복사」** 정도만 스모크하면 됩니다.
 
 **배포 순서(세션 검증 RPC)** — `20260505140000_*`·`20260506120000_*` 는 **DB에 먼저** 적용한 뒤 앱을 배포합니다. 세 번째 인자는 `DEFAULT NULL` 이라 구 클라이언트(인자 2개만 전달)도 동작합니다. 앱만 먼저 올리면 RPC 서명 불일치로 오류가 날 수 있습니다.
 
