@@ -123,14 +123,15 @@ export function GuestOrdersHub({ tenant }: Props) {
 
       {noSession ? (
         <p className="rounded-xl border border-chaya-border bg-chaya-surface px-4 py-4 text-left text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-400">
-          이 브라우저에 비회원 주문 세션이 없습니다. 장바구니에서 주문을 내면 여기에 같은 기기의 주문이
-          쌓입니다. 다른 폰이나 시크릿 창에서는 목록이 비어 있을 수 있습니다.
+          주문 목록·주문 링크는 <strong className="font-medium text-zinc-800 dark:text-zinc-200">주문할 때 쓴 같은 폰·같은 브라우저</strong>에서 열어야 이어집니다. 이 브라우저에는 비회원 주문 세션이 없습니다. 장바구니에서 주문을 내면
+          여기에 같은 기기의 주문이 쌓입니다. 다른 폰이나 시크릿 창에서는 목록이 비어 있을 수 있습니다.
         </p>
       ) : null}
 
       {!loadError && !noSession && orders.length === 0 ? (
         <p className="rounded-xl border border-chaya-border bg-chaya-surface px-4 py-4 text-center text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-400">
-          아직 이 가게에서 주문한 기록이 없습니다. (Supabase RPC{" "}
+          아직 이 가게에서 주문한 기록이 없습니다. 문자나 링크로 받은 주문 확인은{" "}
+          <strong className="font-medium text-zinc-800 dark:text-zinc-200">이 폰·이 브라우저</strong>에서 열어 주세요. (Supabase RPC{" "}
           <code className="rounded bg-zinc-200 px-1 font-mono text-xs dark:bg-zinc-800">list_orders_for_guest</code>{" "}
           마이그레이션을 적용했는지도 확인해 주세요.)
         </p>

@@ -110,7 +110,7 @@ ORDER BY 1;
 
 1. **실기기**로 아래 「수동 점검 체크리스트」 실행 (TalkBack / VoiceOver).
 2. **`get_order_for_guest` 강화**를 검토할 때: 첫 서버 렌더와 SMS 직링크(쿠키 없음)까지 맞출 UX를 함께 정한 뒤 마이그레이션·앱을 같이 바꾼다.
-3. 매장 안내 문구: 주문 링크는 **같은 폰·같은 브라우저**에서 여는 것이 안전하다는 한 줄(선택).
+3. [x] (앱 안내) 주문 상세「찾을 수 없음」·주문 허브(세션 없음·목록 비어 있음)에 **같은 폰·같은 브라우저** 안내. 매장 POP 등 오프라인 문구는 별도로 추가 가능.
 4. **크롤러**: `apps/consumer-menu/app/robots.ts` 에서 `/m/` 점주 경로 `disallow` (배포 시 `https://…/robots.txt` 로 노출).
 5. **헬스**: `GET /health` — `supabase.configured` 등으로 Vercel에 `NEXT_PUBLIC_SUPABASE_*` 가 붙었는지(값은 미노출) 빠르게 확인.
 
