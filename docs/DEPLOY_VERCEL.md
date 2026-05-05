@@ -92,6 +92,13 @@ npx vercel deploy --prod --yes
 
 ---
 
-## 7. 보안
+## 7. 헬스 체크 (`/health`)
+
+배포 후 `https://chaya-app.vercel.app/health` (또는 본인 도메인 + `/health`)를 열면 JSON으로 **`supabase.configured`** 등이 옵니다.  
+**URL·anon 키 값은 응답에 넣지 않으며**, Vercel에 `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` 가 **설정돼 있는지 여부**만 확인할 때 쓰면 됩니다.
+
+---
+
+## 8. 보안
 
 - Supabase 키 등 민감 값은 **Vercel Environment Variables** 에만 둔다. 저장소에 커밋하지 않는다.
