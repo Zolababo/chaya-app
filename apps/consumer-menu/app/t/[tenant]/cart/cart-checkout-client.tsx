@@ -251,11 +251,16 @@ export function CartCheckoutClient({ tenant, initialLines, initialTableHint }: P
         </p>
       ) : null}
 
+      <p id="checkout-guest-order-hint" className="text-center text-sm text-zinc-600 dark:text-zinc-400">
+        접수 후 주문 확인·목록은 <strong className="font-medium text-zinc-800 dark:text-zinc-200">이 폰·이 브라우저</strong>에서 하단 「주문 현황」으로 보는 것이 가장 안전합니다.
+      </p>
+
       <button
         type="button"
         className="min-h-[48px] w-full rounded-2xl bg-chaya-primary py-4 text-lg font-bold text-chaya-on-primary shadow-sm transition hover:opacity-95 disabled:opacity-60"
         disabled={pending || lines.length === 0}
         aria-busy={pending}
+        aria-describedby="checkout-guest-order-hint"
         aria-label={pending ? "주문 전송 중" : `총 ${total.toLocaleString("ko-KR")}원 주문 보내기`}
         onClick={submit}
       >

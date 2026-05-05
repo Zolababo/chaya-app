@@ -61,6 +61,11 @@
 
 **레포에 포함된 마이그레이션 적용 순서(파일명·RLS·RPC)**는 한 문서에 모아 두었다: [배리어프리 진행·손님 주문 RPC 적용 순서](./BARRIER_FREE_NEXT_STEPS.md) 의 「Supabase 손님 주문」절. (`apps/consumer-menu/.env.example` 주석과 동일 계열.)
 
+**현재 `consumer-menu` 구현(요약)**
+
+- 세션 값은 `localStorage`(`chaya_guest_session`)에 두고, 서버 RPC(`get_order_for_guest` 등)와 맞추기 위해 **동일 키 이름의 1st-party 쿠키**로도 동기화한다(`GuestSessionCookieSync`, 주문 전 `syncGuestSessionCookieFromBrowser`). 주문 상세 첫 페인트에서 쿠키가 늦을 수 있어 **`GuestOrderDetailSessionRetry`**로 세션이 있으면 한 번만 `router.refresh()` 한다.
+- 주문 완료·찾을 수 없음·주문 허브·장바구니 등에 **같은 폰·같은 브라우저** 안내 문구를 넣어 두었다. 세부·RPC 적용 순서는 [배리어프리 진행 문서](./BARRIER_FREE_NEXT_STEPS.md)를 따른다.
+
 **한계**
 
 - 시크릿 모드·쿠키 삭제·기기 변경 시 세션은 끊긴다 → 이 경우 **“과거 주문 찾기”는 전화·주문번호·영수증 코드** 같은 **2채널 인증**으로 보완하는 식으로 단계적으로 넣을 수 있다.
