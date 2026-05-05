@@ -104,7 +104,7 @@ ORDER BY 1;
 |-----|------|---------------------------|
 | `get_order_status_for_guest` | 상태 문자열만 폴링 | 주문 행에 세션이 있으면 **같은 값을 넘겨야** 조회됨 (적용됨). |
 | `list_orders_for_guest` | 이 기기 주문 목록 | **항상** tenant + 세션 필요 (기존). |
-| `get_order_for_guest` | 주문 상세 JSON(첫 화면·폴백) | `20260506120000_*` 적용 후: 행에 `guest_session_id` 가 있으면 **같은 값이 쿠키·RPC로 전달**돼야 반환. **첫 방문이 곧바로 주문 상세 URL**이면 쿠키가 아직 없을 수 있음(한 번 메뉴·장바구니 등 `/t/…` 를 연 뒤 재시도). 레거시 행(`guest_session_id` NULL)은 기존처럼 id+tenant만으로 조회. |
+| `get_order_for_guest` | 주문 상세 JSON(첫 화면·폴백) | `20260506120000_*` 적용 후: 행에 `guest_session_id` 가 있으면 **같은 값이 쿠키·RPC로 전달**돼야 반환. **첫 방문이 곧바로 주문 상세 URL**이면 쿠키가 아직 없을 수 있음(한 번 메뉴·장바구니 등 `/t/…` 를 연 뒤 재시도). `GuestOrderDetailSessionRetry`가 `localStorage`에 세션이 있으면 쿠키를 맞춘 뒤 **한 번만** `router.refresh()`로 재요청. 레거시 행(`guest_session_id` NULL)은 기존처럼 id+tenant만으로 조회. |
 
 ### 제품·운영 쪽 다음 후보 (선택)
 

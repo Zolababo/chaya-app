@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { GuestOrderDetailSessionRetry } from "@/components/guest-order-detail-session-retry";
 import { GuestOrderStatusLive } from "@/components/guest-order-status-live";
 import { fetchGuestOrder } from "@/lib/orders/fetch-guest-order";
 
@@ -16,6 +17,7 @@ export default async function OrderStatusPage({ params }: Props) {
   if (order == null) {
     return (
       <div className="mx-auto max-w-lg space-y-4 text-center" role="alert" aria-live="assertive">
+        <GuestOrderDetailSessionRetry />
         <h1 id="order-not-found-heading" className="text-2xl font-bold">
           주문을 찾을 수 없습니다
         </h1>
