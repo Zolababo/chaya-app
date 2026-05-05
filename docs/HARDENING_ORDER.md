@@ -45,7 +45,7 @@
 | Supabase **RLS**, 역할별 정책 | 필수 수준으로 설계 후 적용 |
 | 서비스 롤 키는 **서버·Edge만** | 클라이언트 번들 금지 |
 | 감사 로그(플랫폼 관리자 조회 등) | 신뢰·분쟁 대응 |
-| 손님 **주문 상태** RPC 세션 검증 | 적용 내역·남은 경계는 `docs/BARRIER_FREE_NEXT_STEPS.md` 의 Supabase·보안 경계 절 참고 |
+| 손님 **주문 상태·상세** RPC 세션 검증 | 적용 내역·쿠키 동기화·남은 경계는 `docs/BARRIER_FREE_NEXT_STEPS.md` 의 Supabase·보안 경계 절 참고 |
 
 ---
 

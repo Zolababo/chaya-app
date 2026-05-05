@@ -12,6 +12,7 @@ import {
 import { PREF_TABLE_MAX, readTablePref } from "@/lib/cart/table-pref";
 
 import { GUEST_SESSION_STORAGE_KEY } from "@/lib/guest-session/constants";
+import { syncGuestSessionCookieFromBrowser } from "@/lib/guest-session/sync-guest-session-cookie";
 
 import { submitGuestOrderAction } from "./actions";
 const LAST_ORDER_KEY = "chaya_last_order_id";
@@ -31,6 +32,7 @@ function ensureGuestSession(): string {
       s = crypto.randomUUID();
       localStorage.setItem(GUEST_SESSION_STORAGE_KEY, s);
     }
+    syncGuestSessionCookieFromBrowser();
     return s;
   } catch {
     return "";

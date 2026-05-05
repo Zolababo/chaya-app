@@ -66,10 +66,11 @@
 5. `20260428123000_idx_orders_tenant_guest_created.sql` — 목록 조회 인덱스
 6. `20260428140000_get_order_status_for_guest_rpc.sql` — 상태 문자열만 (가벼운 폴링)
 7. `20260505140000_get_order_status_for_guest_session_match.sql` — `guest_session_id` 가 있는 주문은 같은 세션 문자열로만 상태 조회 (폴링 보강)
+8. `20260506120000_get_order_for_guest_session_match.sql` — 주문 상세 JSON도 동일 세션 규칙(앱은 `chaya_guest_session` 쿠키·`GuestSessionCookieSync` 필요)
 
 로컬: `supabase db push` 또는 대시보드 SQL Editor로 동일 내용 적용.
 
-**배포 순서(세션 검증 적용 시)** — `20260505140000_*` 마이그레이션을 먼저 적용한 뒤 앱을 배포하면, 구 클라이언트(상태 RPC에 인자 2개만 보냄)도 세 번째 인자 기본값으로 동작합니다. 반대로 앱만 먼저 올리면 구 RPC 서명과 맞지 않을 수 있습니다.
+**배포 순서(세션 검증 RPC)** — `20260505140000_*`·`20260506120000_*` 는 **DB에 먼저** 적용한 뒤 앱을 배포합니다. 세 번째 인자는 `DEFAULT NULL` 이라 구 클라이언트(인자 2개만 전달)도 동작합니다. 앱만 먼저 올리면 RPC 서명 불일치로 오류가 날 수 있습니다.
 
 **배포 후 확인 (SQL Editor)** — 아래가 3행이면 anon용 손님 RPC가 등록된 것이다.
 
@@ -86,13 +87,24 @@ WHERE n.nspname = 'public'
 ORDER BY 1;
 ```
 
+**시그니처 확인(선택)** — `get_order_for_guest`·`get_order_status_for_guest` 가 모두 `uuid, text, text` 인지:
+
+```sql
+SELECT p.proname, pg_get_function_identity_arguments(p.oid) AS args
+FROM pg_proc p
+JOIN pg_namespace n ON n.oid = p.pronamespace
+WHERE n.nspname = 'public'
+  AND p.proname IN ('get_order_for_guest', 'get_order_status_for_guest')
+ORDER BY 1;
+```
+
 ### 현재 보안 경계 (요약)
 
 | RPC | 역할 | 세션(`guest_session_id`) |
 |-----|------|---------------------------|
 | `get_order_status_for_guest` | 상태 문자열만 폴링 | 주문 행에 세션이 있으면 **같은 값을 넘겨야** 조회됨 (적용됨). |
 | `list_orders_for_guest` | 이 기기 주문 목록 | **항상** tenant + 세션 필요 (기존). |
-| `get_order_for_guest` | 주문 상세 JSON(첫 화면·폴백) | **아직** 주문 UUID + tenant만 맞으면 반환. 공유 링크·SMS 직링크를 허용하려는 설계이며, URL만 아는 제3자 이론상 조회 가능 — 막으려면 쿠키·서명 토큰·짧은 조회 코드 등 **별도 설계**가 필요하다. |
+| `get_order_for_guest` | 주문 상세 JSON(첫 화면·폴백) | `20260506120000_*` 적용 후: 행에 `guest_session_id` 가 있으면 **같은 값이 쿠키·RPC로 전달**돼야 반환. **첫 방문이 곧바로 주문 상세 URL**이면 쿠키가 아직 없을 수 있음(한 번 메뉴·장바구니 등 `/t/…` 를 연 뒤 재시도). 레거시 행(`guest_session_id` NULL)은 기존처럼 id+tenant만으로 조회. |
 
 ### 제품·운영 쪽 다음 후보 (선택)
 

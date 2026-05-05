@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 
 import { BottomNav } from "@/components/bottom-nav";
+import { GuestSessionCookieSync } from "@/components/guest-session-cookie-sync";
 import { SessionHeader } from "@/components/session-header";
 import { SessionHeaderFallback } from "@/components/header-fallback";
 import { SkipToMainLink } from "@/components/skip-to-main-link";
@@ -18,6 +19,7 @@ export default async function TenantLayout({
   return (
     <div className="flex min-h-dvh flex-col bg-chaya-bg pb-28 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
       <SkipToMainLink />
+      <GuestSessionCookieSync />
       <Suspense fallback={<SessionHeaderFallback />}>
         <SessionHeader tenant={tenant} />
         <TenantTableQuerySync tenant={tenant} />

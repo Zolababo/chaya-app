@@ -1,3 +1,6 @@
+import { cookies } from "next/headers";
+
+import { GUEST_SESSION_STORAGE_KEY } from "@/lib/guest-session/constants";
 import { createConsumerSupabase } from "@/lib/supabase/create-consumer-client";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -74,7 +77,7 @@ function normalizeOrderRow(raw: Record<string, unknown>): GuestOrderView | null 
   };
 }
 
-/** RPC `get_order_for_guest` — 없으면 null */
+/** RPC `get_order_for_guest` — 없으면 null (`GuestSessionCookieSync` 로 쿠키가 있으면 세션 전달) */
 export async function fetchGuestOrder(tenant: string, orderId: string): Promise<GuestOrderView | null> {
   const slug = tenant.trim();
   if (!slug || !UUID_RE.test(orderId.trim())) {
@@ -84,9 +87,22 @@ export async function fetchGuestOrder(tenant: string, orderId: string): Promise<
   const client = createConsumerSupabase();
   if (!client) return null;
 
+  const jar = await cookies();
+  const raw = jar.get(GUEST_SESSION_STORAGE_KEY)?.value;
+  let guestSessionId: string | null = null;
+  if (raw) {
+    try {
+      const decoded = decodeURIComponent(raw).trim();
+      if (decoded.length >= 8 && decoded.length <= 128) guestSessionId = decoded;
+    } catch {
+      guestSessionId = null;
+    }
+  }
+
   const { data, error } = await client.rpc("get_order_for_guest", {
     p_order_id: orderId.trim(),
     p_tenant_slug: slug,
+    p_guest_session_id: guestSessionId,
   });
 
   if (error || data == null || typeof data !== "object") {
