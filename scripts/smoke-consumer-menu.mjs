@@ -33,10 +33,13 @@ function parseArgs(argv) {
   return args;
 }
 
+const FETCH_TIMEOUT_MS = 20_000;
+
 async function fetchText(url) {
   const res = await fetch(url, {
     headers: { "user-agent": "chaya-smoke-check/1.0" },
     cache: "no-store",
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
   const body = await res.text();
   return { res, body };

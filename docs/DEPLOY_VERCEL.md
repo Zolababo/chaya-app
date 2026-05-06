@@ -101,6 +101,8 @@ Vercel 프로덕션/프리뷰에서는 빌드 시 주입되는 **`deployment.env
 손님 주문·화면 동선은 반드시 브라우저로 한 번 확인하세요. 순서는 **`docs/BARRIER_FREE_NEXT_STEPS.md`** 의 「배포 후 앱 스모크 (손님 주문)」를 따르면 됩니다.
 자동 1차 점검은 저장소 루트에서 `pnpm smoke:consumer -- --expected-sha <커밋SHA앞부분> --tenant <slug>` 로 실행할 수 있습니다.
 
+GitHub에서 **`Smoke consumer`** 워크플로(`.github/workflows/smoke-consumer.yml`)가 **매일 한 번**, **main에서 CI 성공 후**, **수동(workflow_dispatch)** 에 프로덕션 URL 스모크를 돌립니다(PR 브랜치 CI에는 반응하지 않음 — `workflow_run` + `head_branch == main`).
+
 ---
 
 ## 8. 보안

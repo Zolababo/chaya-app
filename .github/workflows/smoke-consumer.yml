@@ -1,0 +1,35 @@
+# 프로덕션 소비자 앱 가용성 스모크 (외부 HTTPS, 비밀 불필요)
+name: Smoke consumer
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+  schedule:
+    # 매일 UTC 06:00 (한국 15:00)
+    - cron: "0 6 * * *"
+
+concurrency:
+  group: smoke-consumer-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  prod-smoke:
+    # PR용 CI 성공 후에는 스테이징이 아닌 프로덕션만 치므로 main 브랜치 CI 완료·수동 실행·일정만 허용
+    if: >
+      ${{ github.event_name == 'workflow_dispatch' ||
+          github.event_name == 'schedule' ||
+          (github.event_name == 'workflow_run' &&
+           github.event.workflow_run.conclusion == 'success' &&
+           github.event.workflow_run.head_branch == 'main') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: GET /health · robots · /t/demo 스모크
+        run: node ./scripts/smoke-consumer-menu.mjs --tenant demo
