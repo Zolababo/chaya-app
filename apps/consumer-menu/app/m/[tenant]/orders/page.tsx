@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { MerchantPendingDeltaNotice } from "@/components/merchant-pending-delta-notice";
 import { MerchantPreviewBanner } from "@/components/merchant-preview-banner";
 import { MerchantSubnav } from "@/components/merchant-subnav";
 import { OrderStatusRefresh } from "@/components/order-status-refresh";
@@ -102,6 +103,8 @@ export default async function MerchantOrdersPage({ params, searchParams }: Props
       <div className="mb-6">
         <OrderStatusRefresh />
       </div>
+
+      <MerchantPendingDeltaNotice tenantSlug={tenant} pendingCount={pendingCount} />
 
       <div className="mb-4 flex flex-wrap gap-2" aria-label="주문 상태 필터">
         <Link href={filterHref(null)} className={chip(statusFilter == null)}>
