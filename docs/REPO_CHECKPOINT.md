@@ -57,6 +57,7 @@
 1. (완료) 루트 `pnpm` 워크스페이스, `apps/consumer-menu` — Next.js 15, `build`/`lint`·보안 HTTP 헤더
 2. (완료) `docs/STITCH_TO_APP_MAP.md` 기준 **라우트** — `/t/[tenant]`, `/t/[tenant]/menu/[itemId]`, `/t/[tenant]/cart`, `/t/[tenant]/orders/[orderId]`, 공통 `SessionHeader`·`BottomNav` (UI는 플레이스홀더, 루트 `/`는 `/t/demo` 리다이렉트)
 3. Supabase 연동은 **RLS 초안 이후** (서비스 롤 키는 서버·엣지에서만)
+4. **점주 `/m/...`**: 코드가 있어도 **대외 “오늘부터 쓰세요” 소개 단계**와는 별개다. 점주 설득·실사용에 필요한 최소 기준은 [ARCHITECTURE.md](./ARCHITECTURE.md) **§5.1 「점주 기능…」** 절을 채울 때까지 내부 프리뷰로 두는 것을 권장한다.
 
 ---
 
