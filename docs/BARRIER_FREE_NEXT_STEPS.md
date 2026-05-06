@@ -70,7 +70,17 @@
 
 로컬: `supabase db push` 또는 대시보드 SQL Editor로 동일 내용 적용.
 
-**한 번에 점검:** `supabase/scripts/verify_guest_order_rpcs.sql` 을 SQL Editor에 붙여넣어 RPC 이름·시그니처·`orders` 컬럼·RLS·EXECUTE 권한을 확인합니다. 통과 후에는 배포된 앱에서 **주문 → 목록·상세·상태·「이 주문 주소 복사」** 정도만 스모크하면 됩니다.
+**한 번에 점검:** `supabase/scripts/verify_guest_order_rpcs.sql` 을 SQL Editor에 붙여넣어 RPC 이름·시그니처·`orders` 컬럼·RLS·EXECUTE 권한을 확인합니다. 통과 후에는 아래 **앱 스모크**를 권장합니다.
+
+**배포 후 앱 스모크 (손님 주문)**
+
+`{tenant}` 는 실제 `ChayaMenus.tenant_slug` 와 같은 값(예: `demo`)으로 바꿉니다.
+
+1. `GET https://chaya-app.vercel.app/health` → `supabase.configured`(및 필요 시 `hasUrl` 등) 확인.
+2. `https://chaya-app.vercel.app/t/{tenant}` 에서 메뉴 담기 → 장바구니로 주문 제출.
+3. 접수 화면에서 **이 주문 주소 복사**·**(모바일·지원 브라우저) 다른 앱으로 공유** 가 동작하는지 확인.
+4. 하단 내비 **주문 현황** 에서 해당 주문이 목록에 보이는지, 상세 들어가 폴링·상태가 갱신되는지 확인.
+5. **시크릿 창**(또는 다른 기기)에서 같은 주문 URL만 연 경우, 세션이 없을 때 「찾을 수 없음」·빈 목록처럼 **의도한 제한**인지 확인.
 
 **배포 순서(세션 검증 RPC)** — `20260505140000_*`·`20260506120000_*` 는 **DB에 먼저** 적용한 뒤 앱을 배포합니다. 세 번째 인자는 `DEFAULT NULL` 이라 구 클라이언트(인자 2개만 전달)도 동작합니다. 앱만 먼저 올리면 RPC 서명 불일치로 오류가 날 수 있습니다.
 

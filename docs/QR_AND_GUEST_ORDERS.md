@@ -64,7 +64,7 @@
 **현재 `consumer-menu` 구현(요약)**
 
 - 세션 값은 `localStorage`(`chaya_guest_session`)에 두고, 서버 RPC(`get_order_for_guest` 등)와 맞추기 위해 **동일 키 이름의 1st-party 쿠키**로도 동기화한다(`GuestSessionCookieSync`, 주문 전 `syncGuestSessionCookieFromBrowser`). 주문 상세 첫 페인트에서 쿠키가 늦을 수 있어 **`GuestOrderDetailSessionRetry`**로 세션이 있으면 한 번만 `router.refresh()` 한다.
-- 주문 완료·찾을 수 없음·주문 허브·장바구니 등에 **같은 폰·같은 브라우저** 안내 문구를 넣어 두었고, 접수 화면에는 **현재 주문 URL 복사** 버튼(클립보드·`aria-live` 피드백)이 있다. 세부·RPC 적용 순서는 [배리어프리 진행 문서](./BARRIER_FREE_NEXT_STEPS.md)를 따른다. 배포 후 DB 점검은 `supabase/scripts/verify_guest_order_rpcs.sql` 로 한 번에 확인할 수 있다.
+- 주문 완료·찾을 수 없음·주문 허브·장바구니 등에 **같은 폰·같은 브라우저** 안내 문구를 넣어 두었고, 접수 화면에는 **주문 URL 복사**(클립보드)·**Web Share API**가 가능한 환경에서만 **다른 앱으로 공유** 버튼·`aria-live` 피드백이 있다. 세부·RPC 적용 순서는 [배리어프리 진행 문서](./BARRIER_FREE_NEXT_STEPS.md)를 따른다. 배포 후 DB 점검은 `supabase/scripts/verify_guest_order_rpcs.sql` 로 한 번에 확인할 수 있다.
 
 **한계**
 
