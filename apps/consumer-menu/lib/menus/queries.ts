@@ -1,4 +1,5 @@
 import { createConsumerSupabase } from "@/lib/supabase/create-consumer-client";
+import { withSupabaseReadRetry } from "@/lib/supabase/transient-retry";
 
 import type { ChayaMenuRow, MenuListResult } from "./types";
 
@@ -65,12 +66,14 @@ export async function listMenusForTenant(tenant: string): Promise<MenuListResult
     return { ok: true, source: "demo", items: DEMO_ITEMS };
   }
 
-  const { data, error } = await client
-    .from("ChayaMenus")
-    .select("id,name,description,price,category,imageUrl,sort_order")
-    .eq("tenant_slug", slug)
-    .order("sort_order", { ascending: true })
-    .order("name", { ascending: true });
+  const { data, error } = await withSupabaseReadRetry(() =>
+    client
+      .from("ChayaMenus")
+      .select("id,name,description,price,category,imageUrl,sort_order")
+      .eq("tenant_slug", slug)
+      .order("sort_order", { ascending: true })
+      .order("name", { ascending: true }),
+  );
 
   if (error) {
     return {
@@ -113,12 +116,14 @@ export async function getMenuById(tenant: string, itemId: string): Promise<Chaya
 
   if (!slug) return null;
 
-  const { data, error } = await client
-    .from("ChayaMenus")
-    .select("id,name,description,price,category,imageUrl,sort_order")
-    .eq("id", itemId)
-    .eq("tenant_slug", slug)
-    .maybeSingle();
+  const { data, error } = await withSupabaseReadRetry(() =>
+    client
+      .from("ChayaMenus")
+      .select("id,name,description,price,category,imageUrl,sort_order")
+      .eq("id", itemId)
+      .eq("tenant_slug", slug)
+      .maybeSingle(),
+  );
 
   if (error) {
     return DEMO_ITEMS.find((r) => r.id === itemId) ?? null;

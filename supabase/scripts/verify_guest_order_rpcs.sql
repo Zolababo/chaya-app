@@ -3,7 +3,7 @@
 --
 -- 기대값(최신 앱 기준):
 --   • 아래 ① 에서 public RPC 이름 3개 행
---   • ② 에서 get_order_for_guest / get_order_status_for_guest 는 args = uuid, text, text
+--   • ② 에서 get_order_for_guest / get_order_status_for_guest 는 args = uuid, text, text (세 번째 인자 p_guest_session_id)
 --   • ② 에서 list_orders_for_guest 는 args = text, text, integer
 --   • ③ orders 행이 있으면 tenant_slug·guest_session_id 등 컬럼 존재 확인
 --   • ④ orders 에 RLS 켜짐(relrowsecurity = true)
@@ -68,3 +68,11 @@ WHERE routine_schema = 'public'
   )
   AND grantee IN ('anon', 'authenticated', 'public')
 ORDER BY routine_name, grantee, privilege_type;
+
+-- ── 해석·트러블슈팅(요약) ──
+-- • ① 3행 미만: docs/BARRIER_FREE_NEXT_STEPS.md 의 Supabase 마이그레이션 1→8 순서로 누락분 적용.
+-- • ② get_order_* 가 (uuid,text) 두 인자만: 세션 검증 버전 미적용 — `20260505140000_*`·`20260506120000_*` 가 DB에 들어왔는지 확인.
+-- • ③ orders 컬럼 누락: `20260425140000_*` 테넌트·guest_session_id RLS 초안 또는 `20260425160000_*` 확장부터 순서 확인.
+-- • ④ relrowsecurity = false: RLS 미설정 또는 수동 비활성화 — 테넌트 격리가 약화됩니다.
+-- • ⑤ anon EXECUTE 없음: RPC GRANT 줄이 적용 안 됐거나 다른 롤만 부여된 상태 — 해당 마이그레이션의 GRANT 블록 재실행.
+

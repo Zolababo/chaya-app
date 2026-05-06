@@ -1,4 +1,5 @@
 import { createConsumerSupabase } from "@/lib/supabase/create-consumer-client";
+import { withSupabaseReadRetry } from "@/lib/supabase/transient-retry";
 
 import { fetchGuestOrder } from "./fetch-guest-order";
 
@@ -21,12 +22,14 @@ export async function fetchGuestOrderStatusOnly(
   const client = createConsumerSupabase();
   if (!client) return null;
 
-  const { data, error } = await client.rpc("get_order_status_for_guest", {
-    p_order_id: orderId.trim(),
-    p_tenant_slug: slug,
-    p_guest_session_id:
-      guestSessionId != null && guestSessionId.trim().length > 0 ? guestSessionId.trim() : null,
-  });
+  const { data, error } = await withSupabaseReadRetry(() =>
+    client.rpc("get_order_status_for_guest", {
+      p_order_id: orderId.trim(),
+      p_tenant_slug: slug,
+      p_guest_session_id:
+        guestSessionId != null && guestSessionId.trim().length > 0 ? guestSessionId.trim() : null,
+    }),
+  );
 
   if (!error) {
     if (data == null) return null;

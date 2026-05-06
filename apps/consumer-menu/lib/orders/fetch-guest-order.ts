@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 
 import { GUEST_SESSION_STORAGE_KEY } from "@/lib/guest-session/constants";
 import { createConsumerSupabase } from "@/lib/supabase/create-consumer-client";
+import { withSupabaseReadRetry } from "@/lib/supabase/transient-retry";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -99,11 +100,13 @@ export async function fetchGuestOrder(tenant: string, orderId: string): Promise<
     }
   }
 
-  const { data, error } = await client.rpc("get_order_for_guest", {
-    p_order_id: orderId.trim(),
-    p_tenant_slug: slug,
-    p_guest_session_id: guestSessionId,
-  });
+  const { data, error } = await withSupabaseReadRetry(() =>
+    client.rpc("get_order_for_guest", {
+      p_order_id: orderId.trim(),
+      p_tenant_slug: slug,
+      p_guest_session_id: guestSessionId,
+    }),
+  );
 
   if (error || data == null || typeof data !== "object") {
     return null;

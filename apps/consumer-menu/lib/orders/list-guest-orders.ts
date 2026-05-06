@@ -1,4 +1,5 @@
 import { createConsumerSupabase } from "@/lib/supabase/create-consumer-client";
+import { withSupabaseReadRetry } from "@/lib/supabase/transient-retry";
 
 import {
   sanitizeGuestSessionId,
@@ -61,11 +62,13 @@ export async function listGuestOrdersForTenant(
     return { ok: false, orders: [], errorKind: "no_client" };
   }
 
-  const { data, error } = await client.rpc("list_orders_for_guest", {
-    p_tenant_slug: tenantCheck.slug,
-    p_guest_session_id: sid,
-    p_limit: 30,
-  });
+  const { data, error } = await withSupabaseReadRetry(() =>
+    client.rpc("list_orders_for_guest", {
+      p_tenant_slug: tenantCheck.slug,
+      p_guest_session_id: sid,
+      p_limit: 30,
+    }),
+  );
 
   if (error) {
     console.error("[listGuestOrdersForTenant]", error.code ?? "", error.message);

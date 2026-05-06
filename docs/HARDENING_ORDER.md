@@ -46,6 +46,7 @@
 | 서비스 롤 키는 **서버·Edge만** | 클라이언트 번들 금지 |
 | 감사 로그(플랫폼 관리자 조회 등) | 신뢰·분쟁 대응 |
 | 손님 **주문 상태·상세** RPC 세션 검증 | 적용 내역·쿠키 동기화·남은 경계는 `docs/BARRIER_FREE_NEXT_STEPS.md` 의 Supabase·보안 경계 절 참고 |
+| Supabase **일시 오류 재시도** (앱 측) | `apps/consumer-menu/lib/supabase/transient-retry.ts` — 네트워크·연결·게이트웨이(5xx 문자열)·SQL class `08`(연결)·일부 과부하는 **읽기(RPC/select)부터** 짧게 재시도. **주문 INSERT** 는 이중 접수 방지를 위해 운송/연결 계열만 재시도. |
 
 ---
 

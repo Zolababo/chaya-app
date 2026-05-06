@@ -54,6 +54,15 @@ export function GuestOrderStatusLive({ tenant, orderId, initialStatus }: Props) 
     return () => window.clearInterval(id);
   }, [pull, reducedMotion]);
 
+  /** 모바일 백그라운드 등으로 폴링이 멈춘 뒤 복귀할 때 상태를 바로 한 번 받아 옵니다. */
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") void pull();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, [pull]);
+
   const statusText = orderStatusLabel(status);
 
   return (

@@ -1,4 +1,5 @@
 import { createConsumerSupabase } from "@/lib/supabase/create-consumer-client";
+import { withSupabaseWriteRetry } from "@/lib/supabase/transient-retry";
 
 import type { GuestOrderLine } from "./guest-order-validation";
 import {
@@ -67,7 +68,9 @@ export async function submitGuestOrder(input: {
     row.guest_note = note;
   }
 
-  const { data, error } = await client.from("orders").insert(row).select("id").single();
+  const { data, error } = await withSupabaseWriteRetry(() =>
+    client.from("orders").insert(row).select("id").single(),
+  );
 
   if (error) {
     console.error("[submitGuestOrder]", error.code ?? "", error.message);
