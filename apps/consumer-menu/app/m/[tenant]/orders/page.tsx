@@ -22,7 +22,7 @@ export const dynamic = "force-dynamic";
 
 type Props = {
   params: Promise<{ tenant: string }>;
-  searchParams: Promise<{ token?: string; e?: string; status?: string }>;
+  searchParams: Promise<{ token?: string; e?: string; ok?: string; status?: string }>;
 };
 
 function errorMessage(code: string | undefined): string | null {
@@ -39,9 +39,21 @@ function errorMessage(code: string | undefined): string | null {
   }
 }
 
+function successMessage(code: string | undefined): string | null {
+  if (!code) return null;
+  switch (code) {
+    case "status_saved":
+      return "주문 상태를 저장했습니다.";
+    case "no_change":
+      return "선택한 상태가 기존과 같아 저장하지 않았습니다.";
+    default:
+      return null;
+  }
+}
+
 export default async function MerchantOrdersPage({ params, searchParams }: Props) {
   const { tenant } = await params;
-  const { token, e, status: statusParam } = await searchParams;
+  const { token, e, ok, status: statusParam } = await searchParams;
   const rawFilter = typeof statusParam === "string" ? statusParam.trim() : "";
   const statusFilter = isMerchantOrderStatus(rawFilter) ? rawFilter : null;
 
@@ -63,6 +75,7 @@ export default async function MerchantOrdersPage({ params, searchParams }: Props
     countMerchantPendingOrders(tenant),
   ]);
   const errMsg = errorMessage(e);
+  const okMsg = successMessage(ok);
   const tEnc = encodeURIComponent(tenant);
   const filterHref = (s: string | null) =>
     s ? `/m/${tEnc}/orders?status=${encodeURIComponent(s)}` : `/m/${tEnc}/orders`;
@@ -127,6 +140,15 @@ export default async function MerchantOrdersPage({ params, searchParams }: Props
           {errMsg}
         </p>
       ) : null}
+      {okMsg ? (
+        <p
+          role="status"
+          aria-live="polite"
+          className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100"
+        >
+          {okMsg}
+        </p>
+      ) : null}
 
       {!list.ok ? (
         <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
@@ -160,6 +182,7 @@ export default async function MerchantOrdersPage({ params, searchParams }: Props
                     <form action={updateOrderStatusFromForm} className="flex flex-wrap items-center gap-2">
                       <input type="hidden" name="tenant_slug" value={tenant} />
                       <input type="hidden" name="order_id" value={row.id} />
+                      <input type="hidden" name="current_status" value={row.status} />
                       {statusFilter ? <input type="hidden" name="filter_status" value={statusFilter} /> : null}
                       <select
                         name="status"
