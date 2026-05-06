@@ -95,7 +95,10 @@ npx vercel deploy --prod --yes
 ## 7. 헬스 체크 (`/health`)
 
 배포 후 `https://chaya-app.vercel.app/health` (또는 본인 도메인 + `/health`)를 열면 JSON으로 **`supabase.configured`** 등이 옵니다.  
-**URL·anon 키 값은 응답에 넣지 않으며**, Vercel에 `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` 가 **설정돼 있는지 여부**만 확인할 때 쓰면 됩니다.
+**URL·anon 키 값은 응답에 넣지 않으며**, Vercel에 `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` 가 **설정돼 있는지 여부**만 확인할 때 쓰면 됩니다.  
+Vercel 프로덕션/프리뷰에서는 빌드 시 주입되는 **`deployment.env`**, **`deployment.gitCommitSha`**(짧은 검증용으로 `main` 마지막 커밋과 대조 가능)가 붙을 수 있습니다. 로컬 `next dev` 에서는 보통 생략됩니다.
+
+손님 주문·화면 동선은 반드시 브라우저로 한 번 확인하세요. 순서는 **`docs/BARRIER_FREE_NEXT_STEPS.md`** 의 「배포 후 앱 스모크 (손님 주문)」를 따르면 됩니다.
 
 ---
 

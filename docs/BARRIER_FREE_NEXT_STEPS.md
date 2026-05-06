@@ -76,7 +76,7 @@
 
 `{tenant}` 는 실제 `ChayaMenus.tenant_slug` 와 같은 값(예: `demo`)으로 바꿉니다.
 
-1. `GET https://chaya-app.vercel.app/health` → `supabase.configured`(및 필요 시 `hasUrl` 등) 확인.
+1. `GET https://chaya-app.vercel.app/health` → `supabase.configured`(및 필요 시 `hasUrl` 등) 확인. 배포가 맞는지 `deployment.gitCommitSha` 를 저장소 `main` 과 대조해 볼 수 있음.
 2. `https://chaya-app.vercel.app/t/{tenant}` 에서 메뉴 담기 → 장바구니로 주문 제출.
 3. 접수 화면에서 **이 주문 주소 복사**·**(모바일·지원 브라우저) 다른 앱으로 공유** 가 동작하는지 확인.
 4. 하단 내비 **주문 현황** 에서 해당 주문이 목록에 보이는지, 상세 들어가 폴링·상태가 갱신되는지 확인.
@@ -124,7 +124,7 @@ ORDER BY 1;
 2. **`get_order_for_guest` 강화**를 검토할 때: 첫 서버 렌더와 SMS 직링크(쿠키 없음)까지 맞출 UX를 함께 정한 뒤 마이그레이션·앱을 같이 바꾼다.
 3. [x] (앱 안내) 주문 상세「찾을 수 없음」·주문 허브(세션 없음·목록 비어 있음)에 **같은 폰·같은 브라우저** 안내. 매장 POP 등 오프라인 문구는 별도로 추가 가능.
 4. [x] **크롤러**: `apps/consumer-menu/app/robots.ts` — `/m/`·`/m` `disallow` (배포 후 `https://…/robots.txt` 확인).
-5. [x] **헬스**: `GET /health` (`app/health/route.ts`) — `supabase.configured` 등 플래그만 노출.
+5. [x] **헬스**: `GET /health` (`app/health/route.ts`) — `supabase.configured` 등 플래그만 노출. Vercel에서는 `deployment.gitCommitSha` 등으로 배포된 커밋을 짧게 확인할 수 있음.
 
 ### 수동 점검 체크리스트 (TalkBack / VoiceOver + 모바일 Chrome·Safari)
 
