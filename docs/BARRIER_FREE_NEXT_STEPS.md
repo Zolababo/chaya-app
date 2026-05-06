@@ -72,6 +72,22 @@
 
 **한 번에 점검:** `supabase/scripts/verify_guest_order_rpcs.sql` 을 SQL Editor에 붙여넣어 RPC 이름·시그니처·`orders` 컬럼·RLS·EXECUTE 권한을 확인합니다. 통과 후에는 아래 **앱 스모크**를 권장합니다.
 
+### 이 점검 스크립트가 하는 일 (한 줄 요약)
+
+**“손님용 앱이 Supabase에 전화걸 수 있는지(함수·권한·테이블)”** 를 읽기 전용으로 확인합니다. 제품 로직을 바꾸는 게 아니라, **배포·마이그레이션 누락으로 주문이 조용히 깨지는 일**을 줄이려는 운영 절차입니다.
+
+| 구간 | 정상에 가깝다고 볼 때 | 비유 |
+|------|------------------------|------|
+| ① RPC 이름 3개 | 세 함수가 한 줄씩 보임 | “전화번호가 공급자 부에 등록돼 있나” |
+| ② 시그니처 | `get_order_*` 는 `(uuid, text, text)` — 세 번째가 손님 세션 | “앱이 넣는 인자 개수와 DB 함수 정의가 맞나” |
+| ③ `orders` 컬럼 | `tenant_slug`, `guest_session_id` 등이 조회됨 | “주문표에 필요한 칸이 있나” |
+| ④ RLS | `relrowsecurity = true` | “가게끼리 데이터가 섞이지 않게 잠겨 있나” |
+| ⑤ 권한 | **스크린샷처럼** `anon`·`authenticated` 에 `EXECUTE` 가 함수마다 있음 | “손님 앱(익명 키)이 그 함수를 부를 수 있나” |
+
+### verify ⑤ 결과가 스크린샷과 같을 때
+
+- `get_order_for_guest`, `get_order_status_for_guest`, `list_orders_for_guest` 각각에 대해 **`anon` + `authenticated` + `EXECUTE`** 가 보이면, 대시보드에서 본 것과 같이 **권한 쪽은 정상**에 가깝습니다. (이후 ①·②·④가 맞는지도 같은 스크립트로 이어서 확인하면 됩니다.)
+
 **배포 후 앱 스모크 (손님 주문)**
 
 `{tenant}` 는 실제 `ChayaMenus.tenant_slug` 와 같은 값(예: `demo`)으로 바꿉니다.

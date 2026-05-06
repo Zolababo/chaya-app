@@ -104,6 +104,7 @@ export function CartCheckoutClient({ tenant, initialLines, initialTableHint }: P
       typeof window !== "undefined" ? localStorage.getItem(GUEST_SESSION_STORAGE_KEY) : null;
 
     startTransition(async () => {
+      let orderSucceeded = false;
       try {
         const res = await submitGuestOrderAction(
           tenant,
@@ -116,6 +117,7 @@ export function CartCheckoutClient({ tenant, initialLines, initialTableHint }: P
           setError(res.message);
           return;
         }
+        orderSucceeded = true;
         try {
           localStorage.setItem(LAST_ORDER_KEY, res.orderId);
         } catch {
@@ -124,7 +126,7 @@ export function CartCheckoutClient({ tenant, initialLines, initialTableHint }: P
         clearCart(tenant);
         router.push(`/t/${tenant}/orders/${res.orderId}`);
       } finally {
-        submitLock.current = false;
+        if (!orderSucceeded) submitLock.current = false;
       }
     });
   };
