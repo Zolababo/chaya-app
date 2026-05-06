@@ -95,7 +95,10 @@ export function MenuBoard({ tenant, items, categories }: Props) {
 
       {/* 배달앱형: 한 열 콤팩트 목록 — 행 탭 = 상세, 담기는 별도 (터치 44px 유지) */}
       {filtered.length > 0 ? (
-        <ul className="divide-y divide-chaya-border overflow-hidden rounded-xl border border-chaya-border bg-chaya-surface dark:divide-zinc-800 dark:border-zinc-700 dark:bg-zinc-950">
+        <ul
+          aria-label={`${active ? `${active} 카테고리 ` : ""}메뉴 목록`}
+          className="divide-y divide-chaya-border overflow-hidden rounded-xl border border-chaya-border bg-chaya-surface dark:divide-zinc-800 dark:border-zinc-700 dark:bg-zinc-950"
+        >
           {filtered.map((item) => (
             <li key={item.id} className="flex items-stretch gap-2 px-2 py-1.5 sm:gap-3 sm:px-3">
               <Link
