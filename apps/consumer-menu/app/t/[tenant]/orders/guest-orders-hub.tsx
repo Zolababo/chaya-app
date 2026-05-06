@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState, useTransition } from "react";
 
+import { GuestOrderRowCopyLinkButton } from "@/components/guest-order-row-copy-link-button";
 import { GUEST_SESSION_STORAGE_KEY } from "@/lib/guest-session/constants";
 import type { GuestOrderListItem } from "@/lib/orders/list-guest-orders";
 import { orderStatusLabel } from "@/lib/orders/order-status-label";
@@ -144,32 +145,37 @@ export function GuestOrdersHub({ tenant }: Props) {
         >
           {orders.map((o) => (
             <li key={o.id}>
-              <Link
-                href={`/t/${tenant}/orders/${o.id}`}
-                aria-label={`주문 번호 앞 여덟 자리 ${o.id.slice(0, 8)}, ${orderStatusLabel(o.status)}, ${o.total_price.toLocaleString(
-                  "ko-KR",
-                )}원, 상세 페이지로 이동`}
-                className="flex min-h-[44px] flex-col gap-1 px-4 py-4 transition hover:bg-zinc-50 dark:hover:bg-zinc-900/60 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div>
-                  <p className="font-mono text-sm font-semibold text-zinc-800 dark:text-zinc-200">
-                    {o.id.slice(0, 8)}…
-                  </p>
-                  {o.created_at ? (
-                    <p className="text-xs text-zinc-500">
-                      {new Date(o.created_at).toLocaleString("ko-KR")}
+              <div className="divide-y divide-chaya-border dark:divide-zinc-800">
+                <Link
+                  href={`/t/${tenant}/orders/${o.id}`}
+                  aria-label={`주문 번호 앞 여덟 자리 ${o.id.slice(0, 8)}, ${orderStatusLabel(o.status)}, ${o.total_price.toLocaleString(
+                    "ko-KR",
+                  )}원, 상세 페이지로 이동`}
+                  className="flex min-h-[44px] flex-col gap-1 px-4 py-4 transition hover:bg-zinc-50 dark:hover:bg-zinc-900/60 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div>
+                    <p className="font-mono text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+                      {o.id.slice(0, 8)}…
                     </p>
-                  ) : null}
+                    {o.created_at ? (
+                      <p className="text-xs text-zinc-500">
+                        {new Date(o.created_at).toLocaleString("ko-KR")}
+                      </p>
+                    ) : null}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                    <span className="inline-flex rounded-full bg-zinc-200 px-3 py-1 text-xs font-medium text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200">
+                      {orderStatusLabel(o.status)}
+                    </span>
+                    <span className="text-sm font-semibold tabular-nums text-chaya-primary dark:text-orange-400">
+                      {o.total_price.toLocaleString("ko-KR")}원
+                    </span>
+                  </div>
+                </Link>
+                <div className="bg-zinc-50/80 px-4 py-2 dark:bg-zinc-900/30">
+                  <GuestOrderRowCopyLinkButton tenant={tenant} orderId={o.id} orderLabelShort={o.id.slice(0, 8)} />
                 </div>
-                <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                  <span className="inline-flex rounded-full bg-zinc-200 px-3 py-1 text-xs font-medium text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200">
-                    {orderStatusLabel(o.status)}
-                  </span>
-                  <span className="text-sm font-semibold tabular-nums text-chaya-primary dark:text-orange-400">
-                    {o.total_price.toLocaleString("ko-KR")}원
-                  </span>
-                </div>
-              </Link>
+              </div>
             </li>
           ))}
         </ul>
