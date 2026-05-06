@@ -1,9 +1,13 @@
 import Link from "next/link";
 
+import { MerchantPreviewBanner } from "@/components/merchant-preview-banner";
 import { MerchantSubnav } from "@/components/merchant-subnav";
 import { OrderStatusRefresh } from "@/components/order-status-refresh";
 import { resolveMerchantToken } from "@/lib/merchant/resolve-merchant-token";
-import { listOrdersForMerchant } from "@/lib/orders/list-orders-for-merchant";
+import {
+  countMerchantPendingOrders,
+  listOrdersForMerchant,
+} from "@/lib/orders/list-orders-for-merchant";
 import {
   isMerchantOrderStatus,
   MERCHANT_ORDER_STATUSES,
@@ -52,7 +56,10 @@ export default async function MerchantOrdersPage({ params, searchParams }: Props
     );
   }
 
-  const list = await listOrdersForMerchant(tenant, statusFilter);
+  const [list, pendingCount] = await Promise.all([
+    listOrdersForMerchant(tenant, statusFilter),
+    countMerchantPendingOrders(tenant),
+  ]);
   const errMsg = errorMessage(e);
   const tEnc = encodeURIComponent(tenant);
   const filterHref = (s: string | null) =>
@@ -69,7 +76,17 @@ export default async function MerchantOrdersPage({ params, searchParams }: Props
     <div className="mx-auto min-h-dvh max-w-4xl px-4 py-8">
       <header className="mb-8 border-b border-chaya-border pb-4 dark:border-zinc-700">
         <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Merchant</p>
-        <h1 className="text-2xl font-bold">주문 큐 — {tenant}</h1>
+        <div className="flex flex-wrap items-baseline gap-3">
+          <h1 className="text-2xl font-bold">주문 큐 — {tenant}</h1>
+          {pendingCount != null && pendingCount > 0 ? (
+            <span
+              className="rounded-full bg-red-600 px-3 py-1 text-sm font-bold text-white tabular-nums dark:bg-red-500"
+              aria-label={`대기 중인 주문 ${pendingCount}건`}
+            >
+              대기 {pendingCount}건
+            </span>
+          ) : null}
+        </div>
         <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
           손님 화면:{" "}
           <Link className="font-medium text-chaya-primary underline-offset-2 hover:underline" href={`/t/${tenant}`}>
@@ -78,7 +95,9 @@ export default async function MerchantOrdersPage({ params, searchParams }: Props
         </p>
       </header>
 
-      <MerchantSubnav tenant={tenant} />
+      <MerchantPreviewBanner tenantSlug={tenant} />
+
+      <MerchantSubnav tenant={tenant} pendingOrderCount={pendingCount} />
 
       <div className="mb-6">
         <OrderStatusRefresh />

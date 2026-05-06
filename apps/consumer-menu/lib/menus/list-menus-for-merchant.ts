@@ -1,4 +1,5 @@
 import { createServiceSupabase } from "@/lib/supabase/create-service-client";
+import { withSupabaseReadRetry } from "@/lib/supabase/transient-retry";
 
 import type { ChayaMenuRow } from "./types";
 
@@ -50,15 +51,17 @@ export async function listMenusForMerchant(tenantSlug: string): Promise<ListMerc
     return { ok: false, message: "SUPABASE_SERVICE_ROLE_KEY 또는 URL 이 설정되지 않았습니다." };
   }
 
-  const { data, error } = await client
-    .from("ChayaMenus")
-    .select("id,name,description,price,category,imageUrl,sort_order")
-    .eq("tenant_slug", slug)
-    .order("sort_order", { ascending: true })
-    .order("name", { ascending: true });
+  const { data, error } = await withSupabaseReadRetry(() =>
+    client
+      .from("ChayaMenus")
+      .select("id,name,description,price,category,imageUrl,sort_order")
+      .eq("tenant_slug", slug)
+      .order("sort_order", { ascending: true })
+      .order("name", { ascending: true }),
+  );
 
   if (error) {
-    return { ok: false, message: error.message };
+    return { ok: false, message: error.message ?? error.code ?? "메뉴를 불러오지 못했습니다." };
   }
 
   const items = (data ?? [])

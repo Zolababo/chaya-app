@@ -2,10 +2,14 @@ import Link from "next/link";
 
 type Props = {
   tenant: string;
+  /** `pending` 주문 건수(헤더·서브내비에서 동일하게 넘김). 없으면 뱃지 생략. */
+  pendingOrderCount?: number | null;
 };
 
-export function MerchantSubnav({ tenant }: Props) {
+export function MerchantSubnav({ tenant, pendingOrderCount }: Props) {
   const t = encodeURIComponent(tenant);
+  const showPending =
+    typeof pendingOrderCount === "number" && pendingOrderCount > 0 ? pendingOrderCount : null;
 
   return (
     <nav
@@ -14,9 +18,17 @@ export function MerchantSubnav({ tenant }: Props) {
     >
       <Link
         href={`/m/${t}/orders`}
-        className="inline-flex min-h-[44px] items-center rounded-lg px-3 py-2 text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900"
+        className="inline-flex min-h-[44px] items-center gap-2 rounded-lg px-3 py-2 text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900"
       >
-        주문 큐
+        <span>주문 큐</span>
+        {showPending != null ? (
+          <span
+            className="rounded-full bg-red-600 px-2 py-0.5 text-xs font-bold text-white tabular-nums dark:bg-red-500"
+            aria-label={`대기 중인 주문 ${showPending}건`}
+          >
+            {showPending}
+          </span>
+        ) : null}
       </Link>
       <Link
         href={`/m/${t}/menus`}

@@ -1,5 +1,6 @@
 import { isMerchantOrderStatus } from "@/lib/orders/merchant-status-constants";
 import { createServiceSupabase } from "@/lib/supabase/create-service-client";
+import { withSupabaseReadRetry, withSupabaseReadRetryResult } from "@/lib/supabase/transient-retry";
 
 export type MerchantOrderRow = {
   id: string;
@@ -68,17 +69,21 @@ export async function listOrdersForMerchant(
       ? statusFilter.trim()
       : null;
 
-  let query = client
-    .from("orders")
-    .select("id, created_at, status, table_no, guest_note, total_price")
-    .eq("tenant_slug", slug);
-  if (filter) {
-    query = query.eq("status", filter);
-  }
-  const { data, error } = await query.order("created_at", { ascending: false }).limit(100);
+  const fetchRows = () => {
+    let q = client
+      .from("orders")
+      .select("id, created_at, status, table_no, guest_note, total_price")
+      .eq("tenant_slug", slug);
+    if (filter) {
+      q = q.eq("status", filter);
+    }
+    return q.order("created_at", { ascending: false }).limit(100);
+  };
+
+  const { data, error } = await withSupabaseReadRetry(() => fetchRows());
 
   if (error) {
-    return { ok: false, message: error.message };
+    return { ok: false, message: error.message ?? error.code ?? "주문 목록을 불러오지 못했습니다." };
   }
 
   const rows: MerchantOrderRow[] = [];
@@ -88,4 +93,24 @@ export async function listOrdersForMerchant(
   }
 
   return { ok: true, rows };
+}
+
+/** `pending` 상태 주문만 집계(대기 뱃지·내비용). 실패 시 `null`. */
+export async function countMerchantPendingOrders(tenantSlug: string): Promise<number | null> {
+  const slug = tenantSlug.trim();
+  if (!slug) return null;
+
+  const client = createServiceSupabase();
+  if (!client) return null;
+
+  const { error, count } = await withSupabaseReadRetryResult(() =>
+    client
+      .from("orders")
+      .select("*", { count: "exact", head: true })
+      .eq("tenant_slug", slug)
+      .eq("status", "pending"),
+  );
+
+  if (error) return null;
+  return count ?? 0;
 }

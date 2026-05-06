@@ -1,10 +1,12 @@
 import Link from "next/link";
 
 import { MerchantConfirmSubmitButton } from "@/components/merchant-confirm-submit";
+import { MerchantPreviewBanner } from "@/components/merchant-preview-banner";
 import { MerchantSubnav } from "@/components/merchant-subnav";
 import { OrderStatusRefresh } from "@/components/order-status-refresh";
 import { resolveMerchantToken } from "@/lib/merchant/resolve-merchant-token";
 import { listMenusForMerchant } from "@/lib/menus/list-menus-for-merchant";
+import { countMerchantPendingOrders } from "@/lib/orders/list-orders-for-merchant";
 
 import { createMenuFromForm, deleteMenuFromForm, updateMenuFromForm } from "./actions";
 
@@ -47,7 +49,10 @@ export default async function MerchantMenusPage({ params, searchParams }: Props)
     );
   }
 
-  const list = await listMenusForMerchant(tenant);
+  const [list, pendingCount] = await Promise.all([
+    listMenusForMerchant(tenant),
+    countMerchantPendingOrders(tenant),
+  ]);
   const errMsg = errorMessage(e);
 
   return (
@@ -63,7 +68,9 @@ export default async function MerchantMenusPage({ params, searchParams }: Props)
         </p>
       </header>
 
-      <MerchantSubnav tenant={tenant} />
+      <MerchantPreviewBanner tenantSlug={tenant} />
+
+      <MerchantSubnav tenant={tenant} pendingOrderCount={pendingCount} />
 
       <div className="mb-6">
         <OrderStatusRefresh />

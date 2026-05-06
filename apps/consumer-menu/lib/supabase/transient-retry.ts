@@ -80,3 +80,21 @@ export async function withSupabaseWriteRetry<T>(
   }
   return last;
 }
+
+/**
+ * `select(..., { count: "exact", head: true })` 같이 **`data` 대신 부가 필드만** 오는 결과용.
+ * 반환 타입 전체를 유지해야 할 때 사용합니다.
+ */
+export async function withSupabaseReadRetryResult<R extends { error: LooseDbError }>(
+  run: () => PromiseLike<R>,
+  options?: { maxAttempts?: number },
+): Promise<R> {
+  const maxAttempts = Math.min(5, Math.max(1, options?.maxAttempts ?? 3));
+  const delays = [280, 650];
+  let last = await Promise.resolve(run());
+  for (let i = 1; i < maxAttempts && last.error && isRetryableSupabaseReadError(last.error); i += 1) {
+    await sleep(delays[i - 1] ?? 500);
+    last = await Promise.resolve(run());
+  }
+  return last;
+}

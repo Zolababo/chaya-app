@@ -30,6 +30,14 @@ export function OrderStatusRefresh({ intervalMs = ORDER_STATUS_POLL_MS }: Props)
     return () => window.clearInterval(id);
   }, [router, intervalMs, reducedMotion]);
 
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") router.refresh();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, [router]);
+
   return (
     <div
       className="flex flex-col items-center gap-2 sm:flex-row sm:justify-center sm:gap-4"
