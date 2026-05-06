@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { MerchantOrderStatusSubmit } from "@/components/merchant-order-status-submit";
 import { MerchantPendingDeltaNotice } from "@/components/merchant-pending-delta-notice";
 import { MerchantPreviewBanner } from "@/components/merchant-preview-banner";
 import { MerchantSubnav } from "@/components/merchant-subnav";
@@ -172,12 +173,9 @@ export default async function MerchantOrdersPage({ params, searchParams }: Props
                           </option>
                         ))}
                       </select>
-                      <button
-                        type="submit"
-                        className="rounded-lg bg-zinc-900 px-3 py-1 text-xs font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900"
-                      >
-                        저장
-                      </button>
+                      <MerchantOrderStatusSubmit
+                        confirmMessage={`주문 ${row.id.slice(0, 8)} 상태를 변경합니다. 계속할까요?`}
+                      />
                     </form>
                     {row.guest_note ? (
                       <p className="mt-1 max-w-xs text-xs text-zinc-500 whitespace-pre-wrap">{row.guest_note}</p>
