@@ -99,9 +99,12 @@ npx vercel deploy --prod --yes
 Vercel 프로덕션/프리뷰에서는 빌드 시 주입되는 **`deployment.env`**, **`deployment.gitCommitSha`**(짧은 검증용으로 `main` 마지막 커밋과 대조 가능)가 붙을 수 있습니다. 로컬 `next dev` 에서는 보통 생략됩니다.
 
 손님 주문·화면 동선은 반드시 브라우저로 한 번 확인하세요. 순서는 **`docs/BARRIER_FREE_NEXT_STEPS.md`** 의 「배포 후 앱 스모크 (손님 주문)」를 따르면 됩니다.
-자동 1차 점검은 저장소 루트에서 `pnpm smoke:consumer -- --expected-sha <커밋SHA앞부분> --tenant <slug>` 로 실행할 수 있습니다.
+자동 1차 점검은 저장소 루트에서 `pnpm smoke:consumer -- --expected-sha <커밋SHA앞부분> --tenant <slug>` 로 실행할 수 있습니다.  
+`--expected-sha` 가 있으면 기본값으로 **프로덕션에 새 커밋이 반영될 때까지** `/health`의 `deployment.gitCommitSha` 를 **최대 8회**(간격 기본 **12초**) 재확인합니다. 필요 시 `--sha-retries` / `--sha-retry-delay-ms` 로 조정합니다.  
+점검 항목에 **`/t/{tenant}/orders`(주문 허브)** SSR 마커 포함.
 
-GitHub에서 **`Smoke consumer`** 워크플로(`.github/workflows/smoke-consumer.yml`)가 **매일 한 번**, **main에서 CI 성공 후**, **수동(workflow_dispatch)** 에 프로덕션 URL 스모크를 돌립니다(PR 브랜치 CI에는 반응하지 않음 — `workflow_run` + `head_branch == main`).
+GitHub에서 **`Smoke consumer`** 워크플로(`.github/workflows/smoke-consumer.yml`)가 **매일 한 번**, **main에서 CI 성공 후**, **수동(workflow_dispatch)** 에 프로덕션 URL 스모크를 돌립니다(PR 브랜치 CI에는 반응하지 않음 — `workflow_run` + `head_branch == main`).  
+`workflow_run`(main 성공 분기)에서는 **해당 CI 커밋 SHA** 로 `--expected-sha` 를 넘겨 배포 반영까지 자동 재시도합니다.
 
 ---
 
@@ -115,6 +118,6 @@ GitHub에서 **`Smoke consumer`** 워크플로(`.github/workflows/smoke-consumer
 
 1. **`main`** 반영 후 Vercel 프로덕션(또는 `npx vercel deploy --prod`)이 끝날 때까지 기다린다.  
 2. **`GET …/health`** — `supabase.configured`, `deployment.gitCommitSha` 가 기대 커밋인지 확인.  
-3. **로컬 또는 CI**: `pnpm smoke:consumer` 또는 `pnpm smoke:consumer -- --expected-sha <커밋접두> --tenant <slug>`.  
+3. **로컬 또는 CI**: `pnpm smoke:consumer` 또는 `pnpm smoke:consumer -- --expected-sha <커밋접두> --tenant <slug>` (메뉴판 URL·**주문 허브(`/t/{tenant}/orders`)** 포함).  
 4. **Supabase**: 신규/스테이징 DB면 `verify_guest_order_rpcs.sql` 로 ①~⑤ 확인(`docs/BARRIER_FREE_NEXT_STEPS.md` 참고).  
 5. **브라우저**: 같은 문서의 「배포 후 앱 스모크」(주문 한 번·목록·시크릿 창 등) 선택 실행.

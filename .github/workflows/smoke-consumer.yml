@@ -31,5 +31,14 @@ jobs:
         with:
           node-version: "22"
 
-      - name: GET /health · robots · /t/demo 스모크
-        run: node ./scripts/smoke-consumer-menu.mjs --tenant demo
+      # workflow_run(main CI 성공): 프로덕션이 새 커밋을 반영할 때까지 SHA 검증을 재시도
+      - name: 프로덕션 스모크 (/health · robots · 메뉴 · 주문 허브)
+        env:
+          MAIN_CI_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -e
+          ARGS="--tenant demo"
+          if [ "${{ github.event_name }}" = "workflow_run" ] && [ -n "$MAIN_CI_SHA" ]; then
+            ARGS="$ARGS --expected-sha $MAIN_CI_SHA"
+          fi
+          node ./scripts/smoke-consumer-menu.mjs $ARGS

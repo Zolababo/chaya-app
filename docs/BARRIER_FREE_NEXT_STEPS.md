@@ -82,7 +82,7 @@
 4. 하단 내비 **주문 현황** 에서 해당 주문이 목록에 보이는지, 행별 **링크 복사** 후 붙여넣어 같은 기기에서 열리는지, 상세 들어가 폴링·상태가 갱신되는지 확인.
 5. **시크릿 창**(또는 다른 기기)에서 같은 주문 URL만 연 경우, 세션이 없을 때 「찾을 수 없음」·빈 목록처럼 **의도한 제한**인지 확인.
 
-CLI에서 빠른 1차 확인은 아래로 실행할 수 있습니다.
+CLI에서 빠른 1차 확인은 아래로 실행할 수 있습니다. (`scripts/smoke-consumer-menu.mjs` — `/health`, `robots.txt`, `/t/{tenant}`, **`/t/{tenant}/orders`(주문 허브 SSR)**; `--expected-sha` 가 있으면 Vercel 반영 지연을 허용하기 위해 SHA 검증만 기본 **8회×12초** 재시도.)
 
 ```bash
 pnpm smoke:consumer -- --expected-sha <main 커밋 앞 7~12자> --tenant <tenant_slug>
