@@ -77,7 +77,7 @@
 `{tenant}` 는 실제 `ChayaMenus.tenant_slug` 와 같은 값(예: `demo`)으로 바꿉니다.
 
 1. `GET https://chaya-app.vercel.app/health` → `supabase.configured`(및 필요 시 `hasUrl` 등) 확인. 배포가 맞는지 `deployment.gitCommitSha` 를 저장소 `main` 과 대조해 볼 수 있음.
-2. `https://chaya-app.vercel.app/t/{tenant}` 에서 메뉴 담기 → 장바구니로 주문 제출.
+2. `https://chaya-app.vercel.app/t/{tenant}` 에서 메뉴 담기 → 장바구니로 주문 제출. 브라우저 탭 제목이 `{tenant} · CHAYA 메뉴` 패턴으로 바뀌는지(메타데이터) 확인해 볼 수 있음.
 3. 접수 화면에서 **이 주문 주소 복사**·**(모바일·지원 브라우저) 다른 앱으로 공유** 가 동작하는지 확인.
 4. 하단 내비 **주문 현황** 에서 해당 주문이 목록에 보이는지, 행별 **링크 복사** 후 붙여넣어 같은 기기에서 열리는지, 상세 들어가 폴링·상태가 갱신되는지 확인.
 5. **시크릿 창**(또는 다른 기기)에서 같은 주문 URL만 연 경우, 세션이 없을 때 「찾을 수 없음」·빈 목록처럼 **의도한 제한**인지 확인.

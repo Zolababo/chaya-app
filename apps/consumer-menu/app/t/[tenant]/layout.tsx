@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { BottomNav } from "@/components/bottom-nav";
@@ -6,6 +7,27 @@ import { SessionHeader } from "@/components/session-header";
 import { SessionHeaderFallback } from "@/components/header-fallback";
 import { SkipToMainLink } from "@/components/skip-to-main-link";
 import { TenantTableQuerySync } from "@/components/tenant-table-query-sync";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ tenant: string }>;
+}): Promise<Metadata> {
+  const { tenant } = await params;
+  const raw = (tenant ?? "").trim();
+  const slug = raw ? decodeURIComponent(raw) : "";
+  const label = slug || "매장";
+
+  return {
+    title: label,
+    description: `${label} 주문 메뉴판`,
+    openGraph: {
+      title: label,
+      description: `${label}에서 메뉴를 확인하고 주문합니다.`,
+      type: "website",
+    },
+  };
+}
 
 export default async function TenantLayout({
   children,
