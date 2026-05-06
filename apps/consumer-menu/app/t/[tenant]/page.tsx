@@ -13,7 +13,7 @@ export default async function MenuHomePage({ params }: Props) {
   const categories = collectCategories(result.items);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-5">
       <h1 id="menu-home-heading" className="sr-only">
         메뉴판
       </h1>
@@ -44,14 +44,14 @@ export default async function MenuHomePage({ params }: Props) {
       </p>
 
       <section
-        className="rounded-2xl bg-chaya-info p-4 text-white shadow-md"
+        className="rounded-xl bg-chaya-info p-3 text-white shadow-md sm:rounded-2xl sm:p-4"
         aria-labelledby="info-heading"
         lang="en"
       >
-        <h2 id="info-heading" className="text-lg font-semibold leading-tight">
+        <h2 id="info-heading" className="text-base font-semibold leading-tight sm:text-lg">
           Self-Bar Location
         </h2>
-        <p className="mt-1 text-sm text-white/90">
+        <p className="mt-1 text-xs text-white/90 sm:text-sm">
           Visit the center aisle for fresh kimchi, sauces, and utensils.
         </p>
       </section>

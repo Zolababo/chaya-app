@@ -41,7 +41,7 @@
 - [x] **장바구니 통합**: 편한 메뉴 `담기` → `local-cart` (`addLine`) · 다른 탭 반영 이벤트와 동일
 - [x] **주문 동선 노출**: 편한 메뉴에서 장바구니·주문 현황·상세 페이지 링크
 - [x] **테넌트 레이아웃**: 본문 `<main id="main-content">` · 키보드용 「본문으로 바로가기」
-- [x] 일반 메뉴판(Menuboard): 카테고리 `aria-pressed`, 담기·상세 `aria-label`
+- [x] 일반 메뉴판(Menuboard): 카테고리 `aria-pressed`, 콤팩트 목록(행 링크·`담기` 분리) `aria-label`/포커스 링, 배달앱형 스캔 가능한 밀도
 - [x] 게스트 주문 목록·상세: 헤딩 연결 (`aria-labelledby`), 목록·상태 `aria-live`·링크 접근 이름, 편한 메뉴·주문 목록 진입 동선
 - [x] 메인 메뉴판: 스크린 전용 `h1`「메뉴판」, 하단 내비 한국어 `aria-label`(표시 영어는 `aria-hidden`으로 중복 읽기 완화)
 - [x] 주문 허브·편한 메뉴: 주요 링크·버튼 터치 높이, 오류 `aria-live`, 로딩 스켈레톤 `role="status"`
