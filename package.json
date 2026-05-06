@@ -10,7 +10,8 @@
     "dev": "turbo dev",
     "lint": "turbo lint",
     "verify": "turbo lint && turbo build",
-    "audit": "pnpm audit --audit-level=moderate"
+    "audit": "pnpm audit --audit-level=moderate",
+    "smoke:consumer": "node ./scripts/smoke-consumer-menu.mjs"
   },
   "devDependencies": {
     "turbo": "^2.3.3"

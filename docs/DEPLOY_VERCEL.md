@@ -99,6 +99,7 @@ npx vercel deploy --prod --yes
 Vercel 프로덕션/프리뷰에서는 빌드 시 주입되는 **`deployment.env`**, **`deployment.gitCommitSha`**(짧은 검증용으로 `main` 마지막 커밋과 대조 가능)가 붙을 수 있습니다. 로컬 `next dev` 에서는 보통 생략됩니다.
 
 손님 주문·화면 동선은 반드시 브라우저로 한 번 확인하세요. 순서는 **`docs/BARRIER_FREE_NEXT_STEPS.md`** 의 「배포 후 앱 스모크 (손님 주문)」를 따르면 됩니다.
+자동 1차 점검은 저장소 루트에서 `pnpm smoke:consumer -- --expected-sha <커밋SHA앞부분> --tenant <slug>` 로 실행할 수 있습니다.
 
 ---
 
