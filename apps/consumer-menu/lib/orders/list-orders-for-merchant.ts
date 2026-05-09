@@ -61,7 +61,11 @@ export async function listOrdersForMerchant(
 
   const client = createServiceSupabase();
   if (!client) {
-    return { ok: false, message: "SUPABASE_SERVICE_ROLE_KEY 또는 URL 이 설정되지 않았습니다." };
+    return {
+      ok: false,
+      message:
+        "Supabase 서버 접속 설정이 없습니다. Vercel Production에 SUPABASE_SERVICE_ROLE_KEY(또는 SUPABASE_SECRET_KEY)와 NEXT_PUBLIC_SUPABASE_URL 또는 SUPABASE_URL 을 넣고 재배포해 주세요.",
+    };
   }
 
   const filter =

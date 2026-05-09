@@ -1,0 +1,155 @@
+#!/usr/bin/env node
+
+/**
+ * Merchant parallel smoke checks (Blue/Green).
+ * - Green: /m/{tenant}/orders, /m/{tenant}/menus
+ * - Blue: legacy merchant URL reachability
+ */
+
+const DEFAULT_GREEN_BASE = "https://chaya-app.vercel.app";
+const DEFAULT_BLUE_BASE = "https://chaya-menu-test.vercel.app";
+
+function parseArgs(argv) {
+  const args = {
+    greenBase: DEFAULT_GREEN_BASE,
+    blueBase: DEFAULT_BLUE_BASE,
+    tenant: "demo",
+    retries: 3,
+    retryDelayMs: 4_000,
+  };
+  for (let i = 0; i < argv.length; i += 1) {
+    const token = argv[i];
+    if (token === "--green-base" && argv[i + 1]) {
+      args.greenBase = argv[i + 1];
+      i += 1;
+      continue;
+    }
+    if (token === "--blue-base" && argv[i + 1]) {
+      args.blueBase = argv[i + 1];
+      i += 1;
+      continue;
+    }
+    if ((token === "--tenant" || token === "-t") && argv[i + 1]) {
+      args.tenant = argv[i + 1];
+      i += 1;
+      continue;
+    }
+    if (token === "--retries" && argv[i + 1]) {
+      const n = Number.parseInt(argv[i + 1], 10);
+      if (Number.isFinite(n) && n > 0) args.retries = n;
+      i += 1;
+      continue;
+    }
+    if (token === "--retry-delay-ms" && argv[i + 1]) {
+      const n = Number.parseInt(argv[i + 1], 10);
+      if (Number.isFinite(n) && n >= 0) args.retryDelayMs = n;
+      i += 1;
+      continue;
+    }
+  }
+  return args;
+}
+
+const FETCH_TIMEOUT_MS = 20_000;
+
+async function fetchText(url) {
+  const res = await fetch(url, {
+    headers: { "user-agent": "chaya-merchant-smoke/1.0" },
+    cache: "no-store",
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  });
+  const body = await res.text();
+  return { res, body };
+}
+
+function pass(label, detail) {
+  console.log(`PASS ${label}: ${detail}`);
+}
+
+function fail(label, detail) {
+  console.error(`FAIL ${label}: ${detail}`);
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function checkWithRetry({
+  label,
+  url,
+  retries,
+  retryDelayMs,
+  markerTexts,
+}) {
+  for (let attempt = 1; attempt <= retries; attempt += 1) {
+    try {
+      const { res, body } = await fetchText(url);
+      if (!res.ok) {
+        if (attempt === retries) {
+          fail(label, `${res.status}`);
+          return false;
+        }
+      } else {
+        const hasMarker = markerTexts.some((t) => body.includes(t));
+        if (hasMarker) {
+          pass(label, `${res.status} (attempt ${attempt}/${retries})`);
+          return true;
+        }
+        if (attempt === retries) {
+          fail(label, "marker text missing");
+          return false;
+        }
+      }
+    } catch (e) {
+      if (attempt === retries) {
+        fail(label, e instanceof Error ? e.message : String(e));
+        return false;
+      }
+    }
+
+    await sleep(retryDelayMs);
+  }
+  return false;
+}
+
+async function main() {
+  const { greenBase, blueBase, tenant, retries, retryDelayMs } = parseArgs(process.argv.slice(2));
+  const greenRoot = greenBase.replace(/\/+$/, "");
+  const blueRoot = blueBase.replace(/\/+$/, "");
+  const greenOrdersUrl = `${greenRoot}/m/${encodeURIComponent(tenant)}/orders`;
+  const greenMenusUrl = `${greenRoot}/m/${encodeURIComponent(tenant)}/menus`;
+  const blueUrl = `${blueRoot}/`;
+
+  const checks = await Promise.all([
+    checkWithRetry({
+      label: "green /m/{tenant}/orders",
+      url: greenOrdersUrl,
+      retries,
+      retryDelayMs,
+      markerTexts: ["주문 큐", "접근할 수 없습니다"],
+    }),
+    checkWithRetry({
+      label: "green /m/{tenant}/menus",
+      url: greenMenusUrl,
+      retries,
+      retryDelayMs,
+      markerTexts: ["메뉴 관리", "접근할 수 없습니다"],
+    }),
+    checkWithRetry({
+      label: "blue merchant url",
+      url: blueUrl,
+      retries,
+      retryDelayMs,
+      markerTexts: ["CHAYA", "Restaurant", "관리자", "Admin"],
+    }),
+  ]);
+
+  if (checks.includes(false)) {
+    process.exitCode = 1;
+    console.error("Merchant parallel smoke failed");
+    return;
+  }
+  console.log("Merchant parallel smoke passed");
+}
+
+main();

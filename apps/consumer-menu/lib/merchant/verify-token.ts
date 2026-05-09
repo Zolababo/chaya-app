@@ -5,6 +5,5 @@ export function verifyMerchantToken(token: string | undefined | null): boolean {
   const expected = process.env.MERCHANT_ORDERS_TOKEN?.trim();
   if (!expected || token == null) return false;
   const got = String(token).trim();
-  if (expected.length !== got.length) return false;
   return timingSafeEqualUtf8(expected, got);
 }

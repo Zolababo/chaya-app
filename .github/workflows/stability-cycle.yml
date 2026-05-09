@@ -1,0 +1,53 @@
+name: Stability cycle
+
+on:
+  workflow_dispatch:
+  schedule:
+    # daily UTC 07:00 (KST 16:00)
+    - cron: "0 7 * * *"
+
+concurrency:
+  group: stability-cycle-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Run stability cycle (non-strict cutover)
+        run: |
+          set -e
+          node ./scripts/run-stability-cycle.mjs --tenant demo --checklist-file docs/merchant-validation-demo-20260506.md --out-file docs/STABILITY_REPORT.md
+
+      - name: Generate certification readiness pack
+        run: |
+          set -e
+          node ./scripts/generate-cert-readiness-pack.mjs
+
+      - name: Upload stability report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: stability-report
+          path: docs/STABILITY_REPORT.md
+          if-no-files-found: error
+
+      - name: Upload certification pack artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cert-readiness-pack
+          path: docs/CERT_READINESS_PACK.md
+          if-no-files-found: error
+
+      - name: Add step summary
+        run: |
+          echo "## Stability cycle completed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Tenant: demo" >> $GITHUB_STEP_SUMMARY
+          echo "- Report: docs/STABILITY_REPORT.md (artifact uploaded)" >> $GITHUB_STEP_SUMMARY
+          echo "- Certification pack: docs/CERT_READINESS_PACK.md (artifact uploaded)" >> $GITHUB_STEP_SUMMARY

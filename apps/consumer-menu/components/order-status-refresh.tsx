@@ -1,7 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 
 import { ORDER_STATUS_POLL_MS } from "@/lib/orders/status-poll";
 
@@ -12,7 +12,17 @@ type Props = {
 
 export function OrderStatusRefresh({ intervalMs = ORDER_STATUS_POLL_MS }: Props) {
   const router = useRouter();
+  const pathname = usePathname();
   const [reducedMotion, setReducedMotion] = useState(false);
+
+  /** 점주 `/m/*` 는 httpOnly 쿠키 기준 인증인데, `router.refresh()` RSC 재요청에서 쿠키가 빠져 “접근 불가”로 바뀌는 브라우저·환경이 있음 → 전체 로드로 맞춤. */
+  const reloadLatest = useCallback(() => {
+    if (pathname?.startsWith("/m/")) {
+      window.location.reload();
+      return;
+    }
+    router.refresh();
+  }, [pathname, router]);
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -25,18 +35,18 @@ export function OrderStatusRefresh({ intervalMs = ORDER_STATUS_POLL_MS }: Props)
   useEffect(() => {
     if (reducedMotion) return;
     const id = window.setInterval(() => {
-      router.refresh();
+      reloadLatest();
     }, intervalMs);
     return () => window.clearInterval(id);
-  }, [router, intervalMs, reducedMotion]);
+  }, [intervalMs, reducedMotion, reloadLatest]);
 
   useEffect(() => {
     const onVisibility = () => {
-      if (document.visibilityState === "visible") router.refresh();
+      if (document.visibilityState === "visible") reloadLatest();
     };
     document.addEventListener("visibilitychange", onVisibility);
     return () => document.removeEventListener("visibilitychange", onVisibility);
-  }, [router]);
+  }, [reloadLatest]);
 
   return (
     <div
@@ -46,7 +56,7 @@ export function OrderStatusRefresh({ intervalMs = ORDER_STATUS_POLL_MS }: Props)
     >
       <button
         type="button"
-        onClick={() => router.refresh()}
+        onClick={() => reloadLatest()}
         aria-label="서버에서 최신 목록으로 새로고침"
         className="min-h-[44px] rounded-xl border border-chaya-border px-4 py-2 text-sm font-semibold text-chaya-primary dark:border-zinc-700"
       >

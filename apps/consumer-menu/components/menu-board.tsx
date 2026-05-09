@@ -14,6 +14,7 @@ type Props = {
 };
 
 const THUMB_SZ = "h-14 w-14 sm:h-16 sm:w-16";
+const ALL_CATEGORY = "전체";
 
 /** 목록 행용 작은 썸네일 — 이름·가격은 옆 링크에서 읽히므로 alt 비움 */
 function MenuRowThumb({ imageUrl }: { imageUrl: string | null }) {
@@ -32,7 +33,8 @@ function MenuRowThumb({ imageUrl }: { imageUrl: string | null }) {
 }
 
 export function MenuBoard({ tenant, items, categories }: Props) {
-  const [active, setActive] = useState<string | null>(categories[0] ?? null);
+  const tabCategories = useMemo(() => [ALL_CATEGORY, ...categories], [categories]);
+  const [active, setActive] = useState<string>(ALL_CATEGORY);
   const [addedToast, setAddedToast] = useState(false);
   const toastHide = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -49,7 +51,7 @@ export function MenuBoard({ tenant, items, categories }: Props) {
   };
 
   const filtered = useMemo(() => {
-    if (!active || categories.length <= 1) return items;
+    if (active === ALL_CATEGORY || categories.length <= 1) return items;
     return items.filter((i) => (i.category?.trim() || "기타") === active);
   }, [items, active, categories.length]);
 
@@ -67,12 +69,12 @@ export function MenuBoard({ tenant, items, categories }: Props) {
         </div>
       </div>
 
-      {categories.length > 1 ? (
+      {tabCategories.length > 1 ? (
         <nav
           className="flex gap-1.5 overflow-x-auto pb-1.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           aria-label="카테고리"
         >
-          {categories.map((cat) => {
+          {tabCategories.map((cat) => {
             const selected = active === cat;
             return (
               <button
@@ -96,7 +98,7 @@ export function MenuBoard({ tenant, items, categories }: Props) {
       {/* 배달앱형: 한 열 콤팩트 목록 — 행 탭 = 상세, 담기는 별도 (터치 44px 유지) */}
       {filtered.length > 0 ? (
         <ul
-          aria-label={`${active ? `${active} 카테고리 ` : ""}메뉴 목록`}
+          aria-label={`${active !== ALL_CATEGORY ? `${active} 카테고리 ` : ""}메뉴 목록`}
           className="divide-y divide-chaya-border overflow-hidden rounded-xl border border-chaya-border bg-chaya-surface dark:divide-zinc-800 dark:border-zinc-700 dark:bg-zinc-950"
         >
           {filtered.map((item) => (

@@ -7,6 +7,7 @@ type Props = {
 /** 대외 「영업 도입 홍보」와 구분하기 위한 안내 — docs/ARCHITECTURE.md §5.1 과 정합 */
 export function MerchantPreviewBanner({ tenantSlug }: Props) {
   const t = encodeURIComponent(tenantSlug);
+  const legacyMerchantUrl = process.env.NEXT_PUBLIC_LEGACY_MERCHANT_URL?.trim() || null;
 
   return (
     <aside
@@ -27,6 +28,20 @@ export function MerchantPreviewBanner({ tenantSlug }: Props) {
           손님 메뉴판 열기 (/t/{tenantSlug})
         </Link>
       </p>
+      {legacyMerchantUrl ? (
+        <p className="mt-2 text-xs text-amber-900 dark:text-amber-100/90">
+          병행 운영 중이면{" "}
+          <a
+            href={legacyMerchantUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="font-medium underline underline-offset-2"
+          >
+            기존 점주 데모
+          </a>
+          에서도 최종 확인해 주세요.
+        </p>
+      ) : null}
     </aside>
   );
 }

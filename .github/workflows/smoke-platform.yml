@@ -1,0 +1,42 @@
+# 프로덕션 통합 스모크 (소비자 + 점주 Blue/Green 가용성)
+name: Smoke platform
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+  schedule:
+    # 매일 UTC 06:30 (한국 15:30)
+    - cron: "30 6 * * *"
+
+concurrency:
+  group: smoke-platform-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  prod-smoke:
+    if: >
+      ${{ github.event_name == 'workflow_dispatch' ||
+          github.event_name == 'schedule' ||
+          (github.event_name == 'workflow_run' &&
+           github.event.workflow_run.conclusion == 'success' &&
+           github.event.workflow_run.head_branch == 'main') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: 플랫폼 스모크 (/health · 메뉴 · 주문허브 · 점주 Blue/Green)
+        env:
+          MAIN_CI_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -e
+          ARGS="--tenant demo --merchant-retries 5 --merchant-retry-delay-ms 5000"
+          if [ "${{ github.event_name }}" = "workflow_run" ] && [ -n "$MAIN_CI_SHA" ]; then
+            ARGS="$ARGS --expected-sha $MAIN_CI_SHA"
+          fi
+          node ./scripts/smoke-platform.mjs $ARGS

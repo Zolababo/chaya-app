@@ -55,3 +55,8 @@ jobs:
           npm install -g vercel@latest
           cd apps/consumer-menu
           vercel deploy --prod --yes --token "$VERCEL_TOKEN"
+
+      - name: Post-deploy stability gate (platform smoke)
+        run: |
+          set -e
+          node ./scripts/smoke-platform.mjs --tenant demo --expected-sha ${{ github.event.workflow_run.head_sha }} --merchant-retries 5 --merchant-retry-delay-ms 5000

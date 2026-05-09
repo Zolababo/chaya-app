@@ -51,11 +51,21 @@ function successMessage(code: string | undefined): string | null {
   }
 }
 
+function minutesSince(createdAt: string): number {
+  const t = Date.parse(createdAt);
+  if (!Number.isFinite(t)) return 0;
+  const diffMs = Date.now() - t;
+  if (diffMs <= 0) return 0;
+  return Math.floor(diffMs / 60000);
+}
+
 export default async function MerchantOrdersPage({ params, searchParams }: Props) {
   const { tenant } = await params;
   const { token, e, ok, status: statusParam } = await searchParams;
   const rawFilter = typeof statusParam === "string" ? statusParam.trim() : "";
   const statusFilter = isMerchantOrderStatus(rawFilter) ? rawFilter : null;
+  const hasConfiguredMerchantToken = Boolean(process.env.MERCHANT_ORDERS_TOKEN?.trim());
+  const tokenExample = `/m/${encodeURIComponent(tenant)}/orders?token=YOUR_MERCHANT_ORDERS_TOKEN`;
 
   if (!(await resolveMerchantToken(token))) {
     return (
@@ -66,12 +76,26 @@ export default async function MerchantOrdersPage({ params, searchParams }: Props
           <span className="font-mono">?token=</span> 으로 한 번 열면 브라우저에 안전하게 저장됩니다. 쿠키를 지웠다면
           다시 붙여 주세요.
         </p>
+        {!hasConfiguredMerchantToken ? (
+          <p
+            className="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100"
+            role="alert"
+            aria-live="assertive"
+          >
+            서버 환경변수 <span className="font-mono">MERCHANT_ORDERS_TOKEN</span> 이 설정되지 않았습니다. Vercel
+            프로젝트 환경변수 추가 후 재배포해 주세요.
+          </p>
+        ) : null}
+        <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
+          예시 접속 URL: <span className="font-mono">{tokenExample}</span>
+        </p>
       </div>
     );
   }
 
-  const [list, pendingCount] = await Promise.all([
+  const [list, allOrdersForSummary, pendingCount] = await Promise.all([
     listOrdersForMerchant(tenant, statusFilter),
+    statusFilter ? listOrdersForMerchant(tenant) : Promise.resolve(null),
     countMerchantPendingOrders(tenant),
   ]);
   const errMsg = errorMessage(e);
@@ -86,6 +110,19 @@ export default async function MerchantOrdersPage({ params, searchParams }: Props
         ? "bg-chaya-primary text-chaya-on-primary shadow-sm"
         : "border border-chaya-border bg-chaya-surface text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900",
     ].join(" ");
+  const summaryRows = !list.ok
+    ? []
+    : statusFilter
+      ? allOrdersForSummary && allOrdersForSummary.ok
+        ? allOrdersForSummary.rows
+        : []
+      : list.rows;
+  const activeRows = summaryRows.filter((row) =>
+    ["pending", "accepted", "preparing", "ready"].includes(row.status),
+  );
+  const preparingRows = summaryRows.filter((row) => ["accepted", "preparing"].includes(row.status));
+  const readyRows = summaryRows.filter((row) => row.status === "ready");
+  const totalActiveSales = activeRows.reduce((sum, row) => sum + row.total_price, 0);
 
   return (
     <div className="mx-auto min-h-dvh max-w-4xl px-4 py-8">
@@ -119,6 +156,98 @@ export default async function MerchantOrdersPage({ params, searchParams }: Props
       </div>
 
       <MerchantPendingDeltaNotice tenantSlug={tenant} pendingCount={pendingCount} />
+
+      {list.ok ? (
+        <section className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3" aria-label="주문 요약">
+          <article className="rounded-xl border border-chaya-border bg-white p-4 dark:border-zinc-700 dark:bg-zinc-950">
+            <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">신규 주문</p>
+            <p className="mt-2 text-2xl font-bold tabular-nums text-chaya-primary">
+              {summaryRows.filter((row) => row.status === "pending").length}
+            </p>
+          </article>
+          <article className="rounded-xl border border-chaya-border bg-white p-4 dark:border-zinc-700 dark:bg-zinc-950">
+            <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+              조리 진행중
+            </p>
+            <p className="mt-2 text-2xl font-bold tabular-nums text-emerald-700 dark:text-emerald-400">
+              {preparingRows.length}
+            </p>
+          </article>
+          <article className="rounded-xl border border-chaya-border bg-white p-4 dark:border-zinc-700 dark:bg-zinc-950">
+            <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+              진행 주문 매출
+            </p>
+            <p className="mt-2 text-2xl font-bold tabular-nums text-zinc-900 dark:text-zinc-50">
+              {totalActiveSales.toLocaleString("ko-KR")}원
+            </p>
+          </article>
+        </section>
+      ) : null}
+
+      {list.ok ? (
+        <section className="mb-6 grid grid-cols-1 gap-3 lg:grid-cols-3" aria-label="상태 보드">
+          <article className="rounded-xl border border-chaya-border bg-white p-4 dark:border-zinc-700 dark:bg-zinc-950">
+            <h2 className="mb-3 flex items-center justify-between text-base font-semibold">
+              <span>신규</span>
+              <span className="rounded-full bg-chaya-primary px-2 py-0.5 text-xs font-bold text-white">
+                {summaryRows.filter((row) => row.status === "pending").length}
+              </span>
+            </h2>
+            <div className="space-y-2">
+              {summaryRows
+                .filter((row) => row.status === "pending")
+                .slice(0, 3)
+                .map((row) => (
+                  <div key={row.id} className="rounded-lg border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-800">
+                    <p className="font-semibold">{row.table_no ?? "테이블 미지정"}</p>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400">{minutesSince(row.created_at)}분 전 접수</p>
+                  </div>
+                ))}
+              {summaryRows.filter((row) => row.status === "pending").length === 0 ? (
+                <p className="text-sm text-zinc-500 dark:text-zinc-400">신규 주문이 없습니다.</p>
+              ) : null}
+            </div>
+          </article>
+          <article className="rounded-xl border border-chaya-border bg-white p-4 dark:border-zinc-700 dark:bg-zinc-950">
+            <h2 className="mb-3 flex items-center justify-between text-base font-semibold">
+              <span>조리중</span>
+              <span className="rounded-full bg-zinc-800 px-2 py-0.5 text-xs font-bold text-white dark:bg-zinc-200 dark:text-zinc-900">
+                {preparingRows.length}
+              </span>
+            </h2>
+            <div className="space-y-2">
+              {preparingRows.slice(0, 3).map((row) => (
+                <div key={row.id} className="rounded-lg border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-800">
+                  <p className="font-semibold">{row.table_no ?? "테이블 미지정"}</p>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">{orderStatusLabel(row.status)}</p>
+                </div>
+              ))}
+              {preparingRows.length === 0 ? (
+                <p className="text-sm text-zinc-500 dark:text-zinc-400">조리중인 주문이 없습니다.</p>
+              ) : null}
+            </div>
+          </article>
+          <article className="rounded-xl border border-chaya-border bg-white p-4 dark:border-zinc-700 dark:bg-zinc-950">
+            <h2 className="mb-3 flex items-center justify-between text-base font-semibold">
+              <span>서빙 대기</span>
+              <span className="rounded-full bg-emerald-600 px-2 py-0.5 text-xs font-bold text-white">
+                {readyRows.length}
+              </span>
+            </h2>
+            <div className="space-y-2">
+              {readyRows.slice(0, 3).map((row) => (
+                <div key={row.id} className="rounded-lg border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-800">
+                  <p className="font-semibold">{row.table_no ?? "테이블 미지정"}</p>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">{minutesSince(row.created_at)}분 경과</p>
+                </div>
+              ))}
+              {readyRows.length === 0 ? (
+                <p className="text-sm text-zinc-500 dark:text-zinc-400">서빙 대기 주문이 없습니다.</p>
+              ) : null}
+            </div>
+          </article>
+        </section>
+      ) : null}
 
       <div className="mb-4 flex flex-wrap gap-2" aria-label="주문 상태 필터">
         <Link href={filterHref(null)} className={chip(statusFilter == null)}>

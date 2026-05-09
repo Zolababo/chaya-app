@@ -1,5 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 
+import { getSupabaseServiceUrl } from "./resolve-service-config";
+
 function isPlausibleSupabaseUrl(url: string): boolean {
   try {
     const u = new URL(url);
@@ -16,7 +18,7 @@ function isPlausibleSupabaseUrl(url: string): boolean {
  * 세션 저장 없음 — 서버 컴포넌트에서 매 요청 생성해도 무방합니다.
  */
 export function createConsumerSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  const url = getSupabaseServiceUrl();
   const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
   if (!url || !anon) return null;
   if (!isPlausibleSupabaseUrl(url) || anon.length < 20) return null;

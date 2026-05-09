@@ -114,10 +114,18 @@ GitHub에서 **`Smoke consumer`** 워크플로(`.github/workflows/smoke-consumer
 
 ---
 
-## 9. 한 번에 도는 운영 순서 (소비자 앱 기준)
+## 9. 한 번에 도는 운영 순서 (소비자/점주 안정성 기준)
 
 1. **`main`** 반영 후 Vercel 프로덕션(또는 `npx vercel deploy --prod`)이 끝날 때까지 기다린다.  
 2. **`GET …/health`** — `supabase.configured`, `deployment.gitCommitSha` 가 기대 커밋인지 확인.  
-3. **로컬 또는 CI**: `pnpm smoke:consumer` 또는 `pnpm smoke:consumer -- --expected-sha <커밋접두> --tenant <slug>` (메뉴판 URL·**주문 허브(`/t/{tenant}/orders`)** 포함).  
-4. **Supabase**: 신규/스테이징 DB면 `verify_guest_order_rpcs.sql` 로 ①~⑤ 확인(`docs/BARRIER_FREE_NEXT_STEPS.md` 참고).  
-5. **브라우저**: 같은 문서의 「배포 후 앱 스모크」(주문 한 번·목록·시크릿 창 등) 선택 실행.
+3. **소비자 스모크**: `pnpm smoke:consumer` 또는 `pnpm smoke:consumer -- --expected-sha <커밋접두> --tenant <slug>` (메뉴판 URL·**주문 허브(`/t/{tenant}/orders`)** 포함).  
+4. **점주 병행 스모크**: `pnpm smoke:merchant -- --tenant <slug>` (Green `/m/{tenant}/orders`,`/menus` + Blue 데모 URL 가용성).  
+5. **통합 안정성 게이트**: `pnpm smoke:platform -- --tenant <slug> --expected-sha <커밋접두>` (소비자+점주 연속 점검).  
+6. **Supabase**: 신규/스테이징 DB면 `verify_guest_order_rpcs.sql` 로 ①~⑤ 확인(`docs/BARRIER_FREE_NEXT_STEPS.md` 참고).  
+7. **브라우저**: 같은 문서의 「배포 후 앱 스모크」(주문 한 번·목록·시크릿 창 등) 선택 실행.
+
+추가로 운영 리포트까지 한 번에 만들려면:
+
+```bash
+pnpm stability:cycle -- --tenant <slug> --checklist-file docs/merchant-validation-<slug>-<yyyymmdd>.md --out-file docs/STABILITY_REPORT.md
+```

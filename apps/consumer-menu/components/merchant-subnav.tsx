@@ -37,6 +37,12 @@ export function MerchantSubnav({ tenant, pendingOrderCount }: Props) {
         메뉴 관리
       </Link>
       <Link
+        href={`/m/${t}/readiness`}
+        className="inline-flex min-h-[44px] items-center rounded-lg px-3 py-2 text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900"
+      >
+        운영 체크
+      </Link>
+      <Link
         href="/m/logout"
         className="ml-auto inline-flex min-h-[44px] items-center rounded-lg px-3 py-2 text-zinc-500 underline-offset-2 hover:underline dark:text-zinc-500"
         aria-label="점주 세션 로그아웃"
