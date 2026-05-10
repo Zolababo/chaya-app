@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Be_Vietnam_Pro } from "next/font/google";
 import "./globals.css";
 
@@ -23,6 +23,24 @@ export const metadata: Metadata = {
     template: "%s · CHAYA 메뉴",
   },
   description: "매장 주문 메뉴판",
+  /** 홈 화면 추가 시 짧은 이름(소비자 `/t/*`·점주 `/m/*`·`/ops` 공통). */
+  applicationName: "CHAYA",
+  appleWebApp: {
+    capable: true,
+    title: "CHAYA",
+    statusBarStyle: "default",
+  },
+};
+
+/** 모바일 브라우저·노치 영역(safe-area는 컴포넌트에서 이미 사용) 대응 */
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#fcf9f8" },
+    { media: "(prefers-color-scheme: dark)", color: "#18181b" },
+  ],
 };
 
 export default function RootLayout({
@@ -32,7 +50,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
-      <body className={`${chayaSans.variable} font-sans antialiased`}>{children}</body>
+      <body className={`${chayaSans.variable} touch-manipulation font-sans antialiased`}>{children}</body>
     </html>
   );
 }

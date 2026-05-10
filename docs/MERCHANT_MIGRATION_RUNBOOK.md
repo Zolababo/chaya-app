@@ -1,5 +1,7 @@
 # Merchant Migration Runbook (Demo -> `/m/*`)
 
+Vercel·Supabase·모바일까지 한 번에 점검하려면 **`docs/RUNTIME_GO_LIVE_CHECKLIST.md`** 를 함께 보세요.
+
 기존 점주 데모(`chaya-menu-test`)가 실제 주문 운영과 연결되어 있다면, 즉시 전면 전환보다 병행 운영이 안전합니다.
 
 ## 1) 결론 먼저

@@ -8,7 +8,7 @@ export default async function OpsHomePage() {
   await requirePlatformOperator("/ops");
 
   return (
-    <div className="mx-auto min-h-dvh max-w-2xl px-4 py-10">
+    <div className="mx-auto min-h-dvh max-w-2xl px-4 py-10 pb-[max(2.5rem,env(safe-area-inset-bottom))]">
       <header className="mb-10 border-b border-chaya-border pb-6 dark:border-zinc-700">
         <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Platform</p>
         <h1 className="mt-2 text-3xl font-bold">운영 대시보드</h1>

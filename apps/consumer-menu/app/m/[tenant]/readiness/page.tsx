@@ -20,7 +20,7 @@ export default async function MerchantReadinessPage({ params }: Props) {
   const pendingCount = await countMerchantPendingOrders(tenant);
 
   return (
-    <div className="mx-auto min-h-dvh max-w-4xl px-4 py-8">
+    <div className="mx-auto min-h-dvh max-w-4xl px-4 py-8 pb-[max(2rem,env(safe-area-inset-bottom))]">
       <header className="mb-2 border-b border-chaya-border pb-4 dark:border-zinc-700">
         <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Merchant</p>
         <h1 className="text-2xl font-bold">운영 체크 — {tenant}</h1>

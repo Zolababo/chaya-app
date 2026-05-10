@@ -30,6 +30,12 @@
   --font-sans: var(--font-chaya-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
+html {
+  /* iOS 가로·텍스트 크기 보정 */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);

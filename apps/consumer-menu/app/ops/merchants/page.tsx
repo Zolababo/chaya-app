@@ -62,7 +62,7 @@ export default async function OpsMerchantsPage({ searchParams }: Props) {
   const ok = typeof sp.ok === "string" ? sp.ok : null;
 
   return (
-    <div className="mx-auto min-h-dvh max-w-4xl px-4 py-10">
+    <div className="mx-auto min-h-dvh max-w-4xl px-4 py-10 pb-[max(2.5rem,env(safe-area-inset-bottom))]">
       <header className="mb-8 flex flex-wrap items-end justify-between gap-4 border-b border-chaya-border pb-6 dark:border-zinc-700">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Platform</p>

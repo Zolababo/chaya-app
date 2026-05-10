@@ -31,7 +31,7 @@ export default async function MerchantLoginPage({ searchParams }: Props) {
   const err = alertMessage(typeof sp.e === "string" ? sp.e : undefined);
 
   return (
-    <div className="mx-auto min-h-dvh max-w-md px-4 py-10">
+    <div className="mx-auto min-h-dvh max-w-md px-4 py-10 pb-[max(2.5rem,env(safe-area-inset-bottom))]">
       <header className="mb-8">
         <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Merchant</p>
         <h1 className="mt-2 text-2xl font-bold">점주 로그인</h1>

@@ -39,7 +39,7 @@ export default async function TenantLayout({
   const { tenant } = await params;
 
   return (
-    <div className="flex min-h-dvh flex-col bg-chaya-bg pb-28 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
+    <div className="flex min-h-dvh flex-col bg-chaya-bg pb-[max(7rem,calc(env(safe-area-inset-bottom)+5.5rem))] text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
       <SkipToMainLink />
       <GuestSessionCookieSync />
       <Suspense fallback={<SessionHeaderFallback />}>

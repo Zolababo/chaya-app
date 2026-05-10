@@ -101,7 +101,7 @@ export default async function MerchantOrdersPage({ params, searchParams }: Props
   const totalActiveSales = activeRows.reduce((sum, row) => sum + row.total_price, 0);
 
   return (
-    <div className="mx-auto min-h-dvh max-w-4xl px-4 py-8">
+    <div className="mx-auto min-h-dvh max-w-4xl px-4 py-8 pb-[max(2rem,env(safe-area-inset-bottom))]">
       <header className="mb-8 border-b border-chaya-border pb-4 dark:border-zinc-700">
         <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Merchant</p>
         <div className="flex flex-wrap items-baseline gap-3">
