@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 
-import { getMerchantTokenForAction } from "@/lib/merchant/get-merchant-token-for-action";
+import { requireMerchantOrderMutation } from "@/lib/merchant/require-merchant-action";
 import { tryRemoveMenuImageForTenant } from "@/lib/menus/remove-menu-image-from-url";
 import { pickUploadedMenuImageUrl } from "@/lib/menus/upload-menu-image";
 import { createServiceSupabase } from "@/lib/supabase/create-service-client";
@@ -17,6 +17,14 @@ function redirectMenus(tenant: string, err?: string): never {
   if (err) q.set("e", err);
   const suffix = q.toString() ? `?${q}` : "";
   redirect(`/m/${encodeURIComponent(tenant)}/menus${suffix}`);
+}
+
+async function requireMenusOwner(formData: FormData): Promise<void> {
+  const { role } = await requireMerchantOrderMutation(formData);
+  if (role !== "owner") {
+    const tenant = String(formData.get("tenant_slug") ?? "").trim();
+    redirect(`/m/${encodeURIComponent(tenant || "_")}/orders?e=no_menus_access`);
+  }
 }
 
 function parsePrice(raw: FormDataEntryValue | null): number | null {
@@ -63,8 +71,7 @@ async function nextSortOrder(
 }
 
 export async function createMenuFromForm(formData: FormData): Promise<void> {
-  const token = await getMerchantTokenForAction(formData);
-  if (!token) redirect("/m/forbidden");
+  await requireMenusOwner(formData);
 
   const tenant = String(formData.get("tenant_slug") ?? "").trim();
   const name = trimStr(formData.get("name"), MAX_NAME);
@@ -99,8 +106,7 @@ export async function createMenuFromForm(formData: FormData): Promise<void> {
 }
 
 export async function updateMenuFromForm(formData: FormData): Promise<void> {
-  const token = await getMerchantTokenForAction(formData);
-  if (!token) redirect("/m/forbidden");
+  await requireMenusOwner(formData);
 
   const tenant = String(formData.get("tenant_slug") ?? "").trim();
   const menuId = String(formData.get("menu_id") ?? "").trim();
@@ -153,8 +159,7 @@ export async function updateMenuFromForm(formData: FormData): Promise<void> {
 }
 
 export async function deleteMenuFromForm(formData: FormData): Promise<void> {
-  const token = await getMerchantTokenForAction(formData);
-  if (!token) redirect("/m/forbidden");
+  await requireMenusOwner(formData);
 
   const tenant = String(formData.get("tenant_slug") ?? "").trim();
   const menuId = String(formData.get("menu_id") ?? "").trim();

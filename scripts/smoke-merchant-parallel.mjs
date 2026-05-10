@@ -126,14 +126,14 @@ async function main() {
       url: greenOrdersUrl,
       retries,
       retryDelayMs,
-      markerTexts: ["주문 큐", "접근할 수 없습니다"],
+      markerTexts: ["주문 큐", "점주 로그인"],
     }),
     checkWithRetry({
       label: "green /m/{tenant}/menus",
       url: greenMenusUrl,
       retries,
       retryDelayMs,
-      markerTexts: ["메뉴 관리", "접근할 수 없습니다"],
+      markerTexts: ["메뉴 관리", "점주 로그인"],
     }),
     checkWithRetry({
       label: "blue merchant url",

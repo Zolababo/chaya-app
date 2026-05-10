@@ -5,7 +5,7 @@ import { MerchantPendingDeltaNotice } from "@/components/merchant-pending-delta-
 import { MerchantPreviewBanner } from "@/components/merchant-preview-banner";
 import { MerchantSubnav } from "@/components/merchant-subnav";
 import { OrderStatusRefresh } from "@/components/order-status-refresh";
-import { resolveMerchantToken } from "@/lib/merchant/resolve-merchant-token";
+import { requireMerchantForTenant } from "@/lib/merchant/merchant-access";
 import {
   countMerchantPendingOrders,
   listOrdersForMerchant,
@@ -22,7 +22,7 @@ export const dynamic = "force-dynamic";
 
 type Props = {
   params: Promise<{ tenant: string }>;
-  searchParams: Promise<{ token?: string; e?: string; ok?: string; status?: string }>;
+  searchParams: Promise<{ e?: string; ok?: string; status?: string }>;
 };
 
 function errorMessage(code: string | undefined): string | null {
@@ -34,6 +34,8 @@ function errorMessage(code: string | undefined): string | null {
       return "서버에 SUPABASE_SERVICE_ROLE_KEY 가 없습니다.";
     case "db":
       return "상태 저장에 실패했습니다. DB 권한·RLS·컬럼을 확인해 주세요.";
+    case "no_menus_access":
+      return "메뉴 관리는 소장(OWNER) 계정만 사용할 수 있습니다.";
     default:
       return "처리 중 오류가 났습니다.";
   }
@@ -61,37 +63,11 @@ function minutesSince(createdAt: string): number {
 
 export default async function MerchantOrdersPage({ params, searchParams }: Props) {
   const { tenant } = await params;
-  const { token, e, ok, status: statusParam } = await searchParams;
+  const { e, ok, status: statusParam } = await searchParams;
   const rawFilter = typeof statusParam === "string" ? statusParam.trim() : "";
   const statusFilter = isMerchantOrderStatus(rawFilter) ? rawFilter : null;
-  const hasConfiguredMerchantToken = Boolean(process.env.MERCHANT_ORDERS_TOKEN?.trim());
-  const tokenExample = `/m/${encodeURIComponent(tenant)}/orders?token=YOUR_MERCHANT_ORDERS_TOKEN`;
 
-  if (!(await resolveMerchantToken(token))) {
-    return (
-      <div className="mx-auto max-w-lg p-6">
-        <h1 className="text-xl font-bold">접근할 수 없습니다</h1>
-        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-          <span className="font-mono">MERCHANT_ORDERS_TOKEN</span> 과 같은 값을{" "}
-          <span className="font-mono">?token=</span> 으로 한 번 열면 브라우저에 안전하게 저장됩니다. 쿠키를 지웠다면
-          다시 붙여 주세요.
-        </p>
-        {!hasConfiguredMerchantToken ? (
-          <p
-            className="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100"
-            role="alert"
-            aria-live="assertive"
-          >
-            서버 환경변수 <span className="font-mono">MERCHANT_ORDERS_TOKEN</span> 이 설정되지 않았습니다. Vercel
-            프로젝트 환경변수 추가 후 재배포해 주세요.
-          </p>
-        ) : null}
-        <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
-          예시 접속 URL: <span className="font-mono">{tokenExample}</span>
-        </p>
-      </div>
-    );
-  }
+  const { role } = await requireMerchantForTenant(tenant);
 
   const [list, allOrdersForSummary, pendingCount] = await Promise.all([
     listOrdersForMerchant(tenant, statusFilter),
@@ -149,7 +125,7 @@ export default async function MerchantOrdersPage({ params, searchParams }: Props
 
       <MerchantPreviewBanner tenantSlug={tenant} />
 
-      <MerchantSubnav tenant={tenant} pendingOrderCount={pendingCount} />
+      <MerchantSubnav tenant={tenant} pendingOrderCount={pendingCount} canManageMenus={role === "owner"} />
 
       <div className="mb-6">
         <OrderStatusRefresh />

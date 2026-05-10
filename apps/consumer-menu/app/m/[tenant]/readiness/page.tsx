@@ -2,31 +2,20 @@ import Link from "next/link";
 
 import { MerchantPreviewBanner } from "@/components/merchant-preview-banner";
 import { MerchantSubnav } from "@/components/merchant-subnav";
-import { resolveMerchantToken } from "@/lib/merchant/resolve-merchant-token";
+import { requireMerchantForTenant } from "@/lib/merchant/merchant-access";
 import { countMerchantPendingOrders } from "@/lib/orders/list-orders-for-merchant";
 
 export const dynamic = "force-dynamic";
 
 type Props = {
   params: Promise<{ tenant: string }>;
-  searchParams: Promise<{ token?: string }>;
 };
 
-export default async function MerchantReadinessPage({ params, searchParams }: Props) {
+export default async function MerchantReadinessPage({ params }: Props) {
   const { tenant } = await params;
-  const { token } = await searchParams;
 
-  if (!(await resolveMerchantToken(token))) {
-    return (
-      <div className="mx-auto max-w-lg p-6">
-        <h1 className="text-xl font-bold">접근할 수 없습니다</h1>
-        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-          <span className="font-mono">MERCHANT_ORDERS_TOKEN</span> 과 같은 값을{" "}
-          <span className="font-mono">?token=</span> 으로 한 번 열면 쿠키에 저장됩니다.
-        </p>
-      </div>
-    );
-  }
+  const { role } = await requireMerchantForTenant(tenant);
+  const canManageMenus = role === "owner";
 
   const pendingCount = await countMerchantPendingOrders(tenant);
 
@@ -41,7 +30,7 @@ export default async function MerchantReadinessPage({ params, searchParams }: Pr
       </header>
 
       <MerchantPreviewBanner tenantSlug={tenant} />
-      <MerchantSubnav tenant={tenant} pendingOrderCount={pendingCount} />
+      <MerchantSubnav tenant={tenant} pendingOrderCount={pendingCount} canManageMenus={canManageMenus} />
 
       <section className="rounded-xl border border-chaya-border bg-chaya-surface p-4 dark:border-zinc-700 dark:bg-zinc-950">
         <h2 className="text-lg font-semibold">즉시 실행 체크</h2>
@@ -60,12 +49,14 @@ export default async function MerchantReadinessPage({ params, searchParams }: Pr
         >
           주문 큐로 이동
         </Link>
-        <Link
-          href={`/m/${encodeURIComponent(tenant)}/menus`}
-          className="rounded-xl border border-chaya-border bg-white px-4 py-3 text-sm font-semibold hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:hover:bg-zinc-900"
-        >
-          메뉴 관리로 이동
-        </Link>
+        {canManageMenus ? (
+          <Link
+            href={`/m/${encodeURIComponent(tenant)}/menus`}
+            className="rounded-xl border border-chaya-border bg-white px-4 py-3 text-sm font-semibold hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:hover:bg-zinc-900"
+          >
+            메뉴 관리로 이동
+          </Link>
+        ) : null}
       </section>
     </div>
   );

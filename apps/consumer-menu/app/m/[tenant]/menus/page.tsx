@@ -1,10 +1,11 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { MerchantConfirmSubmitButton } from "@/components/merchant-confirm-submit";
 import { MerchantPreviewBanner } from "@/components/merchant-preview-banner";
 import { MerchantSubnav } from "@/components/merchant-subnav";
 import { OrderStatusRefresh } from "@/components/order-status-refresh";
-import { resolveMerchantToken } from "@/lib/merchant/resolve-merchant-token";
+import { requireMerchantForTenant } from "@/lib/merchant/merchant-access";
 import { listMenusForMerchant } from "@/lib/menus/list-menus-for-merchant";
 import { countMerchantPendingOrders } from "@/lib/orders/list-orders-for-merchant";
 
@@ -14,7 +15,7 @@ export const dynamic = "force-dynamic";
 
 type Props = {
   params: Promise<{ tenant: string }>;
-  searchParams: Promise<{ token?: string; e?: string }>;
+  searchParams: Promise<{ e?: string }>;
 };
 
 function errorMessage(code: string | undefined): string | null {
@@ -35,18 +36,11 @@ function errorMessage(code: string | undefined): string | null {
 
 export default async function MerchantMenusPage({ params, searchParams }: Props) {
   const { tenant } = await params;
-  const { token, e } = await searchParams;
+  const { e } = await searchParams;
 
-  if (!(await resolveMerchantToken(token))) {
-    return (
-      <div className="mx-auto max-w-lg p-6">
-        <h1 className="text-xl font-bold">접근할 수 없습니다</h1>
-        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-          <span className="font-mono">MERCHANT_ORDERS_TOKEN</span> 과 같은 값을{" "}
-          <span className="font-mono">?token=</span> 으로 한 번 열면 쿠키에 저장됩니다.
-        </p>
-      </div>
-    );
+  const { role } = await requireMerchantForTenant(tenant);
+  if (role !== "owner") {
+    redirect(`/m/${encodeURIComponent(tenant)}/orders?e=no_menus_access`);
   }
 
   const [list, pendingCount] = await Promise.all([
@@ -70,7 +64,7 @@ export default async function MerchantMenusPage({ params, searchParams }: Props)
 
       <MerchantPreviewBanner tenantSlug={tenant} />
 
-      <MerchantSubnav tenant={tenant} pendingOrderCount={pendingCount} />
+      <MerchantSubnav tenant={tenant} pendingOrderCount={pendingCount} canManageMenus />
 
       <div className="mb-6">
         <OrderStatusRefresh />

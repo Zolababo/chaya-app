@@ -4,8 +4,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getSupabaseServiceUrl } from "@/lib/supabase/resolve-service-config";
 
 export async function GET(request: NextRequest) {
-  const dest = `${request.nextUrl.origin}/`;
-
+  const dest = new URL("/ops/login", request.nextUrl.origin).toString();
   const response = NextResponse.redirect(dest, { status: 303 });
 
   const url = getSupabaseServiceUrl();
@@ -26,6 +25,5 @@ export async function GET(request: NextRequest) {
   });
 
   await supabase.auth.signOut();
-
   return response;
 }

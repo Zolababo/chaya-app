@@ -4,9 +4,11 @@ type Props = {
   tenant: string;
   /** `pending` 주문 건수(헤더·서브내비에서 동일하게 넘김). 없으면 뱃지 생략. */
   pendingOrderCount?: number | null;
+  /** 기본값 true. `staff` 역할이면 메뉴 관리 링크를 숨길 때 false. */
+  canManageMenus?: boolean;
 };
 
-export function MerchantSubnav({ tenant, pendingOrderCount }: Props) {
+export function MerchantSubnav({ tenant, pendingOrderCount, canManageMenus = true }: Props) {
   const t = encodeURIComponent(tenant);
   const showPending =
     typeof pendingOrderCount === "number" && pendingOrderCount > 0 ? pendingOrderCount : null;
@@ -30,12 +32,14 @@ export function MerchantSubnav({ tenant, pendingOrderCount }: Props) {
           </span>
         ) : null}
       </Link>
-      <Link
-        href={`/m/${t}/menus`}
-        className="inline-flex min-h-[44px] items-center rounded-lg px-3 py-2 text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900"
-      >
-        메뉴 관리
-      </Link>
+      {canManageMenus ? (
+        <Link
+          href={`/m/${t}/menus`}
+          className="inline-flex min-h-[44px] items-center rounded-lg px-3 py-2 text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900"
+        >
+          메뉴 관리
+        </Link>
+      ) : null}
       <Link
         href={`/m/${t}/readiness`}
         className="inline-flex min-h-[44px] items-center rounded-lg px-3 py-2 text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900"

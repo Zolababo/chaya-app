@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 
-import { getMerchantTokenForAction } from "@/lib/merchant/get-merchant-token-for-action";
+import { requireMerchantOrderMutation } from "@/lib/merchant/require-merchant-action";
 import { isMerchantOrderStatus } from "@/lib/orders/merchant-status-constants";
 import { createServiceSupabase } from "@/lib/supabase/create-service-client";
 
@@ -20,10 +20,7 @@ function redirectBack(tenant: string, opts?: { err?: string; ok?: string; status
 }
 
 export async function updateOrderStatusFromForm(formData: FormData): Promise<void> {
-  const token = await getMerchantTokenForAction(formData);
-  if (!token) {
-    redirect("/m/forbidden");
-  }
+  await requireMerchantOrderMutation(formData);
 
   const tenant = String(formData.get("tenant_slug") ?? "").trim();
   const orderId = String(formData.get("order_id") ?? "").trim();
