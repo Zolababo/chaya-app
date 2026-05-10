@@ -1,63 +1,178 @@
-# 런타임·모바일 가동 점검표 (소비자 / 점주 / 플랫폼)
+# 처음부터 끝까지: 배포 후 꼭 맞추는 것들 (비개발자용 가이드)
 
-한 도메인에 세 경로가 함께 있습니다: **`/t/*`(손님)·`/m/*`(점주)·`/ops/*`(운영)**. Vercel·Supabase 세팅과 모바일 접속을 한 번에 확인할 때 사용합니다.
-
----
-
-## 1. Vercel 환경변수 (Production·Preview에 맞게 복제)
-
-| 변수 | 소비자 `/t/*` | 점주 `/m/*` | 플랫폼 `/ops/*` |
-|------|:--:|:--:|:--:|
-| `NEXT_PUBLIC_SUPABASE_URL` | 필수 | 필수 | 필수 |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | 필수 | 필수 | 필수 |
-| `SUPABASE_SERVICE_ROLE_KEY` 또는 `SUPABASE_SECRET_KEY` | 선택(일부 서버 기능) | **필수**(주문·메뉴 서버 작업) | **필수**(점주 계정 생성 `auth.admin`) |
-| `NEXT_PUBLIC_SITE_URL` | 권장(메타·공유 URL 고정) | 동일 | 동일 |
-
-- 값 저장 후 **재배포**해야 런타임에 반영됩니다.
-- 과거 `MERCHANT_ORDERS_TOKEN` 은 **미사용**(삭제 유지).
+이 문서는 **“한 문장 요약이 무슨 뜻이었는지”**를 풀어 쓴 것입니다.
 
 ---
 
-## 2. Supabase (동일 프로젝트)
+## 한 줄로 무엇을 하는 건가요?
 
-### Auth
+웹 주소 하나(예: `https://여러분-app.vercel.app`)로 **세 가지 화면**이 함께 돌아갑니다.
 
-- **Authentication → Providers**: Email 사용.
-- **Authentication → URL configuration**: **Site URL** 을 실제 배포 호스트로 (예: `https://your-app.vercel.app`).
-- 점주·플랫폼 모두 같은 프로젝트 계정을 씁니다.
+| 화면 | 주소 예시 | 누가 씀 |
+|------|-----------|---------|
+| **손님**(메뉴·주문) | `/t/demo` 같은 형태 | 손님 |
+| **점주**(주문 처리·메뉴 수정) | `/m/login` → 가게 선택 | 가게 주인·직원 |
+| **운영**(점주 계정 만들기 등) | `/ops/login` | 본사·운영자만 |
 
-### DB 마이그레이션(요약)
+코드에서 **이미 만들어 두었습니다.**  
+운영에서 해야 하는 일은 크게 세 가지뿐입니다.
 
-손님 주문 등은 기존 레포 마이그레이션 순서를 따르고, 점주·플랫폼에 필요한 것은 최소:
+1. **Vercel**에 “열쇠 문자열”(환경 변수) 넣기  
+2. **Supabase**에 “표 두 개 만들기”(마이그레이션으로 SQL 실행)  
+3. **처음 로그인할 운영자 한 명**을 DB에 등록하기  
 
-- `20260510183000_merchant_tenant_members.sql` — 점주 매장 연결
-- `20260510210000_platform_operators.sql` — `/ops` 운영자
-
-첫 **플랫폼** 운영자: Auth로 사용자 만든 뒤 `platform_operators` 에 `user_id` 삽입.  
-첫 **점주**: `/ops/merchants` 에서 초대하거나, SQL로 `merchant_tenant_members` 삽입.
-
-자세한 절차: `docs/MERCHANT_MIGRATION_RUNBOOK.md`, 손님 RPC 점검: `supabase/scripts/verify_guest_order_rpcs.sql`.
-
----
-
-## 3. 모바일에서 빠른 동작 확인
-
-같은 배포 URL을 **휴대폰 브라우저**(Safari / Chrome)로 열어 확인합니다.
-
-| 앱 | 예시 URL | 기대 |
-|----|----------|------|
-| 소비자 | `/t/demo` | 메뉴·장바구니·하단 탭, 홈 인디케이터와 겹치지 않게 스크롤 |
-| 점주 | `/m/login` → `/m/demo/orders` | 로그인 후 주문 큐, 가로 스크롤 테이블 |
-| 플랫폼 | `/ops/login` → `/ops/merchants` | 로그인 후 목록·초대 폼 |
-
-- **뷰포트·홈 화면 메타**: 루트 `layout`·`app/manifest.ts` 에서 모바일·테마 힌트 적용.
-- 네트워크: 사내 Wi‑Fi에서 DNS/방화벽이 `*.supabase.co` 를 막지 않는지 확인.
+이걸 했으면 **같은 주소를 휴대폰 브라우저로 열어도** 세 화면이 동작해야 합니다.
 
 ---
 
-## 4. 실패 시 자주 나오는 원인
+## 준비물
 
-- **점주 로그인만 실패**: `merchant_tenant_members` 행 없음, 이메일 미인증, anon 키 누락.
-- **주문/메뉴 API 실패**: `SUPABASE_SERVICE_ROLE_KEY` 누락 또는 마이그레이션 미적용.
-- **플랫폼 초대 실패**: service role 없음, 또는 본인이 `platform_operators` 에 없음.
-- **모바일에서만 이상**: `NEXT_PUBLIC_SITE_URL` 과 Supabase Site URL 불일치, 혼합 콘텐츠(http) 여부 확인.
+- **Supabase** 프로젝트 하나(이미 있으면 그걸로 진행)  
+- **Vercel**에 이 앱이 연결되어 있고, GitHub에 푸시하면 자동 배포되는 상태  
+- Supabase에서 **Project Settings → API** 를 열 수 있어야 합니다.
+
+---
+
+## 1단계: Vercel에 환경 변수 넣기
+
+**의미:** 앱이 Supabase에 안전하게 붙으려면 “주소”와 “열쇠”가 필요합니다. 이걸 Vercel에 저장해 둡니다.
+
+1. [Vercel](https://vercel.com) → 본인 프로젝트 선택  
+2. **Settings** → **Environment Variables**  
+3. 아래 네 가지를 **Production**(필요하면 Preview도)에 넣습니다.  
+   값은 전부 **Supabase 대시보드**에서 복사합니다.
+
+| 이름 (Key) | 어디서 복사? | 비고 |
+|------------|--------------|------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase → **Project Settings** → **API** → **Project URL** | 그대로 붙여넣기 |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | 같은 화면의 **anon public** 키 | “공개용”이라 브라우저에 나가도 되는 키 |
+| `SUPABASE_SERVICE_ROLE_KEY` | 같은 화면의 **service_role** 키 | **절대 깃허브·채팅에 올리지 마세요.** 서버에서만 씀 |
+| `NEXT_PUBLIC_SITE_URL` | Vercel이 준 주소 그대로 | 예: `https://여러분-app.vercel.app` (끝에 `/` 없이) |
+
+4. 저장 후 **Deployments**에서 맨 위 배포의 **⋯** → **Redeploy** 로 **한 번 다시 배포**합니다.  
+   (안 하면 예전 설정으로 돌아갈 수 있습니다.)
+
+**손님만 쓸 거면 anon 두 개만으로도 목록은 보일 수 있지만**, 점주·운영 기능(주문 DB, 메뉴 수정, 점주 계정 만들기)은 **`SUPABASE_SERVICE_ROLE_KEY` 없으면 거의 안 돌아갑니다.**
+
+---
+
+## 2단계: Supabase 로그인(이메일) 켜기 + Site URL
+
+**의미:** 점주·운영 로그인이 “이메일+비번”이라서 Supabase 설정을 맞춰야 합니다.
+
+1. Supabase → **Authentication** → **Providers** → **Email** 이 **켜짐**인지 확인  
+2. **Authentication** → **URL configuration** → **Site URL**  
+   - 예: `https://여러분-app.vercel.app`  
+   - (로컬도 쓰면 **Redirect URLs**에 `http://localhost:3000` 등 추가 가능)
+
+여기까지가 “브라우저 로그인이 도메인과 맞는지”입니다.
+
+---
+
+## 3단계: DB에 표 두 개 만들기 (마이그레이션 실행)
+
+**의미:** “어느 점주가 어느 가게에 속하는지”, “누가 운영 화면(`/ops`)에 들어갈 수 있는지”를 DB에 저장합니다.  
+코드 안에 **이미 SQL 파일**이 있으니, **그 내용을 Supabase SQL Editor에 붙여넣어 실행**하면 됩니다.
+
+### 3-1. 첫 번째 파일 (점주–가게 연결)
+
+1. PC에서 이 레포 열기:  
+   `supabase/migrations/20260510183000_merchant_tenant_members.sql`  
+2. 파일 **전체 선택 → 복사**  
+3. Supabase → **SQL Editor** → **New query** → 붙여넣기 → **Run**
+
+### 3-2. 두 번째 파일 (운영자 권한)
+
+1. `supabase/migrations/20260510210000_platform_operators.sql`  
+2. 같은 방식으로 **SQL Editor**에서 **Run**
+
+에러 없이 끝나면 “표가 생긴 것”입니다. (이미 예전에 돌렸다면 “이미 있음”류 메시지가 날 수 있습니다. 그때는 메시지를 읽고 조정하면 됩니다.)
+
+---
+
+## 4단계: “첫 운영자” 한 명 등록하기 (가장 헷갈리는 부분)
+
+**의미:** `/ops` 는 **누구나** 들어가면 안 됩니다.  
+Supabase에 **로그인 계정**을 하나 만든 다음, DB의 `platform_operators` 표에 **그 사람의 ID**를 한 줄 넣습니다.
+
+### 4-1. Supabase에서 운영용 이메일 계정 만들기
+
+1. Supabase → **Authentication** → **Users** → **Add user** → **Create new user**  
+2. 운영에 쓸 **이메일**, **비밀번호** 입력 → 저장  
+3. 같은 화면에서 방금 만든 사용자를 클릭해 **UUID**(긴 문자열)를 복사해 둡니다.
+
+### 4-2. 그 UUID를 운영자 표에 넣기
+
+Supabase → **SQL Editor**에서 아래를 실행합니다.  
+`여기에_UUID_붙여넣기` 만 본인 것으로 바꿉니다.
+
+```sql
+insert into public.platform_operators (user_id)
+values ('여기에_UUID_붙여넣기'::uuid);
+```
+
+이제 브라우저에서:
+
+- `https://여러분-app.vercel.app/ops/login`  
+- 방금 만든 이메일·비번으로 로그인  
+
+→ **운영 대시보드**로 들어가면 성공입니다.
+
+---
+
+## 5단계: 점주 계정 만들기
+
+**의미:** 가게에서 쓸 “아이디/비번”은 **운영 화면**에서 만드는 것이 제일 쉽습니다.
+
+1. 운영자로 `/ops/merchants` 접속  
+2. **새 점주 초대** 폼에  
+   - 가게 코드(`tenant_slug`, 예: `demo`)  
+   - 점주 이메일·최초 비밀번호  
+   - 역할(owner / staff)  
+   입력 후 저장  
+
+끝나면 점주는:
+
+- `https://여러분-app.vercel.app/m/login`  
+에서 로그인한 뒤 주문 화면으로 갑니다.
+
+(운영 화면을 아직 못 쓰면, 예전처럼 SQL로 `merchant_tenant_members`에 행을 넣는 방법도 있습니다. `docs/MERCHANT_MIGRATION_RUNBOOK.md` 참고.)
+
+---
+
+## 6단계: 휴대폰으로 확인
+
+**의미:** 별도 “모바일 앱”을 설치할 필요 없이 **브라우저 주소만** 열면 됩니다.
+
+| 확인할 것 | 주소 예 (도메인은 본인 것) |
+|-----------|----------------------------|
+| 손님 | `https://…vercel.app/t/demo` |
+| 점주 | `https://…vercel.app/m/login` |
+| 운영 | `https://…vercel.app/ops/login` |
+
+Wi‑Fi나 회사망이 Supabase 주소를 막으면 “로딩만 된다” 식으로 보일 수 있습니다. 그때는 LTE로 바꿔 보세요.
+
+---
+
+## 자주 나는 문제 (짧게)
+
+- **점주 로그인은 되는데 주문이 안 보인다**  
+  → Vercel에 `SUPABASE_SERVICE_ROLE_KEY` 넣었는지, 재배포 했는지 확인.
+- **`/ops` 에 “접근 불가”**  
+  → `platform_operators` 에 본인 UUID 줄이 들어갔는지 확인.
+- **운영 화면에서 점주 초대가 실패**  
+  → `SUPABASE_SERVICE_ROLE_KEY` 필수입니다.
+
+---
+
+## 요약 표 (다시 한 번만)
+
+| 해야 할 일 | 어디서 |
+|------------|--------|
+| URL·anon·service 역할 키 넣기 | Vercel 환경 변수 + 재배포 |
+| 이메일 로그인 + Site URL | Supabase Authentication |
+| 표 2개 만들기 | SQL Editor에 마이그레이션 두 파일 순서대로 실행 |
+| 운영자 1명 | Auth에서 유저 만들기 → `platform_operators`에 UUID insert |
+| 점주 만들기 | `/ops/merchants` 폼 또는 SQL |
+
+더 세부적인 점주 병행·RPC 점검은 `docs/MERCHANT_MIGRATION_RUNBOOK.md`, 손님 주문 RPC는 `supabase/scripts/verify_guest_order_rpcs.sql` 을 참고하면 됩니다.
