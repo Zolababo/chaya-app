@@ -17,17 +17,18 @@ type MemberRow = {
   tenant_slug: string;
   role: string;
   created_at: string;
+  invite_phone: string | null;
 };
 
 function errText(code: string | undefined): string | null {
   if (!code) return null;
   switch (code) {
     case "bad_input":
-      return "테넌트 슬러그·이메일·비밀번호(6자 이상)를 확인해 주세요.";
+      return "테넌트 슬러그·휴대폰 번호(예: 01012345678)를 확인해 주세요.";
     case "no_service":
       return "서버에 SUPABASE_SERVICE_ROLE_KEY 가 없습니다.";
     case "invite_failed":
-      return "계정 생성에 실패했습니다. 이미 가입된 이메일이거나 비밀번호 규칙을 확인해 주세요.";
+      return "계정 생성에 실패했습니다. 이미 등록된 번호이거나 Supabase Phone/SMS 설정을 확인해 주세요.";
     case "insert_failed":
       return "멤버 행 저장에 실패했습니다. 같은 가게에 이미 묶여 있는 사용자일 수 있습니다.";
     case "no_session":
@@ -51,7 +52,7 @@ export default async function OpsMerchantsPage({ searchParams }: Props) {
   if (supabase) {
     const { data, error } = await supabase
       .from("merchant_tenant_members")
-      .select("id,user_id,tenant_slug,role,created_at")
+      .select("id,user_id,tenant_slug,role,created_at,invite_phone")
       .order("tenant_slug", { ascending: true })
       .order("created_at", { ascending: false });
     if (error) loadErr = error.message ?? "목록 로드 오류";
@@ -68,8 +69,7 @@ export default async function OpsMerchantsPage({ searchParams }: Props) {
           <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Platform</p>
           <h1 className="mt-2 text-3xl font-bold">점주 멤버십</h1>
           <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-            각 행은 Supabase Auth 사용자 한 명을 가게(tenant_slug)에 연결합니다. 비밀번호는 여기서만 최초 설정되며 이후 변경은 Supabase Dashboard·비밀번호 재설정
-            플로로 처리할 수 있습니다.
+            점주는 휴대폰 문자(SMS)로 로그인합니다. 여기서 번호를 등록하면 Supabase Auth 사용자가 만들어지고 매장과 연결됩니다. SMS는 Supabase Phone(Twilio 등) 설정이 필요합니다.
           </p>
         </div>
         <nav className="text-sm font-medium">
@@ -117,30 +117,18 @@ export default async function OpsMerchantsPage({ searchParams }: Props) {
               className="mt-1 w-full max-w-md rounded-lg border border-chaya-border px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
             />
           </div>
-          <div>
-            <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400" htmlFor="em">
-              이메일 (아이디)
+          <div className="sm:col-span-2">
+            <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400" htmlFor="ph">
+              휴대폰 번호 (E.164로 저장, 예: 01012345678)
             </label>
             <input
-              id="em"
-              name="email"
-              type="email"
+              id="ph"
+              name="phone"
+              type="tel"
               required
-              className="mt-1 w-full rounded-lg border border-chaya-border px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
-            />
-          </div>
-          <div>
-            <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400" htmlFor="pw">
-              최초 비밀번호
-            </label>
-            <input
-              id="pw"
-              name="password"
-              type="password"
-              autoComplete="new-password"
-              required
-              minLength={6}
-              className="mt-1 w-full rounded-lg border border-chaya-border px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
+              autoComplete="tel-national"
+              placeholder="01012345678"
+              className="mt-1 w-full max-w-md rounded-lg border border-chaya-border px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
             />
           </div>
           <div>
@@ -183,6 +171,7 @@ export default async function OpsMerchantsPage({ searchParams }: Props) {
                 <tr>
                   <th className="px-3 py-2 font-semibold">테넌트</th>
                   <th className="px-3 py-2 font-semibold">역할</th>
+                  <th className="px-3 py-2 font-semibold">휴대폰</th>
                   <th className="px-3 py-2 font-semibold">user id</th>
                   <th className="px-3 py-2 font-semibold">생성</th>
                   <th className="px-3 py-2 font-semibold"> </th>
@@ -193,6 +182,9 @@ export default async function OpsMerchantsPage({ searchParams }: Props) {
                   <tr key={r.id}>
                     <td className="px-3 py-2 font-medium">{r.tenant_slug}</td>
                     <td className="px-3 py-2">{r.role}</td>
+                    <td className="px-3 py-2 tabular-nums text-zinc-700 dark:text-zinc-300">
+                      {r.invite_phone ?? "—"}
+                    </td>
                     <td className="px-3 py-2 font-mono text-xs text-zinc-500">{r.user_id}</td>
                     <td className="px-3 py-2 tabular-nums text-zinc-600 dark:text-zinc-400">
                       {new Date(r.created_at).toLocaleString("ko-KR")}

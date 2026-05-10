@@ -2,9 +2,13 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { sanitizeMerchantNextPath } from "@/lib/merchant/merchant-access";
+import {
+  clearMerchantOtpPhoneCookieOptions,
+  MERCHANT_OTP_PHONE_COOKIE,
+  merchantOtpPhoneCookieOptions,
+} from "@/lib/merchant/merchant-otp-cookie";
+import { normalizeKrPhoneToE164 } from "@/lib/merchant/phone-e164-kr";
 import { getSupabaseServiceUrl } from "@/lib/supabase/resolve-service-config";
-
-/** `/m/login` 페이지와 분리(`/m/login/submit`): 세션 쿠키를 리다이렉트 응답에 붙여 프로덕션에서 안정적으로 동작시킵니다. */
 
 function redirectLogin(request: NextRequest, e: string, safeNext: string) {
   const u = new URL("/m/login", request.nextUrl.origin);
@@ -21,13 +25,13 @@ export async function POST(request: NextRequest) {
     return redirectLogin(request, "missing", "/m");
   }
 
-  const email = String(formData.get("email") ?? "").trim();
-  const password = String(formData.get("password") ?? "");
+  const phoneRaw = String(formData.get("phone") ?? "").trim();
   const nextRaw = String(formData.get("next") ?? "").trim();
   const safeNext = sanitizeMerchantNextPath(nextRaw) ?? "/m";
 
-  if (!email || !password) {
-    return redirectLogin(request, "missing", safeNext);
+  const phone = normalizeKrPhoneToE164(phoneRaw);
+  if (!phone) {
+    return redirectLogin(request, "bad_phone", safeNext);
   }
 
   const url = getSupabaseServiceUrl();
@@ -36,9 +40,11 @@ export async function POST(request: NextRequest) {
     return redirectLogin(request, "no_anon", safeNext);
   }
 
-  const redirectSuccess = NextResponse.redirect(new URL(safeNext, request.nextUrl.origin), {
-    status: 303,
-  });
+  const confirmUrl = new URL("/m/login", request.nextUrl.origin);
+  confirmUrl.searchParams.set("phase", "confirm");
+  confirmUrl.searchParams.set("next", safeNext);
+
+  const redirectResp = NextResponse.redirect(confirmUrl, { status: 303 });
 
   const supabase = createServerClient(url, anon, {
     cookies: {
@@ -47,17 +53,25 @@ export async function POST(request: NextRequest) {
       },
       setAll(cookiesToSet) {
         cookiesToSet.forEach(({ name, value, options }) =>
-          redirectSuccess.cookies.set(name, value, options as CookieOptions | undefined),
+          redirectResp.cookies.set(name, value, options as CookieOptions | undefined),
         );
       },
     },
   });
 
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { error } = await supabase.auth.signInWithOtp({
+    phone,
+    options: {
+      shouldCreateUser: false,
+    },
+  });
+
   if (error) {
-    const errCode = error.code === "email_not_confirmed" ? "unconfirmed" : "auth";
-    return redirectLogin(request, errCode, safeNext);
+    const fail = redirectLogin(request, "send_failed", safeNext);
+    fail.cookies.set(MERCHANT_OTP_PHONE_COOKIE, "", clearMerchantOtpPhoneCookieOptions());
+    return fail;
   }
 
-  return redirectSuccess;
+  redirectResp.cookies.set(MERCHANT_OTP_PHONE_COOKIE, phone, merchantOtpPhoneCookieOptions());
+  return redirectResp;
 }

@@ -56,16 +56,19 @@
 
 ---
 
-## 2단계: Supabase 로그인(이메일) 켜기 + Site URL
+## 2단계: Supabase 로그인 + Site URL
 
-**의미:** 점주·운영 로그인이 “이메일+비번”이라서 Supabase 설정을 맞춰야 합니다.
+**운영 `/ops` 로그인:** 이메일+비밀번호(기존 방식).
 
-1. Supabase → **Authentication** → **Providers** → **Email** 이 **켜짐**인지 확인  
+**점주 `/m` 로그인:** 휴대폰 **문자(SMS) 인증번호** 방식입니다.
+
+1. Supabase → **Authentication** → **Providers**  
+   - **Phone** 을 **Enabled** 로 켜고, 안내에 따라 **Twilio**(또는 Supabase가 허용하는 SMS 공급자) **API 키를 연결**합니다. (문자 발송에 비용이 듭니다.)
+   - **점주는 “초대된 번호만”** 로그인합니다. 앱에서는 `signInWithOtp(..., shouldCreateUser: false)` 를 사용하므로, **대시보드의 “새 사용자 가입 허용”이 꺼져 있어도** 이미 생성된 Auth 사용자에게만 문자가 갑니다. (임의 번호로 가입 허용하지 않음.)
 2. **Authentication** → **URL configuration** → **Site URL**  
-   - 예: `https://여러분-app.vercel.app`  
-   - (로컬도 쓰면 **Redirect URLs**에 `http://localhost:3000` 등 추가 가능)
+   - 예: `https://여러분-app.vercel.app`
 
-여기까지가 “브라우저 로그인이 도메인과 맞는지”입니다.
+**DB:** 점주 초대 시 표시용으로 `merchant_tenant_members.invite_phone` 컬럼이 필요하면 마이그레이션 `20260511120000_merchant_tenant_invite_phone.sql` 을 SQL Editor에서 실행합니다.
 
 ---
 
@@ -120,23 +123,16 @@ values ('여기에_UUID_붙여넣기'::uuid);
 
 ---
 
-## 5단계: 점주 계정 만들기
+## 5단계: 점주 계정 만들기 (휴대폰 번호)
 
-**의미:** 가게에서 쓸 “아이디/비번”은 **운영 화면**에서 만드는 것이 제일 쉽습니다.
+**의미:** 운영 화면에서 **휴대폰 번호**로 Auth 사용자를 만들고 가게와 연결합니다.
 
 1. 운영자로 `/ops/merchants` 접속  
-2. **새 점주 초대** 폼에  
-   - 가게 코드(`tenant_slug`, 예: `demo`)  
-   - 점주 이메일·최초 비밀번호  
-   - 역할(owner / staff)  
-   입력 후 저장  
+2. **새 점주 초대**에 테넌트·**휴대폰**(예: `01012345678`)·역할 입력 후 저장  
 
-끝나면 점주는:
+끝나면 점주는 `https://여러분-app.vercel.app/m/login` 에서 **인증번호 받기 → 문자 코드 입력** 후 주문 화면으로 갑니다.
 
-- `https://여러분-app.vercel.app/m/login`  
-에서 로그인한 뒤 주문 화면으로 갑니다.
-
-(운영 화면을 아직 못 쓰면, 예전처럼 SQL로 `merchant_tenant_members`에 행을 넣는 방법도 있습니다. `docs/MERCHANT_MIGRATION_RUNBOOK.md` 참고.)
+(이전에 이메일로만 만든 점주 계정은, 같은 사람에게 **휴대폰 번호로 다시 초대**하거나 Supabase 대시보드에서 해당 사용자에 전화번호를 연결해야 SMS 로그인할 수 있습니다.)
 
 ---
 

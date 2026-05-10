@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { normalizeKrPhoneToE164 } from "@/lib/merchant/phone-e164-kr";
 import { requirePlatformOperator } from "@/lib/platform/require-platform-operator";
 import { createServiceSupabase } from "@/lib/supabase/create-service-client";
 import { createSupabaseServerClient } from "@/lib/supabase/create-server-session-client";
@@ -17,13 +18,13 @@ function backToMerchants(opts: Record<string, string>): never {
 export async function inviteMerchantFromOps(formData: FormData): Promise<void> {
   await requirePlatformOperator("/ops/merchants");
 
-  const email = String(formData.get("email") ?? "").trim().toLowerCase();
-  const password = String(formData.get("password") ?? "");
+  const phoneRaw = String(formData.get("phone") ?? "").trim();
+  const phone = normalizeKrPhoneToE164(phoneRaw);
   const tenant_slug = String(formData.get("tenant_slug") ?? "").trim();
   const roleRaw = String(formData.get("role") ?? "owner").trim();
   const role = roleRaw === "staff" ? "staff" : "owner";
 
-  if (!email || !tenant_slug || password.length < 6) {
+  if (!phone || !tenant_slug) {
     backToMerchants({ e: "bad_input" });
   }
 
@@ -33,9 +34,8 @@ export async function inviteMerchantFromOps(formData: FormData): Promise<void> {
   }
 
   const { data: nu, error: authErr } = await service.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
+    phone,
+    phone_confirm: true,
   });
 
   if (authErr || !nu?.user) {
@@ -56,6 +56,7 @@ export async function inviteMerchantFromOps(formData: FormData): Promise<void> {
     user_id: nu.user.id,
     tenant_slug,
     role,
+    invite_phone: phone,
   });
 
   if (insertErr) {

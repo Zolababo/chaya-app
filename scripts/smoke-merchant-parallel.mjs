@@ -126,7 +126,7 @@ async function main() {
       url: greenOrdersUrl,
       retries,
       retryDelayMs,
-      markerTexts: ["주문 큐", "점주 로그인"],
+      markerTexts: ["주문 큐", "인증번호 받기", "점주 로그인"],
     }),
     checkWithRetry({
       label: "green /m/{tenant}/menus",
