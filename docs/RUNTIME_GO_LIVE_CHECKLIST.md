@@ -60,15 +60,15 @@
 
 **운영 `/ops` 로그인:** 이메일+비밀번호(기존 방식).
 
-**점주 `/m` 로그인:** 휴대폰 **문자(SMS) 인증번호** 방식입니다.
+**점주 `/m` 로그인·초대(두 가지 모드):**
 
-1. Supabase → **Authentication** → **Providers**  
-   - **Phone** 을 **Enabled** 로 켜고, 안내에 따라 **Twilio**(또는 Supabase가 허용하는 SMS 공급자) **API 키를 연결**합니다. (문자 발송에 비용이 듭니다.)
-   - **점주는 “초대된 번호만”** 로그인합니다. 앱에서는 `signInWithOtp(..., shouldCreateUser: false)` 를 사용하므로, **대시보드의 “새 사용자 가입 허용”이 꺼져 있어도** 이미 생성된 Auth 사용자에게만 문자가 갑니다. (임의 번호로 가입 허용하지 않음.)
-2. **Authentication** → **URL configuration** → **Site URL**  
-   - 예: `https://여러분-app.vercel.app`
+- **기본(테스트·SMS 없이):** Vercel에 **`NEXT_PUBLIC_MERCHANT_LOGIN_SMS` 를 넣지 않거나 `false`** 로 두면, 점주는 **이메일·비밀번호**로 `/m/login` 에 들어옵니다. `/ops/merchants` 에서도 **이메일 + 임시 비밀번호**로 초대합니다. 이때 Supabase **Email** 제공자만 켜져 있으면 됩니다.
+- **문자(SMS) 로 전환할 때만:** **`NEXT_PUBLIC_MERCHANT_LOGIN_SMS=true`** 로 배포하면 점주는 **OTP 문자** 로그인하고, `/ops/merchants` 는 **휴대폰 번호** 초대 폼만 씁니다. 다음이 필요합니다.
+  1. Supabase → **Authentication** → **Providers** → **Phone** **Enabled**, **Twilio**(또는 허용 SMS 공급자) 연결.
+  2. **점주는 “초대된 번호만”** 로그인합니다. 앱에서는 `signInWithOtp(..., shouldCreateUser: false)` 를 쓰므로, 이미 생성된 Auth 사용자에게만 문자가 갑니다.
+3. 모든 모드 공통: **Authentication** → **URL configuration** → **Site URL** 을 배포 호스트와 맞춥니다 (예: `https://여러분-app.vercel.app`).
 
-**DB:** 점주 초대 시 표시용으로 `merchant_tenant_members.invite_phone` 컬럼이 필요하면 마이그레이션 `20260511120000_merchant_tenant_invite_phone.sql` 을 SQL Editor에서 실행합니다.
+**DB(초대 표시용 컬럼):** `merchant_tenant_members.invite_email` 은 `20260511133000_merchant_tenant_invite_email.sql`, SMS 모드용 `invite_phone` 은 `20260511120000_merchant_tenant_invite_phone.sql` 을 SQL Editor에서 실행합니다. (이미 돌린 경우 스킵.)
 
 ---
 
@@ -123,16 +123,18 @@ values ('여기에_UUID_붙여넣기'::uuid);
 
 ---
 
-## 5단계: 점주 계정 만들기 (휴대폰 번호)
+## 5단계: 점주 계정 만들기 (`/ops/merchants`)
 
-**의미:** 운영 화면에서 **휴대폰 번호**로 Auth 사용자를 만들고 가게와 연결합니다.
+**의미:** 운영 화면에서 점주용 Auth 사용자를 만들고 `merchant_tenant_members` 에 가게를 연결합니다. **기본은 이메일·임시 비밀번호**, `NEXT_PUBLIC_MERCHANT_LOGIN_SMS=true` 일 때만 **휴대폰** 폼이 보입니다.
 
 1. 운영자로 `/ops/merchants` 접속  
-2. **새 점주 초대**에 테넌트·**휴대폰**(예: `01012345678`)·역할 입력 후 저장  
+2. **새 점주 초대**에 테넌트·역할 입력 후 저장  
+   - **이메일 모드(기본):** 이메일 + 임시 비밀번호(6자 이상)  
+   - **SMS 모드:** 휴대폰(예: `01012345678`)
 
-끝나면 점주는 `https://여러분-app.vercel.app/m/login` 에서 **인증번호 받기 → 문자 코드 입력** 후 주문 화면으로 갑니다.
+끝나면 점주는 `https://여러분-app.vercel.app/m/login` 에서 **이메일·비밀번호**로 로그인하거나(SMS 모드면 **인증번호 받기 → 코드 입력**) 주문 화면으로 갑니다.
 
-(이전에 이메일로만 만든 점주 계정은, 같은 사람에게 **휴대폰 번호로 다시 초대**하거나 Supabase 대시보드에서 해당 사용자에 전화번호를 연결해야 SMS 로그인할 수 있습니다.)
+(SMS로 바꾼 뒤에는 기존 **이메일만** 계정에 전화번호를 연결하거나, 휴대폰으로 다시 초대해야 OTP 로그인할 수 있습니다.)
 
 ---
 

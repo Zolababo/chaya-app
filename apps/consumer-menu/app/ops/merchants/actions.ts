@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { merchantLoginUsesSms } from "@/lib/merchant/merchant-login-mode";
 import { normalizeKrPhoneToE164 } from "@/lib/merchant/phone-e164-kr";
 import { requirePlatformOperator } from "@/lib/platform/require-platform-operator";
 import { createServiceSupabase } from "@/lib/supabase/create-service-client";
@@ -15,37 +16,60 @@ function backToMerchants(opts: Record<string, string>): never {
   redirect(`/ops/merchants?${q.toString()}`);
 }
 
+/** SMS 모드에서는 Phone 전용 초대 행만, 기본 이메일 모드에서는 email + invite_email 만 채움 */
 export async function inviteMerchantFromOps(formData: FormData): Promise<void> {
   await requirePlatformOperator("/ops/merchants");
 
-  const phoneRaw = String(formData.get("phone") ?? "").trim();
-  const phone = normalizeKrPhoneToE164(phoneRaw);
+  const useSms = merchantLoginUsesSms();
   const tenant_slug = String(formData.get("tenant_slug") ?? "").trim();
   const roleRaw = String(formData.get("role") ?? "owner").trim();
   const role = roleRaw === "staff" ? "staff" : "owner";
-
-  if (!phone || !tenant_slug) {
-    backToMerchants({ e: "bad_input" });
-  }
 
   const service = createServiceSupabase();
   if (!service) {
     backToMerchants({ e: "no_service" });
   }
 
-  const { data: nu, error: authErr } = await service.auth.admin.createUser({
-    phone,
-    phone_confirm: true,
-  });
+  let userId = "";
+  const insertExtras: Record<string, string | null> = {};
 
-  if (authErr || !nu?.user) {
-    backToMerchants({ e: "invite_failed" });
+  if (useSms) {
+    const phone = normalizeKrPhoneToE164(String(formData.get("phone") ?? "").trim());
+    if (!phone || !tenant_slug) backToMerchants({ e: "bad_input" });
+    insertExtras.invite_phone = phone;
+    insertExtras.invite_email = null;
+
+    const { data: nu, error: authErr } = await service.auth.admin.createUser({
+      phone,
+      phone_confirm: true,
+    });
+
+    if (authErr || !nu?.user) backToMerchants({ e: "invite_failed" });
+    userId = nu.user.id;
+  } else {
+    const email = String(formData.get("email") ?? "").trim().toLowerCase();
+    const password = String(formData.get("password") ?? "");
+    if (!email || !tenant_slug || password.length < 6) {
+      backToMerchants({ e: "bad_input" });
+    }
+
+    insertExtras.invite_phone = null;
+    insertExtras.invite_email = email;
+
+    const { data: nu, error: authErr } = await service.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+    });
+
+    if (authErr || !nu?.user) backToMerchants({ e: "invite_failed" });
+    userId = nu.user.id;
   }
 
   const supabase = await createSupabaseServerClient();
   if (!supabase) {
     try {
-      await service.auth.admin.deleteUser(nu.user.id);
+      await service.auth.admin.deleteUser(userId);
     } catch {
       /* ignore */
     }
@@ -53,15 +77,15 @@ export async function inviteMerchantFromOps(formData: FormData): Promise<void> {
   }
 
   const { error: insertErr } = await supabase.from("merchant_tenant_members").insert({
-    user_id: nu.user.id,
+    user_id: userId,
     tenant_slug,
     role,
-    invite_phone: phone,
+    ...insertExtras,
   });
 
   if (insertErr) {
     try {
-      await service.auth.admin.deleteUser(nu.user.id);
+      await service.auth.admin.deleteUser(userId);
     } catch {
       /* ignore */
     }

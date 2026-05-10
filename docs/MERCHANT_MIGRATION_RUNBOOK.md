@@ -78,9 +78,11 @@ insert into public.platform_operators (user_id)
 values ('YOUR_AUTH_USER_UUID_HERE'::uuid);
 ```
 
-  3. 배포 호스트에서 `/ops/login` 으로 로그인 → **점주 멤버십**에서 **휴대폰 번호**로 점주 등록·테넌트 연결(서버에 `SUPABASE_SERVICE_ROLE_KEY` 필요). 점주 로그인은 `/m/login` 에서 SMS 인증번호입니다(**Phone** 제공자·Twilio 등 필수).
+  3. 배포 호스트에서 `/ops/login` 으로 로그인 → **점주 멤버십**에서 점주 등록·테넌트 연결(서버에 `SUPABASE_SERVICE_ROLE_KEY` 필요).  
+     - **기본:** 이메일 + 임시 비밀번호 초대 → 점주는 `/m/login` 에서 **이메일·비밀번호** (`NEXT_PUBLIC_MERCHANT_LOGIN_SMS` 미설정 또는 `false`).  
+     - **SMS 모드:** Vercel에 `NEXT_PUBLIC_MERCHANT_LOGIN_SMS=true` 이면 폼이 **휴대폰**만 되고, 점주는 `/m/login` 에서 OTP(**Phone**·Twilio 등 필수).
 
-- 표시용 컬럼: `merchant_tenant_members.invite_phone` 는 `20260511120000_merchant_tenant_invite_phone.sql`.
+- 표시용 컬럼: `invite_email` → `20260511133000_merchant_tenant_invite_email.sql`, SMS용 `invite_phone` → `20260511120000_merchant_tenant_invite_phone.sql`.
 
 - “연결 삭제”는 **`merchant_tenant_members` 행만** 삭제합니다. Auth 사용자 삭제가 필요하면 Supabase 대시보드에서 처리합니다.
 

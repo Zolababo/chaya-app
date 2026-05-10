@@ -74,12 +74,17 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/** Any group matches if every string in that group is a substring of body (OR across groups). */
+function bodyMatchesAnyGroup(body, groups) {
+  return groups.some((g) => g.every((t) => body.includes(t)));
+}
+
 async function checkWithRetry({
   label,
   url,
   retries,
   retryDelayMs,
-  markerTexts,
+  markerGroups,
 }) {
   for (let attempt = 1; attempt <= retries; attempt += 1) {
     try {
@@ -90,7 +95,7 @@ async function checkWithRetry({
           return false;
         }
       } else {
-        const hasMarker = markerTexts.some((t) => body.includes(t));
+        const hasMarker = bodyMatchesAnyGroup(body, markerGroups);
         if (hasMarker) {
           pass(label, `${res.status} (attempt ${attempt}/${retries})`);
           return true;
@@ -126,21 +131,31 @@ async function main() {
       url: greenOrdersUrl,
       retries,
       retryDelayMs,
-      markerTexts: ["주문 큐", "인증번호 받기", "점주 로그인"],
+      markerGroups: [
+        ["주문 큐"],
+        ["점주 로그인", "이메일", "비밀번호"],
+        ["점주 로그인", "인증번호 받기"],
+        ["문자 인증", "인증번호"],
+      ],
     }),
     checkWithRetry({
       label: "green /m/{tenant}/menus",
       url: greenMenusUrl,
       retries,
       retryDelayMs,
-      markerTexts: ["메뉴 관리", "점주 로그인"],
+      markerGroups: [
+        ["메뉴 관리"],
+        ["점주 로그인", "이메일", "비밀번호"],
+        ["점주 로그인", "인증번호 받기"],
+        ["문자 인증", "인증번호"],
+      ],
     }),
     checkWithRetry({
       label: "blue merchant url",
       url: blueUrl,
       retries,
       retryDelayMs,
-      markerTexts: ["CHAYA", "Restaurant", "관리자", "Admin"],
+      markerGroups: [["CHAYA"], ["Restaurant"], ["관리자"], ["Admin"]],
     }),
   ]);
 
