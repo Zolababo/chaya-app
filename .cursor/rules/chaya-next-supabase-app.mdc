@@ -1,0 +1,23 @@
+---
+description: Next.js App Router + Supabase implementation patterns for consumer-menu
+globs: apps/consumer-menu/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# App Router Patterns
+
+- Default to Server Components for data fetch/render gates.
+- Use Client Components only for interaction (timers, handlers, optimistic UI).
+- Keep route files thin: move shared logic into `lib/*` helpers.
+
+# Data and Errors
+
+- Prefer typed helper functions in `lib/*` over inline query logic in pages.
+- Keep user messages deterministic via explicit error-code mapping.
+- For multi-step auth flows, validate `next` paths with sanitizer helpers.
+
+# Merchant/Platform UX Consistency
+
+- Merchant pages should keep common nav/refresh behavior aligned.
+- Platform membership screens should reuse existing status messaging style.
+- If adding CRUD pages, follow the existing section pattern: form -> alert -> list.

@@ -1,0 +1,19 @@
+---
+description: CHAYA core architecture and consistency rules
+alwaysApply: true
+---
+
+# CHAYA Core Rules
+
+- Respect app boundaries: consumer `/t/*`, merchant `/m/*`, platform `/ops/*`.
+- Prefer existing helpers before new abstractions (auth guards, Supabase clients, error mappers).
+- Keep naming consistent: components `PascalCase`, utility files `kebab-case`.
+- Follow existing route/query error-code patterns (`?e=...`, `?ok=...`) for user-facing flows.
+- For repetitive UI, extract reusable components instead of copying blocks.
+- Do not introduce new environment flags if an existing one already controls the behavior.
+
+# Change Discipline
+
+- Keep changes minimal and scoped; avoid broad refactors while shipping feature fixes.
+- When adding a new flow, update docs/runbook/checklist in the same change.
+- Validate with build/lint after non-trivial edits.

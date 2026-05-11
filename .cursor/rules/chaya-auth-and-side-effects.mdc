@@ -1,0 +1,20 @@
+---
+description: Auth/session safety and side-effect routing rules
+alwaysApply: true
+---
+
+# Auth and Side-Effect Safety
+
+- Never implement destructive or state-changing behavior behind `GET` routes.
+- Use `POST` forms or server actions for logout and other side effects.
+- Assume route prefetch/crawlers may hit `GET`; keep `GET` idempotent and safe.
+- Use guard utilities for protected areas:
+  - merchant: `requireMerchantForTenant`, `requireMerchantOrderMutation`
+  - platform: `requirePlatformOperator`
+- Preserve cookie options when writing auth cookies (`path`, `sameSite`, `maxAge`, etc.).
+- Avoid introducing frequent hard reload loops for authenticated pages.
+
+# Supabase Rules
+
+- RLS is mandatory; never bypass with broad client privileges.
+- Service-role actions must remain server-side only.
