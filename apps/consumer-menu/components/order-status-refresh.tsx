@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { ORDER_STATUS_POLL_MS } from "@/lib/orders/status-poll";
 
@@ -14,14 +14,25 @@ export function OrderStatusRefresh({ intervalMs = ORDER_STATUS_POLL_MS }: Props)
   const router = useRouter();
   const pathname = usePathname();
   const [reducedMotion, setReducedMotion] = useState(false);
+  const isRefreshingRef = useRef(false);
+  const lastRefreshAtRef = useRef(0);
 
-  /** 점주 `/m/*` 는 httpOnly 쿠키 기준 인증인데, `router.refresh()` RSC 재요청에서 쿠키가 빠져 “접근 불가”로 바뀌는 브라우저·환경이 있음 → 전체 로드로 맞춤. */
   const reloadLatest = useCallback(() => {
-    if (pathname?.startsWith("/m/")) {
-      window.location.reload();
-      return;
+    // visibilitychange + interval + 수동 버튼이 겹치면 중복 refresh가 발생할 수 있어 간단히 직렬화합니다.
+    if (isRefreshingRef.current) return;
+    const now = Date.now();
+    if (now - lastRefreshAtRef.current < 1500) return;
+    if (!pathname) return;
+
+    isRefreshingRef.current = true;
+    lastRefreshAtRef.current = now;
+    try {
+      router.refresh();
+    } finally {
+      window.setTimeout(() => {
+        isRefreshingRef.current = false;
+      }, 400);
     }
-    router.refresh();
   }, [pathname, router]);
 
   useEffect(() => {
@@ -35,6 +46,7 @@ export function OrderStatusRefresh({ intervalMs = ORDER_STATUS_POLL_MS }: Props)
   useEffect(() => {
     if (reducedMotion) return;
     const id = window.setInterval(() => {
+      if (document.visibilityState !== "visible") return;
       reloadLatest();
     }, intervalMs);
     return () => window.clearInterval(id);
