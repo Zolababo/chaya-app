@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import type { MerchantRole } from "@/lib/merchant/merchant-access";
 import { getMerchantTenantActionAccess, merchantLoginUrl } from "@/lib/merchant/merchant-access";
 import { createSupabaseServerClient } from "@/lib/supabase/create-server-session-client";
+import { resolveServerUser } from "@/lib/supabase/resolve-server-user";
 
 /**
  * 폼 바운드 테넌트에 대한 점주 권한을 검사합니다.
@@ -17,9 +18,7 @@ export async function requireMerchantOrderMutation(formData: FormData): Promise<
     redirect("/m/forbidden");
   }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await resolveServerUser(supabase);
   if (!user) {
     redirect(merchantLoginUrl(nextPath));
   }

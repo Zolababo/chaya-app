@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { createSupabaseServerClient } from "@/lib/supabase/create-server-session-client";
+import { resolveServerUser } from "@/lib/supabase/resolve-server-user";
 
 export type MerchantRole = "owner" | "staff";
 
@@ -31,11 +32,8 @@ export async function requireMerchantForTenant(tenantRaw: string): Promise<{ rol
     redirect(merchantLoginUrl(`/m/${encodeURIComponent(tenant)}/orders`));
   }
 
-  const {
-    data: { user },
-    error: userErr,
-  } = await supabase.auth.getUser();
-  if (userErr || !user) {
+  const user = await resolveServerUser(supabase);
+  if (!user) {
     redirect(merchantLoginUrl(`/m/${encodeURIComponent(tenant)}/orders`));
   }
 
@@ -64,11 +62,8 @@ export async function getMerchantTenantActionAccess(
   const supabase = await createSupabaseServerClient();
   if (!supabase) return null;
 
-  const {
-    data: { user },
-    error: userErr,
-  } = await supabase.auth.getUser();
-  if (userErr || !user) return null;
+  const user = await resolveServerUser(supabase);
+  if (!user) return null;
 
   const { data: row, error: rowErr } = await supabase
     .from("merchant_tenant_members")

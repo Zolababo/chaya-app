@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { createSupabaseServerClient } from "@/lib/supabase/create-server-session-client";
+import { resolveServerUser } from "@/lib/supabase/resolve-server-user";
 
 import { opsLoginUrl } from "./ops-path";
 
@@ -10,12 +11,8 @@ export async function requirePlatformOperator(nextPathFallback = "/ops"): Promis
     redirect(opsLoginUrl(nextPathFallback));
   }
 
-  const {
-    data: { user },
-    error: userErr,
-  } = await supabase.auth.getUser();
-
-  if (userErr || !user) {
+  const user = await resolveServerUser(supabase);
+  if (!user) {
     redirect(opsLoginUrl(nextPathFallback));
   }
 

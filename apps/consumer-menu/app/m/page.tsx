@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { createSupabaseServerClient } from "@/lib/supabase/create-server-session-client";
+import { resolveServerUser } from "@/lib/supabase/resolve-server-user";
 
 export const dynamic = "force-dynamic";
 
@@ -19,11 +20,8 @@ export default async function MerchantPortalHomePage() {
     );
   }
 
-  const {
-    data: { user },
-    error: userErr,
-  } = await supabase.auth.getUser();
-  if (userErr || !user) {
+  const user = await resolveServerUser(supabase);
+  if (!user) {
     redirect("/m/login");
   }
 
