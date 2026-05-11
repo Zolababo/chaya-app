@@ -1,0 +1,85 @@
+-- Merchant live-readiness verification (run in Supabase SQL Editor)
+-- 목적: 점주 실사용 전, tenant/권한/주문/메뉴 최소 상태를 한 번에 확인합니다.
+--
+-- 사용법:
+-- 1) 아래 tenant 값을 실제 매장 slug로 바꿉니다.
+-- 2) 전체 실행 후 각 섹션 결과를 점검표에 기록합니다.
+
+-- ====== params ======
+-- 예: 'demo', 'gangnam-1ho'
+with params as (
+  select 'demo'::text as tenant_slug
+)
+
+-- ====== A. tenant에 연결된 점주 계정 ======
+select
+  'A.merchant_members' as section,
+  m.tenant_slug,
+  m.role,
+  u.email,
+  m.created_at
+from params p
+join public.merchant_tenant_members m on m.tenant_slug = p.tenant_slug
+left join auth.users u on u.id = m.user_id
+order by m.created_at desc;
+
+-- ====== B. owner 계정 존재 여부 ======
+with params as (
+  select 'demo'::text as tenant_slug
+)
+select
+  'B.owner_exists' as section,
+  p.tenant_slug,
+  exists (
+    select 1
+    from public.merchant_tenant_members m
+    where m.tenant_slug = p.tenant_slug
+      and m.role = 'owner'
+  ) as has_owner
+from params p;
+
+-- ====== C. 최근 24시간 주문 통계 ======
+with params as (
+  select 'demo'::text as tenant_slug
+)
+select
+  'C.orders_24h' as section,
+  p.tenant_slug,
+  count(*) as order_count_24h,
+  coalesce(sum(o.total_price), 0) as sales_24h
+from params p
+left join public.orders o
+  on o.tenant_slug = p.tenant_slug
+ and o.created_at >= now() - interval '24 hours'
+group by p.tenant_slug;
+
+-- ====== D. 메뉴 최소 구성 확인 ======
+with params as (
+  select 'demo'::text as tenant_slug
+)
+select
+  'D.menu_count' as section,
+  p.tenant_slug,
+  count(*) as menu_count,
+  count(*) filter (where coalesce(c.name, '') <> '') as category_filled_count
+from params p
+left join public."ChayaMenus" m on m.tenant_slug = p.tenant_slug
+left join lateral (
+  select m.category::text as name
+) c on true
+group by p.tenant_slug;
+
+-- ====== E. 최근 주문 상태 분포 ======
+with params as (
+  select 'demo'::text as tenant_slug
+)
+select
+  'E.order_status' as section,
+  p.tenant_slug,
+  o.status,
+  count(*) as cnt
+from params p
+join public.orders o on o.tenant_slug = p.tenant_slug
+where o.created_at >= now() - interval '7 days'
+group by p.tenant_slug, o.status
+order by o.status;

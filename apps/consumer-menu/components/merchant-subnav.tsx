@@ -19,6 +19,12 @@ export function MerchantSubnav({ tenant, pendingOrderCount, canManageMenus = tru
       aria-label="점주 메뉴"
     >
       <Link
+        href={`/m/${t}/dashboard`}
+        className="inline-flex min-h-[44px] items-center rounded-lg px-3 py-2 text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900"
+      >
+        대시보드
+      </Link>
+      <Link
         href={`/m/${t}/orders`}
         className="inline-flex min-h-[44px] items-center gap-2 rounded-lg px-3 py-2 text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900"
       >

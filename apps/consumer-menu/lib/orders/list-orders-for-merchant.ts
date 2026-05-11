@@ -118,3 +118,61 @@ export async function countMerchantPendingOrders(tenantSlug: string): Promise<nu
   if (error) return null;
   return count ?? 0;
 }
+
+export type MerchantDashboard24hMetrics =
+  | {
+      ok: true;
+      orderCount: number;
+      totalSales: number;
+      byStatus: Partial<Record<string, number>>;
+    }
+  | { ok: false; message: string };
+
+/** 최근 24시간 주문 요약 (실사용 대시보드 카드용). */
+export async function getMerchantDashboard24hMetrics(tenantSlug: string): Promise<MerchantDashboard24hMetrics> {
+  const slug = tenantSlug.trim();
+  if (!slug) {
+    return { ok: false, message: "테넌트가 없습니다." };
+  }
+
+  const client = createServiceSupabase();
+  if (!client) {
+    return {
+      ok: false,
+      message:
+        "Supabase 서버 접속 설정이 없습니다. Vercel Production에 SUPABASE_SERVICE_ROLE_KEY(또는 SUPABASE_SECRET_KEY)와 NEXT_PUBLIC_SUPABASE_URL 또는 SUPABASE_URL 을 넣고 재배포해 주세요.",
+    };
+  }
+
+  const sinceIso = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+  const { data, error } = await withSupabaseReadRetry(() =>
+    client
+      .from("orders")
+      .select("total_price, status")
+      .eq("tenant_slug", slug)
+      .gte("created_at", sinceIso),
+  );
+
+  if (error) {
+    return { ok: false, message: error.message ?? error.code ?? "주문 통계를 불러오지 못했습니다." };
+  }
+
+  const rows = data ?? [];
+  let totalSales = 0;
+  const byStatus: Partial<Record<string, number>> = {};
+
+  for (const r of rows) {
+    const rawPrice = r.total_price;
+    const p =
+      typeof rawPrice === "number" ? rawPrice : typeof rawPrice === "string" ? Number(rawPrice) : NaN;
+    if (Number.isFinite(p)) totalSales += p;
+
+    const st = typeof r.status === "string" ? r.status : "";
+    if (st) {
+      byStatus[st] = (byStatus[st] ?? 0) + 1;
+    }
+  }
+
+  return { ok: true, orderCount: rows.length, totalSales, byStatus };
+}
