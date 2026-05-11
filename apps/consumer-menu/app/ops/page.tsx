@@ -29,9 +29,11 @@ export default async function OpsHomePage() {
           점주 화면
         </Link>
         {" · "}
-        <Link href="/ops/logout" className="underline-offset-4 hover:underline">
-          로그아웃
-        </Link>
+        <form action="/ops/logout" method="post" className="inline">
+          <button type="submit" className="underline-offset-4 hover:underline">
+            로그아웃
+          </button>
+        </form>
       </p>
     </div>
   );

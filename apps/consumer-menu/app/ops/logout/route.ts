@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { getSupabaseServiceUrl } from "@/lib/supabase/resolve-service-config";
 
-export async function GET(request: NextRequest) {
+export async function POST(request: NextRequest) {
   const dest = new URL("/ops/login", request.nextUrl.origin).toString();
   const response = NextResponse.redirect(dest, { status: 303 });
 
@@ -26,4 +26,8 @@ export async function GET(request: NextRequest) {
 
   await supabase.auth.signOut();
   return response;
+}
+
+export async function GET() {
+  return NextResponse.json({ error: "Method Not Allowed" }, { status: 405 });
 }

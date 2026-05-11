@@ -66,14 +66,16 @@ export default async function MerchantPortalHomePage() {
           );
         })}
       </ul>
-      <p className="mt-10 text-center">
-        <Link
-          href="/m/logout"
-          className="text-sm font-medium text-zinc-500 underline-offset-4 hover:underline dark:text-zinc-400"
-        >
-          로그아웃
-        </Link>
-      </p>
+      <div className="mt-10 text-center">
+        <form action="/m/logout" method="post">
+          <button
+            type="submit"
+            className="text-sm font-medium text-zinc-500 underline-offset-4 hover:underline dark:text-zinc-400"
+          >
+            로그아웃
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

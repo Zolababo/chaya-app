@@ -46,13 +46,15 @@ export function MerchantSubnav({ tenant, pendingOrderCount, canManageMenus = tru
       >
         운영 체크
       </Link>
-      <Link
-        href="/m/logout"
-        className="ml-auto inline-flex min-h-[44px] items-center rounded-lg px-3 py-2 text-zinc-500 underline-offset-2 hover:underline dark:text-zinc-500"
-        aria-label="점주 세션 로그아웃"
-      >
-        로그아웃
-      </Link>
+      <form action="/m/logout" method="post" className="ml-auto">
+        <button
+          type="submit"
+          className="inline-flex min-h-[44px] items-center rounded-lg px-3 py-2 text-zinc-500 underline-offset-2 hover:underline dark:text-zinc-500"
+          aria-label="점주 세션 로그아웃"
+        >
+          로그아웃
+        </button>
+      </form>
     </nav>
   );
 }

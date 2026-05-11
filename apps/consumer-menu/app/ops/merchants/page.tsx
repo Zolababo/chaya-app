@@ -86,9 +86,11 @@ export default async function OpsMerchantsPage({ searchParams }: Props) {
             운영 홈
           </Link>
           {" · "}
-          <Link href="/ops/logout" className="text-zinc-500 underline-offset-4 hover:underline dark:text-zinc-400">
-            로그아웃
-          </Link>
+          <form action="/ops/logout" method="post" className="inline">
+            <button type="submit" className="text-zinc-500 underline-offset-4 hover:underline dark:text-zinc-400">
+              로그아웃
+            </button>
+          </form>
         </nav>
       </header>
 
