@@ -33,6 +33,7 @@
 - ✅ `/m/[tenant]/audit` **감사 로그 조회 UI** — 세션 클라이언트 + RLS, 액션 필터, 페이지네이션(25건).
 - ✅ **기간 필터**(KST 달력일, 최대 120일) 및 **CSV** — `GET /m/[tenant]/audit/export` (동일 필터, 최대 5,000건, 초과 시 `X-Audit-Export-Truncated`).
 - ✅ 플랫폼 **`/ops/audit`** — 전 매장 조회·필터·CSV (`GET /ops/audit/export`). DB에 `merchant_audit_events_select_platform_operator` 정책 필요(`20260512160000_*` 마이그레이션).
+- ✅ **`/ops/merchants` 운영 액션 감사** — 초대·승인·연결 삭제·주문 메일 토글 성공 시 `merchant_audit_events`에 기록(액션 접두사 `ops.`; 이메일·전화·비밀번호는 detail에 넣지 않음). `SUPABASE_SERVICE_ROLE_KEY` 필요.
 
 ### Phase 3 — 알림 (진행 중)
 

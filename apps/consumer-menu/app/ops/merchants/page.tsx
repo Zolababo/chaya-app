@@ -52,6 +52,8 @@ function errText(code: string | undefined, useSms: boolean): string | null {
       return "삭제 요청 값이 올바르지 않습니다.";
     case "delete_failed":
       return "행 삭제에 실패했습니다.";
+    case "delete_not_found":
+      return "삭제할 멤버십을 찾지 못했습니다.";
     case "approve_not_found":
       return "승인할 멤버십을 찾지 못했습니다.";
     case "approve_failed":

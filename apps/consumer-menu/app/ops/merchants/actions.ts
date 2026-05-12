@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { merchantLoginUsesSms } from "@/lib/merchant/merchant-login-mode";
 import { normalizeKrPhoneToE164 } from "@/lib/merchant/phone-e164-kr";
+import { recordMerchantAuditEvent } from "@/lib/merchant/record-merchant-audit";
 import { requirePlatformOperator } from "@/lib/platform/require-platform-operator";
 import { createServiceSupabase } from "@/lib/supabase/create-service-client";
 import { createSupabaseServerClient } from "@/lib/supabase/create-server-session-client";
@@ -19,7 +20,7 @@ function backToMerchants(opts: Record<string, string>): never {
 
 /** SMS 모드에서는 Phone 전용 초대 행만, 기본 이메일 모드에서는 email + invite_email 만 채움 */
 export async function inviteMerchantFromOps(formData: FormData): Promise<void> {
-  await requirePlatformOperator("/ops/merchants");
+  const { userId: actorUserId } = await requirePlatformOperator("/ops/merchants");
 
   const useSms = merchantLoginUsesSms();
   const tenantRaw = String(formData.get("tenant_slug") ?? "").trim();
@@ -100,6 +101,18 @@ export async function inviteMerchantFromOps(formData: FormData): Promise<void> {
     backToMerchants({ e: "insert_failed" });
   }
 
+  void recordMerchantAuditEvent({
+    tenantSlug: tenant_slug,
+    actorUserId,
+    action: "ops.merchant_invite",
+    detail: {
+      invited_user_id: userId,
+      role,
+      approve_immediately: approveImmediately,
+      channel: useSms ? "sms" : "email",
+    },
+  });
+
   revalidatePath("/ops/merchants");
   const qs: Record<string, string> = { ok: "1", t: tenant_slug };
   if (!approveImmediately) qs.pend = "1";
@@ -107,7 +120,7 @@ export async function inviteMerchantFromOps(formData: FormData): Promise<void> {
 }
 
 export async function removeMerchantMembership(formData: FormData): Promise<void> {
-  await requirePlatformOperator("/ops/merchants");
+  const { userId: actorUserId } = await requirePlatformOperator("/ops/merchants");
 
   const id = String(formData.get("membership_id") ?? "").trim();
   if (!UUID_ROW.test(id)) {
@@ -117,17 +130,40 @@ export async function removeMerchantMembership(formData: FormData): Promise<void
   const supabase = await createSupabaseServerClient();
   if (!supabase) backToMerchants({ e: "no_session" });
 
+  const { data: row, error: selErr } = await supabase
+    .from("merchant_tenant_members")
+    .select("tenant_slug,user_id")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (selErr || !row) {
+    backToMerchants({ e: "delete_not_found" });
+  }
+
+  const tenantSlug = String((row as { tenant_slug?: unknown }).tenant_slug ?? "").trim();
+  const memberUserId = String((row as { user_id?: unknown }).user_id ?? "").trim();
+  if (!tenantSlug || !memberUserId) {
+    backToMerchants({ e: "delete_not_found" });
+  }
+
   const { error } = await supabase.from("merchant_tenant_members").delete().eq("id", id);
   if (error) {
     backToMerchants({ e: "delete_failed" });
   }
+
+  void recordMerchantAuditEvent({
+    tenantSlug,
+    actorUserId,
+    action: "ops.merchant_membership_removed",
+    detail: { membership_id: id, member_user_id: memberUserId },
+  });
 
   revalidatePath("/ops/merchants");
   backToMerchants({ ok: "removed" });
 }
 
 export async function approveMerchantMembershipFromOps(formData: FormData): Promise<void> {
-  await requirePlatformOperator("/ops/merchants");
+  const { userId: actorUserId } = await requirePlatformOperator("/ops/merchants");
 
   const id = String(formData.get("membership_id") ?? "").trim();
   if (!UUID_ROW.test(id)) {
@@ -139,7 +175,7 @@ export async function approveMerchantMembershipFromOps(formData: FormData): Prom
 
   const { data: existing, error: selErr } = await supabase
     .from("merchant_tenant_members")
-    .select("id, approved_at")
+    .select("id, approved_at, tenant_slug, user_id")
     .eq("id", id)
     .maybeSingle();
 
@@ -153,6 +189,9 @@ export async function approveMerchantMembershipFromOps(formData: FormData): Prom
     backToMerchants({ ok: "approved_already" });
   }
 
+  const tenantSlug = String((existing as { tenant_slug?: unknown }).tenant_slug ?? "").trim();
+  const memberUserId = String((existing as { user_id?: unknown }).user_id ?? "").trim();
+
   const { error } = await supabase
     .from("merchant_tenant_members")
     .update({ approved_at: new Date().toISOString() })
@@ -162,13 +201,22 @@ export async function approveMerchantMembershipFromOps(formData: FormData): Prom
     backToMerchants({ e: "approve_failed" });
   }
 
+  if (tenantSlug && memberUserId) {
+    void recordMerchantAuditEvent({
+      tenantSlug,
+      actorUserId,
+      action: "ops.merchant_membership_approved",
+      detail: { membership_id: id, member_user_id: memberUserId },
+    });
+  }
+
   revalidatePath("/ops/merchants");
   backToMerchants({ ok: "approved" });
 }
 
 /** 플랫폼 운영자만: 멤버별 신규 주문 Resend 수신 여부 */
 export async function setMerchantNotifyOrderEmailFromOps(formData: FormData): Promise<void> {
-  await requirePlatformOperator("/ops/merchants");
+  const { userId: actorUserId } = await requirePlatformOperator("/ops/merchants");
 
   const id = String(formData.get("membership_id") ?? "").trim();
   if (!UUID_ROW.test(id)) {
@@ -188,7 +236,7 @@ export async function setMerchantNotifyOrderEmailFromOps(formData: FormData): Pr
     .from("merchant_tenant_members")
     .update({ notify_order_email })
     .eq("id", id)
-    .select("id")
+    .select("id,tenant_slug,user_id")
     .maybeSingle();
 
   if (error) {
@@ -196,6 +244,21 @@ export async function setMerchantNotifyOrderEmailFromOps(formData: FormData): Pr
   }
   if (!data) {
     backToMerchants({ e: "notify_not_found" });
+  }
+
+  const tenantSlug = String((data as { tenant_slug?: unknown }).tenant_slug ?? "").trim();
+  const memberUserId = String((data as { user_id?: unknown }).user_id ?? "").trim();
+  if (tenantSlug && memberUserId) {
+    void recordMerchantAuditEvent({
+      tenantSlug,
+      actorUserId,
+      action: "ops.merchant_notify_order_email_set",
+      detail: {
+        membership_id: id,
+        member_user_id: memberUserId,
+        notify_order_email,
+      },
+    });
   }
 
   revalidatePath("/ops/merchants");
