@@ -165,3 +165,39 @@ export async function approveMerchantMembershipFromOps(formData: FormData): Prom
   revalidatePath("/ops/merchants");
   backToMerchants({ ok: "approved" });
 }
+
+/** 플랫폼 운영자만: 멤버별 신규 주문 Resend 수신 여부 */
+export async function setMerchantNotifyOrderEmailFromOps(formData: FormData): Promise<void> {
+  await requirePlatformOperator("/ops/merchants");
+
+  const id = String(formData.get("membership_id") ?? "").trim();
+  if (!UUID_ROW.test(id)) {
+    backToMerchants({ e: "bad_id" });
+  }
+
+  const raw = String(formData.get("notify_order_email") ?? "").trim();
+  if (raw !== "0" && raw !== "1") {
+    backToMerchants({ e: "notify_bad_value" });
+  }
+  const notify_order_email = raw === "1";
+
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) backToMerchants({ e: "no_session" });
+
+  const { data, error } = await supabase
+    .from("merchant_tenant_members")
+    .update({ notify_order_email })
+    .eq("id", id)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    backToMerchants({ e: "notify_update_failed" });
+  }
+  if (!data) {
+    backToMerchants({ e: "notify_not_found" });
+  }
+
+  revalidatePath("/ops/merchants");
+  backToMerchants({ ok: "notify_email" });
+}

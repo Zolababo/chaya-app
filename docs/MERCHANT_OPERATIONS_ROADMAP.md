@@ -39,8 +39,9 @@
 - ✅ DB **`merchant_notification_events`** + RLS(승인 멤버·`platform_operators` SELECT).
 - ✅ **대시보드「최근 알림」** — 신규 손님 주문·주문 상태 변경 기록, 메일 발송 여부 뱃지.
 - ✅ **Resend(선택)** — `RESEND_API_KEY`·`RESEND_FROM_EMAIL` + 멤버 `invite_email` 있을 때만 신규 주문 메일.
-- ✅ **멤버별 `notify_order_email`(DB)** — 기본 true, Resend 수신자 조회 시 `true` 인 멤버만. 마이그레이션 `20260512210000_*` 적용 필요. **운영 UI 토글은 다음 단계.**
-- ⬜ 웹 푸시 / 카카오 / **`notify_order_email` UI(`/ops/merchants` 등)**.
+- ✅ **멤버별 `notify_order_email`** — DB(기본 true) + Resend 필터 + **`/ops/merchants`에서 운영자 토글**(POST 서버 액션). 마이그레이션 `20260512210000_*` 적용 필요.
+- ✅ **신규주문 Resend 쿨다운** — 매장당 3분(인스턴스 메모리, 서버리스 한계 있음).
+- ⬜ 웹 푸시 / 카카오 등.
 
 #### SQL 적용 후 권장 순서
 

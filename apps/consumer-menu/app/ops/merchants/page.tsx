@@ -4,7 +4,12 @@ import { merchantLoginUsesSms } from "@/lib/merchant/merchant-login-mode";
 import { requirePlatformOperator } from "@/lib/platform/require-platform-operator";
 import { createSupabaseServerClient } from "@/lib/supabase/create-server-session-client";
 
-import { approveMerchantMembershipFromOps, inviteMerchantFromOps, removeMerchantMembership } from "./actions";
+import {
+  approveMerchantMembershipFromOps,
+  inviteMerchantFromOps,
+  removeMerchantMembership,
+  setMerchantNotifyOrderEmailFromOps,
+} from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +26,7 @@ type MemberRow = {
   invite_phone: string | null;
   invite_email: string | null;
   approved_at: string | null;
+  notify_order_email: boolean;
 };
 
 function errText(code: string | undefined, useSms: boolean): string | null {
@@ -50,6 +56,12 @@ function errText(code: string | undefined, useSms: boolean): string | null {
       return "승인할 멤버십을 찾지 못했습니다.";
     case "approve_failed":
       return "승인 저장에 실패했습니다. DB 마이그레이션(approved_at 컬럼) 적용 여부를 확인해 주세요.";
+    case "notify_bad_value":
+      return "주문 메일 알림 설정 값이 올바르지 않습니다.";
+    case "notify_update_failed":
+      return "주문 메일 알림 설정 저장에 실패했습니다.";
+    case "notify_not_found":
+      return "해당 멤버십을 찾지 못했습니다.";
     default:
       return "처리 중 오류입니다.";
   }
@@ -67,7 +79,9 @@ export default async function OpsMerchantsPage({ searchParams }: Props) {
   if (supabase) {
     const { data, error } = await supabase
       .from("merchant_tenant_members")
-      .select("id,user_id,tenant_slug,role,created_at,invite_phone,invite_email,approved_at")
+      .select(
+        "id,user_id,tenant_slug,role,created_at,invite_phone,invite_email,approved_at,notify_order_email",
+      )
       .order("tenant_slug", { ascending: true })
       .order("created_at", { ascending: false });
     if (error) loadErr = error.message ?? "목록 로드 오류";
@@ -191,6 +205,11 @@ export default async function OpsMerchantsPage({ searchParams }: Props) {
       {ok === "approved_already" ? (
         <p className="mb-4 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-800 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
           이미 승인된 멤버십입니다.
+        </p>
+      ) : null}
+      {ok === "notify_email" ? (
+        <p className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100">
+          신규 주문 이메일(Resend) 수신 설정을 저장했습니다.
         </p>
       ) : null}
 
@@ -332,13 +351,14 @@ export default async function OpsMerchantsPage({ searchParams }: Props) {
           <p className="text-sm text-zinc-600 dark:text-zinc-400">등록된 멤버십이 없습니다.</p>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-chaya-border dark:border-zinc-700">
-            <table className="min-w-[820px] w-full text-left text-sm">
+            <table className="min-w-[920px] w-full text-left text-sm">
               <thead className="border-b border-chaya-border bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
                 <tr>
                   <th className="px-3 py-2 font-semibold">승인</th>
                   <th className="px-3 py-2 font-semibold">테넌트</th>
                   <th className="px-3 py-2 font-semibold">역할</th>
                   <th className="px-3 py-2 font-semibold">이메일 / 휴대폰</th>
+                  <th className="px-3 py-2 font-semibold">주문 메일</th>
                   <th className="px-3 py-2 font-semibold">user id</th>
                   <th className="px-3 py-2 font-semibold">생성</th>
                   <th className="px-3 py-2 font-semibold"> </th>
@@ -348,6 +368,8 @@ export default async function OpsMerchantsPage({ searchParams }: Props) {
                 {rows.map((r) => {
                   const shown = [r.invite_email, r.invite_phone].filter(Boolean).join(" · ") || "—";
                   const pendingApproval = r.approved_at == null;
+                  const notifyOn =
+                    typeof r.notify_order_email === "boolean" ? r.notify_order_email : true;
                   return (
                     <tr key={r.id}>
                       <td className="px-3 py-2 align-top">
@@ -377,6 +399,26 @@ export default async function OpsMerchantsPage({ searchParams }: Props) {
                       <td className="px-3 py-2 font-medium">{r.tenant_slug}</td>
                       <td className="px-3 py-2">{r.role}</td>
                       <td className="px-3 py-2 text-zinc-700 dark:text-zinc-300">{shown}</td>
+                      <td className="px-3 py-2 align-top">
+                        <div className="flex flex-col gap-1">
+                          <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                            {notifyOn ? "수신함" : "수신 안 함"}
+                          </span>
+                          <form action={setMerchantNotifyOrderEmailFromOps} className="inline">
+                            <input type="hidden" name="membership_id" value={r.id} />
+                            <input type="hidden" name="notify_order_email" value={notifyOn ? "0" : "1"} />
+                            <button
+                              type="submit"
+                              className="rounded-lg border border-chaya-border bg-zinc-50 px-2 py-1 text-xs font-semibold text-zinc-800 hover:bg-zinc-100 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                            >
+                              {notifyOn ? "끄기" : "켜기"}
+                            </button>
+                          </form>
+                          <p className="max-w-[10rem] text-[10px] leading-snug text-zinc-500 dark:text-zinc-500">
+                            승인된 멤버·invite_email 있을 때만 Resend 대상
+                          </p>
+                        </div>
+                      </td>
                       <td className="px-3 py-2 font-mono text-xs text-zinc-500">{r.user_id}</td>
                       <td className="px-3 py-2 tabular-nums text-zinc-600 dark:text-zinc-400">
                         {new Date(r.created_at).toLocaleString("ko-KR")}
