@@ -1,6 +1,10 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { merchantLoginUsesSms } from "@/lib/merchant/merchant-login-mode";
+import { sanitizeMerchantNextPath } from "@/lib/merchant/merchant-access";
+import { createSupabaseServerClient } from "@/lib/supabase/create-server-session-client";
+import { resolveServerUser } from "@/lib/supabase/resolve-server-user";
 
 export const dynamic = "force-dynamic";
 
@@ -56,6 +60,18 @@ export default async function MerchantLoginPage({ searchParams }: Props) {
     useSms &&
     typeof sp.phase === "string" &&
     sp.phase.toLowerCase() === "confirm";
+
+  /** 이미 세션이 있으면 로그인 폼을 건너뜁니다. `/m` 이 단일 가게면 대시보드로 이어집니다. */
+  if (!isConfirm) {
+    const supabase = await createSupabaseServerClient();
+    if (supabase) {
+      const user = await resolveServerUser(supabase);
+      if (user) {
+        const next = sanitizeMerchantNextPath(typeof sp.next === "string" ? sp.next : null);
+        redirect(next ?? "/m");
+      }
+    }
+  }
 
   const err = useSms
     ? smsAlertMessage(typeof sp.e === "string" ? sp.e : undefined)
