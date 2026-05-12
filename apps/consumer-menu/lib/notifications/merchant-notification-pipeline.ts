@@ -16,7 +16,8 @@ async function loadInviteEmailsForTenant(
     .from("merchant_tenant_members")
     .select("invite_email")
     .eq("tenant_slug", tenantSlug)
-    .not("approved_at", "is", null);
+    .not("approved_at", "is", null)
+    .eq("notify_order_email", true);
 
   if (error || !data) return [];
 
