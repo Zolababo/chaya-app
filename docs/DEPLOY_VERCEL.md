@@ -66,6 +66,10 @@ pnpm exec turbo run build --filter=@chaya/consumer-menu
 
 **Turborepo / Vercel:** Production·Preview에서 설정한 환경 변수 이름은 `apps/consumer-menu/turbo.json` 의 `tasks.build.env` 에 **이름만** 선언해 두었습니다. 값은 계속 Vercel 대시보드(또는 CLI)에서만 주입하고, Turborepo가 캐시 키를 올바르게 잡도록 합니다. 자세한 변수 목록은 같은 앱의 `.env.example` 을 참고하세요.
 
+**Supabase Auth URL:** 대시보드 **Authentication → URL configuration**(Site URL·Redirect URLs)을 프로덕션/프리뷰 호스트와 맞추는 절차는 `docs/MERCHANT_MIGRATION_RUNBOOK.md` §5 및 `docs/RUNTIME_GO_LIVE_CHECKLIST.md` 2단계를 따릅니다(비밀 값은 저장소에 두지 않음).
+
+**프리뷰 배포:** PR 프리뷰 URL이 **보호(Vercel SSO·암호)**되어 있으면 CLI·스크립트 스모크는 건너뛰어도 됩니다. 프로덕션 URL로만 주기 점검해도 됩니다.
+
 ---
 
 ## 5. 로컬 CLI 배포 (선택)
@@ -100,6 +104,8 @@ npx vercel deploy --prod --yes
 **URL·anon 키 값은 응답에 넣지 않으며**, Vercel에 `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` 가 **설정돼 있는지 여부**만 확인할 때 쓰면 됩니다.  
 Vercel 프로덕션/프리뷰에서는 빌드 시 주입되는 **`deployment.env`**, **`deployment.gitCommitSha`**(짧은 검증용으로 `main` 마지막 커밋과 대조 가능)가 붙을 수 있습니다. 로컬 `next dev` 에서는 보통 생략됩니다.
 
+**Ops 참고(RSC·미들웨어·쿠키):** 서버·미들웨어는 요청마다 Supabase 세션 쿠키를 읽고 갱신합니다. **GET `/m/logout`은 405**로 두어 프리페치·크롤러가 세션을 지우지 않게 했고, 실제 로그아웃은 **POST 폼**만 사용합니다.
+
 손님 주문·화면 동선은 반드시 브라우저로 한 번 확인하세요. 순서는 **`docs/BARRIER_FREE_NEXT_STEPS.md`** 의 「배포 후 앱 스모크 (손님 주문)」를 따르면 됩니다.
 자동 1차 점검은 저장소 루트에서 `pnpm smoke:consumer -- --expected-sha <커밋SHA앞부분> --tenant <slug>` 로 실행할 수 있습니다.  
 `--expected-sha` 가 있으면 기본값으로 **프로덕션에 새 커밋이 반영될 때까지** `/health`의 `deployment.gitCommitSha` 를 **최대 8회**(간격 기본 **12초**) 재확인합니다. 필요 시 `--sha-retries` / `--sha-retry-delay-ms` 로 조정합니다.  
@@ -125,6 +131,7 @@ GitHub에서 **`Smoke consumer`** 워크플로(`.github/workflows/smoke-consumer
 5. **통합 안정성 게이트**: `pnpm smoke:platform -- --tenant <slug> --expected-sha <커밋접두>` (소비자+점주 연속 점검).  
 6. **Supabase**: 신규/스테이징 DB면 `verify_guest_order_rpcs.sql` 로 ①~⑤ 확인(`docs/BARRIER_FREE_NEXT_STEPS.md` 참고).  
 7. **브라우저**: 같은 문서의 「배포 후 앱 스모크」(주문 한 번·목록·시크릿 창 등) 선택 실행.
+8. **Lighthouse(모바일)**: CI 자동화는 필수 아님. 수동으로 한 번 **베이스라인**만 잡아 두면 이후 성능·접근성 회귀 비교에 도움이 됩니다.
 
 추가로 운영 리포트까지 한 번에 만들려면:
 
