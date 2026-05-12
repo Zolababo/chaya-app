@@ -22,6 +22,12 @@ export default async function OpsHomePage() {
         >
           점주 멤버십 관리 →
         </Link>
+        <Link
+          href="/ops/audit"
+          className="flex min-h-[56px] items-center rounded-xl border border-chaya-border bg-white px-4 text-base font-semibold hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:hover:bg-zinc-900"
+        >
+          감사 로그 (전 매장) →
+        </Link>
       </nav>
 
       <p className="mt-16 text-center text-sm text-zinc-500">
