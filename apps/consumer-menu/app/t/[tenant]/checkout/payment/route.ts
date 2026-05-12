@@ -1,4 +1,4 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
 import { CONSUMER_CHECKOUT_PAYMENT_IMPLEMENTED } from "@/lib/consumer/future-features";
 

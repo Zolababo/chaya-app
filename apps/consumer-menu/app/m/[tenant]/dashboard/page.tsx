@@ -5,6 +5,7 @@ import { MerchantSubnav } from "@/components/merchant-subnav";
 import { OrderStatusRefresh } from "@/components/order-status-refresh";
 import { requireMerchantForTenant } from "@/lib/merchant/merchant-access";
 import { listMenusForMerchant } from "@/lib/menus/list-menus-for-merchant";
+import { listRecentMerchantNotificationEvents } from "@/lib/notifications/list-merchant-notification-events";
 import {
   countMerchantPendingOrders,
   getMerchantDashboard24hMetrics,
@@ -34,11 +35,12 @@ export default async function MerchantDashboardPage({ params, searchParams }: Pr
   const { role } = await requireMerchantForTenant(tenant);
   const canManageMenus = role === "owner";
 
-  const [pendingCount, metrics24h, list, menus] = await Promise.all([
+  const [pendingCount, metrics24h, list, menus, notif] = await Promise.all([
     countMerchantPendingOrders(tenant),
     getMerchantDashboard24hMetrics(tenant),
     listOrdersForMerchant(tenant),
     listMenusForMerchant(tenant),
+    listRecentMerchantNotificationEvents(tenant, 8),
   ]);
 
   const recentOrders = list.ok ? list.rows.slice(0, 8) : [];
@@ -76,6 +78,49 @@ export default async function MerchantDashboardPage({ params, searchParams }: Pr
       <div className="mb-6">
         <OrderStatusRefresh />
       </div>
+
+      <section className="mb-8 rounded-xl border border-chaya-border bg-chaya-surface p-4 dark:border-zinc-700 dark:bg-zinc-950" aria-label="최근 알림">
+        <h2 className="text-base font-semibold">최근 알림</h2>
+        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+          손님 신규 주문·상태 변경이 여기에 쌓입니다. 이메일은{" "}
+          <span className="font-mono">RESEND_API_KEY</span>·<span className="font-mono">RESEND_FROM_EMAIL</span> 이
+          있고 멤버에 <span className="font-mono">invite_email</span> 이 있을 때만 발송됩니다.
+        </p>
+        {!notif.ok ? (
+          <p className="mt-3 text-sm text-amber-800 dark:text-amber-200">{notif.message}</p>
+        ) : notif.rows.length === 0 ? (
+          <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">아직 알림이 없습니다.</p>
+        ) : (
+          <ul className="mt-3 divide-y divide-chaya-border rounded-lg border border-chaya-border bg-white dark:divide-zinc-800 dark:border-zinc-700 dark:bg-zinc-950">
+            {notif.rows.map((n) => (
+              <li key={n.id} className="flex flex-wrap items-start justify-between gap-2 px-3 py-2 text-sm">
+                <div>
+                  <p className="font-medium text-zinc-900 dark:text-zinc-50">{n.summary}</p>
+                  <p className="mt-0.5 text-xs text-zinc-500 tabular-nums dark:text-zinc-400">
+                    {n.created_at
+                      ? new Date(n.created_at).toLocaleString("ko-KR", {
+                          dateStyle: "short",
+                          timeStyle: "short",
+                        })
+                      : "—"}
+                  </p>
+                </div>
+                <span
+                  className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${
+                    n.email_status === "sent"
+                      ? "bg-emerald-100 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-100"
+                      : n.email_status === "failed"
+                        ? "bg-red-100 text-red-900 dark:bg-red-900/40 dark:text-red-100"
+                        : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
+                  }`}
+                >
+                  {n.email_status === "sent" ? "메일 발송" : n.email_status === "failed" ? "메일 실패" : "메일 생략"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       {!metrics24h.ok ? (
         <p

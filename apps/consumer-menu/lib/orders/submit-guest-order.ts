@@ -1,6 +1,8 @@
 import { createConsumerSupabase } from "@/lib/supabase/create-consumer-client";
 import { withSupabaseReadRetry, withSupabaseWriteRetry } from "@/lib/supabase/transient-retry";
 
+import { fireMerchantGuestOrderCreatedNotification } from "@/lib/notifications/merchant-notification-pipeline";
+
 import type { GuestOrderLine } from "./guest-order-validation";
 import {
   GUEST_ORDER_LIMITS,
@@ -147,6 +149,13 @@ export async function submitGuestOrder(input: {
   if (id == null) {
     return { ok: false, message: "주문 번호를 받지 못했습니다." };
   }
+  const orderIdStr = String(id);
+  fireMerchantGuestOrderCreatedNotification({
+    tenantSlug: slug,
+    orderId: orderIdStr,
+    totalPrice: total_price,
+    tableNo: table || null,
+  });
 
-  return { ok: true, orderId: String(id) };
+  return { ok: true, orderId: orderIdStr };
 }

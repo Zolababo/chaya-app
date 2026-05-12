@@ -13,7 +13,7 @@
 
 | 영역 | 비율 | 비고 |
 |------|------|------|
-| 점주 콘솔 운영 성숙도(로드맵 Phase 1–4 통합) | **~92%** | Phase 2 완료(점주 감사 UI·CSV + **`/ops` 전 매장 조회·CSV**). 알림(Phase 3)·세분 RBAC(Phase 4)는 미완. |
+| 점주 콘솔 운영 성숙도(로드맵 Phase 1–4 통합) | **~94%** | Phase 3 착수: `merchant_notification_events` + 대시보드 피드, 신규 주문·상태 변경 기록, **선택 Resend 이메일**. 웹푸시·카카오 등은 미연동. |
 | 소비자 `/t` 주문·메뉴 MVP | **~63%** | 게스트 주문·장바구니·주문 조회 등 핵심 동작. **결제·직원 호출**은 `lib/consumer/future-features` + 서버 라우트 스텁만(당장 미사용). |
 
 숫자는 펜테스트·실매장 검증 없이 **저장소와 흐름 기준 추정**입니다. 이후 작업 마칠 때마다 이 표를 갱신합니다.
@@ -34,9 +34,12 @@
 - ✅ **기간 필터**(KST 달력일, 최대 120일) 및 **CSV** — `GET /m/[tenant]/audit/export` (동일 필터, 최대 5,000건, 초과 시 `X-Audit-Export-Truncated`).
 - ✅ 플랫폼 **`/ops/audit`** — 전 매장 조회·필터·CSV (`GET /ops/audit/export`). DB에 `merchant_audit_events_select_platform_operator` 정책 필요(`20260512160000_*` 마이그레이션).
 
-### Phase 3 — 알림
+### Phase 3 — 알림 (진행 중)
 
-- 주문 대기·상태 변경에 대한 **이메일 / 웹 푸시 / 카카오** 등 채널별 설계(비용·동의·옵트아웃).
+- ✅ DB **`merchant_notification_events`** + RLS(승인 멤버·`platform_operators` SELECT).
+- ✅ **대시보드「최근 알림」** — 신규 손님 주문·주문 상태 변경 기록, 메일 발송 여부 뱃지.
+- ✅ **Resend(선택)** — `RESEND_API_KEY`·`RESEND_FROM_EMAIL` + 멤버 `invite_email` 있을 때만 신규 주문 메일.
+- ⬜ 웹 푸시 / 카카오 / 수신 옵트인·빈도 제한 등.
 
 ### Phase 4 — 권한·거버넌스
 

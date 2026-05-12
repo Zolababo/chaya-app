@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 
 import { requireMerchantOrderMutation } from "@/lib/merchant/require-merchant-action";
 import { recordMerchantAuditEvent } from "@/lib/merchant/record-merchant-audit";
+import { fireMerchantOrderStatusChangedNotification } from "@/lib/notifications/merchant-notification-pipeline";
 import { isMerchantOrderStatus } from "@/lib/orders/merchant-status-constants";
 import { createServiceSupabase } from "@/lib/supabase/create-service-client";
 
@@ -61,6 +62,13 @@ export async function updateOrderStatusFromForm(formData: FormData): Promise<voi
       status,
       previous_status: currentStatus || null,
     },
+  });
+
+  fireMerchantOrderStatusChangedNotification({
+    tenantSlug: tenant,
+    orderId,
+    fromStatus: currentStatus?.trim() || null,
+    toStatus: status,
   });
 
   redirectBack(tenant, { ok: "status_saved", statusFilter });
