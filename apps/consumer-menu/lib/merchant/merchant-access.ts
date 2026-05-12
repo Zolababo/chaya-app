@@ -29,12 +29,12 @@ export async function requireMerchantForTenant(tenantRaw: string): Promise<{ rol
 
   const supabase = await createSupabaseServerClient();
   if (!supabase) {
-    redirect(merchantLoginUrl(`/m/${encodeURIComponent(tenant)}/orders`));
+    redirect(merchantLoginUrl(`/m/${encodeURIComponent(tenant)}/dashboard`));
   }
 
   const user = await resolveServerUser(supabase);
   if (!user) {
-    redirect(merchantLoginUrl(`/m/${encodeURIComponent(tenant)}/orders`));
+    redirect(merchantLoginUrl(`/m/${encodeURIComponent(tenant)}/dashboard`));
   }
 
   const { data: row, error: rowErr } = await supabase

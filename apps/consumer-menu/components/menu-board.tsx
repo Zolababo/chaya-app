@@ -120,21 +120,33 @@ export function MenuBoard({ tenant, items, categories }: Props) {
                   ) : null}
                   <p className="mt-1 text-sm font-semibold tabular-nums text-chaya-primary dark:text-orange-400">
                     {formatKrw(item.price)}
+                    {item.isSoldOut ? (
+                      <span className="ml-2 text-xs font-semibold text-zinc-500 dark:text-zinc-400">품절</span>
+                    ) : null}
                   </p>
                 </div>
               </Link>
-              <button
-                type="button"
-                title="1개 장바구니에 담기"
-                aria-label={`${item.name} 1개 장바구니에 담기`}
-                className="touch-manipulation min-h-[44px] min-w-[44px] self-center rounded-xl border border-chaya-border bg-chaya-surface px-3 py-2 text-sm font-semibold text-zinc-800 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100"
-                onClick={() => {
-                  addLine(tenant, item, 1, null);
-                  flashAdded();
-                }}
-              >
-                담기
-              </button>
+              {item.isSoldOut ? (
+                <span
+                  className="touch-manipulation flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center self-center rounded-xl border border-zinc-200 bg-zinc-100 px-2 text-center text-xs font-semibold text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400"
+                  aria-label={`${item.name} 품절`}
+                >
+                  품절
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  title="1개 장바구니에 담기"
+                  aria-label={`${item.name} 1개 장바구니에 담기`}
+                  className="touch-manipulation min-h-[44px] min-w-[44px] self-center rounded-xl border border-chaya-border bg-chaya-surface px-3 py-2 text-sm font-semibold text-zinc-800 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100"
+                  onClick={() => {
+                    addLine(tenant, item, 1, null);
+                    flashAdded();
+                  }}
+                >
+                  담기
+                </button>
+              )}
             </li>
           ))}
         </ul>

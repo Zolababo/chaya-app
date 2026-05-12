@@ -12,18 +12,30 @@ const MAX_CAT = 120;
 const MAX_DESC = 2000;
 const MAX_URL = 2000;
 
-function redirectMenus(tenant: string, err?: string): never {
+function redirectMenus(tenant: string, err?: string, preserveCategory?: string | null): never {
   const q = new URLSearchParams();
   if (err) q.set("e", err);
+  const cat = preserveCategory?.trim();
+  if (cat) q.set("category", cat.slice(0, MAX_CAT));
   const suffix = q.toString() ? `?${q}` : "";
   redirect(`/m/${encodeURIComponent(tenant)}/menus${suffix}`);
+}
+
+function readPreserveCategory(formData: FormData): string | null {
+  return trimStr(formData.get("preserve_category"), MAX_CAT);
+}
+
+function parseSoldOutCheckbox(raw: FormDataEntryValue | null): boolean {
+  if (raw == null) return false;
+  const s = String(raw).trim();
+  return s === "on" || s === "true" || s === "1";
 }
 
 async function requireMenusOwner(formData: FormData): Promise<void> {
   const { role } = await requireMerchantOrderMutation(formData);
   if (role !== "owner") {
     const tenant = String(formData.get("tenant_slug") ?? "").trim();
-    redirect(`/m/${encodeURIComponent(tenant || "_")}/orders?e=no_menus_access`);
+    redirect(`/m/${encodeURIComponent(tenant || "_")}/dashboard?e=no_menus_access`);
   }
 }
 
@@ -77,12 +89,13 @@ export async function createMenuFromForm(formData: FormData): Promise<void> {
   const name = trimStr(formData.get("name"), MAX_NAME);
   const price = parsePrice(formData.get("price"));
   if (!tenant || !name || price == null) redirectMenus(tenant || "_", "bad_input");
+  const preserveCategory = readPreserveCategory(formData);
 
   const client = createServiceSupabase();
-  if (!client) redirectMenus(tenant, "no_service");
+  if (!client) redirectMenus(tenant, "no_service", preserveCategory);
 
   const upload = await pickUploadedMenuImageUrl(client, formData, tenant);
-  if (!upload.ok) redirectMenus(tenant, "upload");
+  if (!upload.ok) redirectMenus(tenant, "upload", preserveCategory);
   const imageUrl = upload.url ?? trimStr(formData.get("imageUrl"), MAX_URL);
 
   const rawSort = formData.get("sort_order");
@@ -90,6 +103,8 @@ export async function createMenuFromForm(formData: FormData): Promise<void> {
     rawSort == null || String(rawSort).trim() === ""
       ? await nextSortOrder(client, tenant)
       : parseSortOrder(rawSort);
+
+  const is_sold_out = parseSoldOutCheckbox(formData.get("is_sold_out"));
 
   const { error } = await client.from("ChayaMenus").insert({
     tenant_slug: tenant,
@@ -99,10 +114,11 @@ export async function createMenuFromForm(formData: FormData): Promise<void> {
     description: trimStr(formData.get("description"), MAX_DESC),
     imageUrl,
     sort_order,
+    is_sold_out,
   });
 
-  if (error) redirectMenus(tenant, "db");
-  redirectMenus(tenant);
+  if (error) redirectMenus(tenant, "db", preserveCategory);
+  redirectMenus(tenant, undefined, preserveCategory);
 }
 
 export async function updateMenuFromForm(formData: FormData): Promise<void> {
@@ -115,9 +131,10 @@ export async function updateMenuFromForm(formData: FormData): Promise<void> {
   if (!tenant || !menuId || !UUID_RE.test(menuId) || !name || price == null) {
     redirectMenus(tenant || "_", "bad_input");
   }
+  const preserveCategory = readPreserveCategory(formData);
 
   const client = createServiceSupabase();
-  if (!client) redirectMenus(tenant, "no_service");
+  if (!client) redirectMenus(tenant, "no_service", preserveCategory);
 
   const { data: existing } = await client
     .from("ChayaMenus")
@@ -127,9 +144,10 @@ export async function updateMenuFromForm(formData: FormData): Promise<void> {
     .maybeSingle();
 
   const upload = await pickUploadedMenuImageUrl(client, formData, tenant);
-  if (!upload.ok) redirectMenus(tenant, "upload");
+  if (!upload.ok) redirectMenus(tenant, "upload", preserveCategory);
   const imageUrl = upload.url ?? trimStr(formData.get("imageUrl"), MAX_URL);
   const sort_order = parseSortOrder(formData.get("sort_order"));
+  const is_sold_out = parseSoldOutCheckbox(formData.get("is_sold_out"));
 
   const prevUrl =
     existing && typeof existing === "object" && "imageUrl" in existing
@@ -145,17 +163,42 @@ export async function updateMenuFromForm(formData: FormData): Promise<void> {
       description: trimStr(formData.get("description"), MAX_DESC),
       imageUrl,
       sort_order,
+      is_sold_out,
     })
     .eq("id", menuId)
     .eq("tenant_slug", tenant);
 
-  if (error) redirectMenus(tenant, "db");
+  if (error) redirectMenus(tenant, "db", preserveCategory);
 
   if (prevUrl && prevUrl !== imageUrl) {
     await tryRemoveMenuImageForTenant(client, tenant, prevUrl);
   }
 
-  redirectMenus(tenant);
+  redirectMenus(tenant, undefined, preserveCategory);
+}
+
+export async function setMenuSoldOutFromForm(formData: FormData): Promise<void> {
+  await requireMenusOwner(formData);
+
+  const tenant = String(formData.get("tenant_slug") ?? "").trim();
+  const menuId = String(formData.get("menu_id") ?? "").trim();
+  const preserveCategory = readPreserveCategory(formData);
+  const raw = formData.get("is_sold_out");
+  const is_sold_out = raw === "true" || raw === "1" || raw === "on";
+
+  if (!tenant || !menuId || !UUID_RE.test(menuId)) redirectMenus(tenant || "_", "bad_input");
+
+  const client = createServiceSupabase();
+  if (!client) redirectMenus(tenant, "no_service", preserveCategory);
+
+  const { error } = await client
+    .from("ChayaMenus")
+    .update({ is_sold_out })
+    .eq("id", menuId)
+    .eq("tenant_slug", tenant);
+
+  if (error) redirectMenus(tenant, "db", preserveCategory);
+  redirectMenus(tenant, undefined, preserveCategory);
 }
 
 export async function deleteMenuFromForm(formData: FormData): Promise<void> {
@@ -164,9 +207,10 @@ export async function deleteMenuFromForm(formData: FormData): Promise<void> {
   const tenant = String(formData.get("tenant_slug") ?? "").trim();
   const menuId = String(formData.get("menu_id") ?? "").trim();
   if (!tenant || !menuId || !UUID_RE.test(menuId)) redirectMenus(tenant || "_", "bad_input");
+  const preserveCategory = readPreserveCategory(formData);
 
   const client = createServiceSupabase();
-  if (!client) redirectMenus(tenant, "no_service");
+  if (!client) redirectMenus(tenant, "no_service", preserveCategory);
 
   const { data: existing } = await client
     .from("ChayaMenus")
@@ -182,9 +226,9 @@ export async function deleteMenuFromForm(formData: FormData): Promise<void> {
 
   const { error } = await client.from("ChayaMenus").delete().eq("id", menuId).eq("tenant_slug", tenant);
 
-  if (error) redirectMenus(tenant, "db");
+  if (error) redirectMenus(tenant, "db", preserveCategory);
 
   await tryRemoveMenuImageForTenant(client, tenant, prevUrl);
 
-  redirectMenus(tenant);
+  redirectMenus(tenant, undefined, preserveCategory);
 }

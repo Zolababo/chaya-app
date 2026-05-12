@@ -9,13 +9,13 @@ import { requireMerchantForTenant } from "@/lib/merchant/merchant-access";
 import { listMenusForMerchant } from "@/lib/menus/list-menus-for-merchant";
 import { countMerchantPendingOrders } from "@/lib/orders/list-orders-for-merchant";
 
-import { createMenuFromForm, deleteMenuFromForm, updateMenuFromForm } from "./actions";
+import { createMenuFromForm, deleteMenuFromForm, setMenuSoldOutFromForm, updateMenuFromForm } from "./actions";
 
 export const dynamic = "force-dynamic";
 
 type Props = {
   params: Promise<{ tenant: string }>;
-  searchParams: Promise<{ e?: string }>;
+  searchParams: Promise<{ e?: string; category?: string }>;
 };
 
 function errorMessage(code: string | undefined): string | null {
@@ -36,11 +36,11 @@ function errorMessage(code: string | undefined): string | null {
 
 export default async function MerchantMenusPage({ params, searchParams }: Props) {
   const { tenant } = await params;
-  const { e } = await searchParams;
+  const { e, category: categoryParam } = await searchParams;
 
   const { role } = await requireMerchantForTenant(tenant);
   if (role !== "owner") {
-    redirect(`/m/${encodeURIComponent(tenant)}/orders?e=no_menus_access`);
+    redirect(`/m/${encodeURIComponent(tenant)}/dashboard?e=no_menus_access`);
   }
 
   const [list, pendingCount] = await Promise.all([
@@ -48,6 +48,20 @@ export default async function MerchantMenusPage({ params, searchParams }: Props)
     countMerchantPendingOrders(tenant),
   ]);
   const errMsg = errorMessage(e);
+  const categoryFilter =
+    typeof categoryParam === "string" && categoryParam.trim() ? categoryParam.trim() : null;
+  const displayItems =
+    list.ok && categoryFilter
+      ? list.items.filter((it) => (it.category?.trim() || "기타") === categoryFilter)
+      : list.ok
+        ? list.items
+        : [];
+
+  const categoryTabs = list.ok
+    ? Array.from(new Set(list.items.map((it) => (it.category?.trim() || "기타")))).sort((a, b) =>
+        a.localeCompare(b, "ko"),
+      )
+    : [];
 
   return (
     <div className="mx-auto min-h-dvh max-w-4xl px-4 py-8 pb-[max(2rem,env(safe-area-inset-bottom))]">
@@ -90,6 +104,40 @@ export default async function MerchantMenusPage({ params, searchParams }: Props)
         </p>
       ) : (
         <>
+          {categoryTabs.length > 0 ? (
+            <nav
+              className="mb-6 flex flex-wrap gap-2"
+              aria-label="카테고리로 메뉴 목록 필터"
+            >
+              <Link
+                href={`/m/${encodeURIComponent(tenant)}/menus`}
+                className={
+                  categoryFilter == null
+                    ? "inline-flex min-h-[40px] items-center rounded-full bg-chaya-primary px-4 py-2 text-sm font-semibold text-chaya-on-primary"
+                    : "inline-flex min-h-[40px] items-center rounded-full border border-chaya-border bg-chaya-surface px-4 py-2 text-sm font-semibold text-zinc-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200"
+                }
+              >
+                전체
+              </Link>
+              {categoryTabs.map((c) => {
+                const active = categoryFilter === c;
+                return (
+                  <Link
+                    key={c}
+                    href={`/m/${encodeURIComponent(tenant)}/menus?category=${encodeURIComponent(c)}`}
+                    className={
+                      active
+                        ? "inline-flex min-h-[40px] items-center rounded-full bg-chaya-primary px-4 py-2 text-sm font-semibold text-chaya-on-primary"
+                        : "inline-flex min-h-[40px] items-center rounded-full border border-chaya-border bg-chaya-surface px-4 py-2 text-sm font-semibold text-zinc-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200"
+                    }
+                  >
+                    {c}
+                  </Link>
+                );
+              })}
+            </nav>
+          ) : null}
+
           <section className="mb-10 rounded-xl border border-chaya-border bg-chaya-surface p-4 dark:border-zinc-700 dark:bg-zinc-950">
             <h2 className="mb-3 text-lg font-semibold">새 메뉴 추가</h2>
             <form
@@ -98,6 +146,9 @@ export default async function MerchantMenusPage({ params, searchParams }: Props)
               className="grid gap-3 sm:grid-cols-2"
             >
               <input type="hidden" name="tenant_slug" value={tenant} />
+              {categoryFilter != null ? (
+                <input type="hidden" name="preserve_category" value={categoryFilter} />
+              ) : null}
               <div className="sm:col-span-2">
                 <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400" htmlFor="new-name">
                   이름 *
@@ -162,6 +213,18 @@ export default async function MerchantMenusPage({ params, searchParams }: Props)
                   className="mt-1 w-full rounded-lg border border-chaya-border bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
                 />
               </div>
+              <div className="sm:col-span-2 flex items-center gap-2">
+                <input
+                  id="new-sold-out"
+                  name="is_sold_out"
+                  type="checkbox"
+                  value="on"
+                  className="h-4 w-4 rounded border-chaya-border"
+                />
+                <label htmlFor="new-sold-out" className="text-sm text-zinc-700 dark:text-zinc-300">
+                  추가 직후 품절로 표시
+                </label>
+              </div>
               <div className="sm:col-span-2">
                 <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400" htmlFor="new-file">
                   이미지 파일
@@ -199,12 +262,19 @@ export default async function MerchantMenusPage({ params, searchParams }: Props)
           </section>
 
           <section>
-            <h2 className="mb-3 text-lg font-semibold">등록된 메뉴 ({list.items.length})</h2>
+            <h2 className="mb-3 text-lg font-semibold">
+              등록된 메뉴 (
+              {categoryFilter ? `${displayItems.length} / 전체 ${list.items.length}` : list.items.length})
+            </h2>
             {list.items.length === 0 ? (
               <p className="text-zinc-600 dark:text-zinc-400">아직 메뉴가 없습니다. 위에서 추가해 주세요.</p>
+            ) : categoryFilter && displayItems.length === 0 ? (
+              <p className="text-zinc-600 dark:text-zinc-400">
+                이 카테고리에 해당하는 메뉴가 없습니다. 필터를 바꾸거나 메뉴의 카테고리를 수정해 주세요.
+              </p>
             ) : (
               <ul className="space-y-4">
-                {list.items.map((item) => (
+                {displayItems.map((item) => (
                   <li
                     key={item.id}
                     className="rounded-xl border border-chaya-border bg-chaya-surface p-4 dark:border-zinc-700 dark:bg-zinc-950"
@@ -213,6 +283,11 @@ export default async function MerchantMenusPage({ params, searchParams }: Props)
                       <div>
                         <p className="font-semibold">
                           {item.name}
+                          {item.isSoldOut ? (
+                            <span className="ml-2 rounded-md bg-zinc-200 px-1.5 py-0.5 text-xs font-semibold text-zinc-800 dark:bg-zinc-800 dark:text-zinc-100">
+                              품절
+                            </span>
+                          ) : null}
                           <span className="ml-2 font-mono text-xs font-normal text-zinc-500">#{item.sortOrder}</span>
                         </p>
                         <p className="text-sm text-chaya-primary dark:text-orange-400">
@@ -225,9 +300,43 @@ export default async function MerchantMenusPage({ params, searchParams }: Props)
                           <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">{item.description}</p>
                         ) : null}
                       </div>
+                      <div className="flex shrink-0 flex-wrap items-center gap-2">
+                        <form action={setMenuSoldOutFromForm} className="inline">
+                          <input type="hidden" name="tenant_slug" value={tenant} />
+                          <input type="hidden" name="menu_id" value={item.id} />
+                          <input type="hidden" name="is_sold_out" value="false" />
+                          {categoryFilter != null ? (
+                            <input type="hidden" name="preserve_category" value={categoryFilter} />
+                          ) : null}
+                          <button
+                            type="submit"
+                            disabled={!item.isSoldOut}
+                            className="rounded-lg border border-chaya-border px-2 py-1 text-xs font-semibold text-zinc-800 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-600 dark:text-zinc-100"
+                          >
+                            판매
+                          </button>
+                        </form>
+                        <form action={setMenuSoldOutFromForm} className="inline">
+                          <input type="hidden" name="tenant_slug" value={tenant} />
+                          <input type="hidden" name="menu_id" value={item.id} />
+                          <input type="hidden" name="is_sold_out" value="true" />
+                          {categoryFilter != null ? (
+                            <input type="hidden" name="preserve_category" value={categoryFilter} />
+                          ) : null}
+                          <button
+                            type="submit"
+                            disabled={item.isSoldOut}
+                            className="rounded-lg border border-amber-600/50 bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-950 disabled:cursor-not-allowed disabled:opacity-40 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100"
+                          >
+                            품절
+                          </button>
+                        </form>
                       <form action={deleteMenuFromForm} className="shrink-0">
                         <input type="hidden" name="tenant_slug" value={tenant} />
                         <input type="hidden" name="menu_id" value={item.id} />
+                        {categoryFilter != null ? (
+                          <input type="hidden" name="preserve_category" value={categoryFilter} />
+                        ) : null}
                         <MerchantConfirmSubmitButton
                           confirmMessage={`「${item.name}」메뉴를 삭제할까요?`}
                           className="rounded-lg border border-red-300 px-3 py-1 text-xs font-semibold text-red-700 dark:border-red-800 dark:text-red-300"
@@ -235,6 +344,7 @@ export default async function MerchantMenusPage({ params, searchParams }: Props)
                           삭제
                         </MerchantConfirmSubmitButton>
                       </form>
+                      </div>
                     </div>
                     <details className="mt-3 border-t border-chaya-border pt-3 dark:border-zinc-800">
                       <summary className="cursor-pointer text-sm font-medium text-chaya-primary">수정</summary>
@@ -245,6 +355,9 @@ export default async function MerchantMenusPage({ params, searchParams }: Props)
                       >
                         <input type="hidden" name="tenant_slug" value={tenant} />
                         <input type="hidden" name="menu_id" value={item.id} />
+                        {categoryFilter != null ? (
+                          <input type="hidden" name="preserve_category" value={categoryFilter} />
+                        ) : null}
                         <div className="sm:col-span-2">
                           <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">이름 *</label>
                           <input
@@ -297,6 +410,19 @@ export default async function MerchantMenusPage({ params, searchParams }: Props)
                             defaultValue={item.description ?? ""}
                             className="mt-1 w-full rounded-lg border border-chaya-border bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
                           />
+                        </div>
+                        <div className="sm:col-span-2 flex items-center gap-2">
+                          <input
+                            id={`sold-out-${item.id}`}
+                            name="is_sold_out"
+                            type="checkbox"
+                            value="on"
+                            defaultChecked={item.isSoldOut}
+                            className="h-4 w-4 rounded border-chaya-border"
+                          />
+                          <label htmlFor={`sold-out-${item.id}`} className="text-sm text-zinc-700 dark:text-zinc-300">
+                            품절로 표시 (손님 화면에서 담기 비활성)
+                          </label>
                         </div>
                         <div className="sm:col-span-2">
                           <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">새 이미지 파일</label>

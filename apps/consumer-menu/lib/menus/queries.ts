@@ -12,6 +12,7 @@ const DEMO_ITEMS: ChayaMenuRow[] = [
     category: "Korean Food",
     imageUrl: null,
     sortOrder: 0,
+    isSoldOut: false,
   },
 ];
 
@@ -38,6 +39,10 @@ function normalizeRow(raw: Record<string, unknown>): ChayaMenuRow | null {
         : 0;
   const sortOrderNorm = Number.isFinite(sortOrder) ? Math.trunc(sortOrder) : 0;
 
+  const soldRaw = raw.is_sold_out ?? raw.isSoldOut;
+  const isSoldOut =
+    soldRaw === true || soldRaw === "true" || soldRaw === "t" || soldRaw === 1 || soldRaw === "1";
+
   return {
     id: String(id),
     name,
@@ -46,6 +51,7 @@ function normalizeRow(raw: Record<string, unknown>): ChayaMenuRow | null {
     category: typeof raw.category === "string" ? raw.category : null,
     imageUrl: typeof raw.imageUrl === "string" ? raw.imageUrl : null,
     sortOrder: sortOrderNorm,
+    isSoldOut,
   };
 }
 
@@ -69,7 +75,7 @@ export async function listMenusForTenant(tenant: string): Promise<MenuListResult
   const { data, error } = await withSupabaseReadRetry(() =>
     client
       .from("ChayaMenus")
-      .select("id,name,description,price,category,imageUrl,sort_order")
+      .select("id,name,description,price,category,imageUrl,sort_order,is_sold_out")
       .eq("tenant_slug", slug)
       .order("sort_order", { ascending: true })
       .order("name", { ascending: true }),
@@ -119,7 +125,7 @@ export async function getMenuById(tenant: string, itemId: string): Promise<Chaya
   const { data, error } = await withSupabaseReadRetry(() =>
     client
       .from("ChayaMenus")
-      .select("id,name,description,price,category,imageUrl,sort_order")
+      .select("id,name,description,price,category,imageUrl,sort_order,is_sold_out")
       .eq("id", itemId)
       .eq("tenant_slug", slug)
       .maybeSingle(),

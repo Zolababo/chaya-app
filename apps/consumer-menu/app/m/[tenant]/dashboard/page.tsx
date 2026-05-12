@@ -108,25 +108,38 @@ export default async function MerchantDashboardPage({ params }: Props) {
       )}
 
       {!metrics24h.ok ? null : (
-        <section className="mb-8 rounded-xl border border-chaya-border bg-chaya-surface p-4 dark:border-zinc-700 dark:bg-zinc-950">
-          <h2 className="text-base font-semibold">24시간 상태별 건수</h2>
-          <ul className="mt-3 flex flex-wrap gap-2">
-            {Object.entries(metrics24h.byStatus)
-              .filter(([, n]) => (n ?? 0) > 0)
-              .sort(([a], [b]) => a.localeCompare(b))
-              .map(([status, cnt]) => (
-                <li
-                  key={status}
-                  className="rounded-full bg-white px-3 py-1 text-xs font-semibold shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-700"
-                >
-                  {orderStatusLabel(status)} <span className="tabular-nums text-zinc-600 dark:text-zinc-400">{cnt}</span>
-                </li>
-              ))}
-            {Object.keys(metrics24h.byStatus).length === 0 ? (
-              <li className="text-sm text-zinc-600 dark:text-zinc-400">최근 24시간 접수된 주문이 없습니다.</li>
-            ) : null}
-          </ul>
-        </section>
+        <>
+          <p className="mb-4 text-center text-sm text-zinc-600 dark:text-zinc-400">
+            7일·30일 롤링 합계는{" "}
+            <Link
+              href={`/m/${encodeURIComponent(tenant)}/analytics`}
+              className="font-semibold text-chaya-primary underline-offset-2 hover:underline"
+            >
+              기간 실적
+            </Link>
+            에서 볼 수 있습니다.
+          </p>
+          <section className="mb-8 rounded-xl border border-chaya-border bg-chaya-surface p-4 dark:border-zinc-700 dark:bg-zinc-950">
+            <h2 className="text-base font-semibold">24시간 상태별 건수</h2>
+            <ul className="mt-3 flex flex-wrap gap-2">
+              {Object.entries(metrics24h.byStatus)
+                .filter(([, n]) => (n ?? 0) > 0)
+                .sort(([a], [b]) => a.localeCompare(b))
+                .map(([status, cnt]) => (
+                  <li
+                    key={status}
+                    className="rounded-full bg-white px-3 py-1 text-xs font-semibold shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-700"
+                  >
+                    {orderStatusLabel(status)}{" "}
+                    <span className="tabular-nums text-zinc-600 dark:text-zinc-400">{cnt}</span>
+                  </li>
+                ))}
+              {Object.keys(metrics24h.byStatus).length === 0 ? (
+                <li className="text-sm text-zinc-600 dark:text-zinc-400">최근 24시간 접수된 주문이 없습니다.</li>
+              ) : null}
+            </ul>
+          </section>
+        </>
       )}
 
       <section aria-label="최근 주문 미리보기">

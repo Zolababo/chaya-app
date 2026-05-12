@@ -94,6 +94,9 @@ export function BarrierFreeMenuClient({ tenant, items, categories }: Props) {
                 <h2 className="text-base font-semibold">{item.name}</h2>
                 <p className="text-sm font-semibold tabular-nums text-chaya-primary dark:text-orange-400">
                   {formatKrw(item.price)}
+                  {item.isSoldOut ? (
+                    <span className="ml-2 text-xs font-semibold text-zinc-500 dark:text-zinc-400">품절</span>
+                  ) : null}
                 </p>
                 {item.description?.trim() ? (
                   <p className="text-sm text-zinc-600 dark:text-zinc-400">{item.description}</p>
@@ -106,18 +109,27 @@ export function BarrierFreeMenuClient({ tenant, items, categories }: Props) {
                   {item.name} 상세·수량 선택
                 </Link>
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  addLine(slug, item, 1, null);
-                  setLastMessage(`${item.name} 1개를 같은 장바구니에 담았습니다. 하단 카트에서 확인할 수 있습니다.`);
-                  refreshCartCount();
-                }}
-                aria-label={`${item.name} 1개 장바구니에 담기`}
-                className="min-h-[44px] shrink-0 rounded-lg bg-chaya-primary px-4 py-2 text-sm font-semibold text-chaya-on-primary hover:bg-chaya-primary-hover"
-              >
-                담기
-              </button>
+              {item.isSoldOut ? (
+                <span
+                  className="flex min-h-[44px] shrink-0 items-center justify-center rounded-lg border border-zinc-300 bg-zinc-100 px-4 text-sm font-semibold text-zinc-500 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-400"
+                  aria-label={`${item.name} 품절`}
+                >
+                  품절
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    addLine(slug, item, 1, null);
+                    setLastMessage(`${item.name} 1개를 같은 장바구니에 담았습니다. 하단 카트에서 확인할 수 있습니다.`);
+                    refreshCartCount();
+                  }}
+                  aria-label={`${item.name} 1개 장바구니에 담기`}
+                  className="min-h-[44px] shrink-0 rounded-lg bg-chaya-primary px-4 py-2 text-sm font-semibold text-chaya-on-primary hover:bg-chaya-primary-hover"
+                >
+                  담기
+                </button>
+              )}
             </article>
           ))
         )}

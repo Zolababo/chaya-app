@@ -47,6 +47,18 @@ export function MerchantSubnav({ tenant, pendingOrderCount, canManageMenus = tru
         </Link>
       ) : null}
       <Link
+        href={`/m/${t}/analytics`}
+        className="inline-flex min-h-[44px] items-center rounded-lg px-3 py-2 text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900"
+      >
+        기간 실적
+      </Link>
+      <Link
+        href={`/m/${t}/categories`}
+        className="inline-flex min-h-[44px] items-center rounded-lg px-3 py-2 text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900"
+      >
+        카테고리
+      </Link>
+      <Link
         href={`/m/${t}/readiness`}
         className="inline-flex min-h-[44px] items-center rounded-lg px-3 py-2 text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900"
       >

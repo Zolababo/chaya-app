@@ -16,9 +16,23 @@ export function MenuItemAddToCart({ tenant, item }: Props) {
   const [qty, setQty] = useState(1);
 
   const addAndGo = () => {
+    if (item.isSoldOut) return;
     addLine(tenant, item, qty, null);
     router.push(`/t/${tenant}/cart`);
   };
+
+  if (item.isSoldOut) {
+    return (
+      <div className="fixed bottom-28 left-0 right-0 z-30 flex flex-col items-center gap-3 px-4">
+        <p
+          role="status"
+          className="w-full max-w-md rounded-2xl border border-zinc-300 bg-zinc-100 px-4 py-4 text-center text-sm font-semibold text-zinc-800 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-200"
+        >
+          지금은 품절입니다. 다른 메뉴를 둘러봐 주세요.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed bottom-28 left-0 right-0 z-30 flex flex-col items-center gap-3 px-4">

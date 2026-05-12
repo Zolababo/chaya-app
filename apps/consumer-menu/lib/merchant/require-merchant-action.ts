@@ -11,7 +11,7 @@ import { resolveServerUser } from "@/lib/supabase/resolve-server-user";
  */
 export async function requireMerchantOrderMutation(formData: FormData): Promise<{ role: MerchantRole }> {
   const tenant = String(formData.get("tenant_slug") ?? "").trim();
-  const nextPath = tenant ? `/m/${encodeURIComponent(tenant)}/orders` : "/m";
+  const nextPath = tenant ? `/m/${encodeURIComponent(tenant)}/dashboard` : "/m";
 
   const supabase = await createSupabaseServerClient();
   if (!supabase) {

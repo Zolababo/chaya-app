@@ -37,6 +37,11 @@ function normalizeRow(raw: Record<string, unknown>): ChayaMenuRow | null {
     category: typeof raw.category === "string" ? raw.category : null,
     imageUrl: typeof raw.imageUrl === "string" ? raw.imageUrl : null,
     sortOrder: sortOrderNorm,
+    isSoldOut:
+      raw.is_sold_out === true ||
+      raw.is_sold_out === "true" ||
+      raw.isSoldOut === true ||
+      raw.isSoldOut === "true",
   };
 }
 
@@ -58,7 +63,7 @@ export async function listMenusForMerchant(tenantSlug: string): Promise<ListMerc
   const { data, error } = await withSupabaseReadRetry(() =>
     client
       .from("ChayaMenus")
-      .select("id,name,description,price,category,imageUrl,sort_order")
+      .select("id,name,description,price,category,imageUrl,sort_order,is_sold_out")
       .eq("tenant_slug", slug)
       .order("sort_order", { ascending: true })
       .order("name", { ascending: true }),

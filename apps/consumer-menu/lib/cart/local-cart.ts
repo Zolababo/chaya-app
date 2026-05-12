@@ -42,6 +42,10 @@ function parseLine(raw: unknown): CartLine | null {
     typeof so === "number" ? so : typeof so === "string" ? Number(so) : 0;
   const sortOrderNorm = Number.isFinite(sortOrder) ? Math.trunc(sortOrder) : 0;
 
+  const soldRaw = o.is_sold_out ?? o.isSoldOut;
+  const isSoldOut =
+    soldRaw === true || soldRaw === "true" || soldRaw === "t" || soldRaw === 1 || soldRaw === "1";
+
   return {
     id: o.id,
     name: o.name,
@@ -52,6 +56,7 @@ function parseLine(raw: unknown): CartLine | null {
     category: typeof o.category === "string" ? o.category : null,
     imageUrl: typeof o.imageUrl === "string" ? o.imageUrl : null,
     sortOrder: sortOrderNorm,
+    isSoldOut,
   };
 }
 
@@ -99,6 +104,9 @@ export function addLine(
   quantity: number,
   notes: string | null,
 ): CartLine[] {
+  if (item.isSoldOut) {
+    return readCart(tenant);
+  }
   const q = Math.max(1, Math.min(99, Math.floor(quantity)));
   const lines = readCart(tenant);
   const idx = lines.findIndex((l) => l.id === item.id);

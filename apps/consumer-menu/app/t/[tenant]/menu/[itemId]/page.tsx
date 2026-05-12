@@ -48,6 +48,14 @@ export default async function MenuItemPage({ params }: Props) {
           <p className="text-sm font-medium text-chaya-muted dark:text-zinc-400">
             {item.category ?? "메뉴"}
           </p>
+          {item.isSoldOut ? (
+            <p
+              role="status"
+              className="mt-2 rounded-lg border border-zinc-300 bg-zinc-100 px-3 py-2 text-sm font-semibold text-zinc-800 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-200"
+            >
+              현재 품절입니다.
+            </p>
+          ) : null}
           <h1 className="mt-1 text-2xl font-bold">{item.name}</h1>
           <p className="mt-2 text-lg font-semibold text-chaya-primary dark:text-orange-400">
             {formatKrw(item.price)}

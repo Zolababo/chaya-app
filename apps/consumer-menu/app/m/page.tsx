@@ -36,7 +36,7 @@ export default async function MerchantPortalHomePage() {
 
   const list = rows as { tenant_slug: string; role: string }[];
   if (list.length === 1) {
-    redirect(`/m/${encodeURIComponent(list[0].tenant_slug)}/orders`);
+    redirect(`/m/${encodeURIComponent(list[0].tenant_slug)}/dashboard`);
   }
 
   return (
@@ -54,7 +54,7 @@ export default async function MerchantPortalHomePage() {
           return (
             <li key={r.tenant_slug}>
               <Link
-                href={`/m/${t}/orders`}
+                href={`/m/${t}/dashboard`}
                 className="flex min-h-[52px] items-center rounded-xl border border-chaya-border bg-white px-4 py-3 text-sm font-semibold hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:hover:bg-zinc-900"
               >
                 <span>{r.tenant_slug}</span>

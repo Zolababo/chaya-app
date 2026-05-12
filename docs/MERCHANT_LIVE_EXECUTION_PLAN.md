@@ -39,11 +39,14 @@
 ### D. 주문 운영 리허설
 
 - [ ] `/m/{tenant}/dashboard` 에서 최근 24시간 접수·대기 요약 확인
+- [ ] `/m/{tenant}/analytics` (7일·30일)·`/m/{tenant}/categories` 요약 확인
 - [ ] 손님 주문 생성 -> 점주 주문 큐 반영
 - [ ] 상태 전이: `pending -> accepted -> preparing -> ready -> completed`
 - [ ] 점주 재접속/탭 전환 후 상태 유지 확인
 
 ## 3) SQL 점검 루틴
+
+**DB:** 프로덕션에 `ChayaMenus.is_sold_out` 컬럼이 있어야 합니다. 없으면 마이그레이션 `supabase/migrations/20260511150000_chaya_menus_is_sold_out.sql` 적용 후 배포하세요.
 
 실행 파일:
 

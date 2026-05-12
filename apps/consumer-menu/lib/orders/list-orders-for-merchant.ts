@@ -128,8 +128,11 @@ export type MerchantDashboard24hMetrics =
     }
   | { ok: false; message: string };
 
-/** 최근 24시간 주문 요약 (실사용 대시보드 카드용). */
-export async function getMerchantDashboard24hMetrics(tenantSlug: string): Promise<MerchantDashboard24hMetrics> {
+/** 최근 N일(롤링 24h×N) 주문 요약. N=1 이면 대시보드 24시간 카드와 동일 스케일. */
+export async function getMerchantOrderMetricsSinceDays(
+  tenantSlug: string,
+  days: number,
+): Promise<MerchantDashboard24hMetrics> {
   const slug = tenantSlug.trim();
   if (!slug) {
     return { ok: false, message: "테넌트가 없습니다." };
@@ -144,7 +147,8 @@ export async function getMerchantDashboard24hMetrics(tenantSlug: string): Promis
     };
   }
 
-  const sinceIso = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const d = Math.min(90, Math.max(1, Math.floor(Number(days)) || 1));
+  const sinceIso = new Date(Date.now() - d * 24 * 60 * 60 * 1000).toISOString();
 
   const { data, error } = await withSupabaseReadRetry(() =>
     client
@@ -175,4 +179,9 @@ export async function getMerchantDashboard24hMetrics(tenantSlug: string): Promis
   }
 
   return { ok: true, orderCount: rows.length, totalSales, byStatus };
+}
+
+/** 최근 24시간 주문 요약 (실사용 대시보드 카드용). */
+export async function getMerchantDashboard24hMetrics(tenantSlug: string): Promise<MerchantDashboard24hMetrics> {
+  return getMerchantOrderMetricsSinceDays(tenantSlug, 1);
 }

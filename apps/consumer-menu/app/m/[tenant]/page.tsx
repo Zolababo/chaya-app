@@ -9,5 +9,5 @@ type Props = {
 /** `/m/{tenant}` → 주문 큐 */
 export default async function MerchantTenantRootPage({ params }: Props) {
   const { tenant } = await params;
-  redirect(`/m/${encodeURIComponent(tenant)}/orders`);
+  redirect(`/m/${encodeURIComponent(tenant)}/dashboard`);
 }

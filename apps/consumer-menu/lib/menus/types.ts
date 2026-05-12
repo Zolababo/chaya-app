@@ -8,6 +8,8 @@ export type ChayaMenuRow = {
   imageUrl: string | null;
   /** 같은 가게 내 정렬. 작을수록 먼저 표시. */
   sortOrder: number;
+  /** 품절 시 손님 장바구니 담기 비활성화 (`20260511150000_chaya_menus_is_sold_out.sql`). */
+  isSoldOut: boolean;
 };
 
 export type MenuListResult = {
