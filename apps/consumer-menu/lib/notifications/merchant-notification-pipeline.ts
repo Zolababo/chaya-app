@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { orderStatusLabel } from "@/lib/orders/order-status-label";
 import { createServiceSupabase } from "@/lib/supabase/create-service-client";
 
+import { consumeGuestOrderResendCooldown } from "./resend-guest-order-email-cooldown";
 import { getServerSiteBaseUrl } from "./site-base-url";
 
 export type MerchantNotificationKind = "guest_order_created" | "order_status_changed";
@@ -162,6 +163,10 @@ export async function runMerchantGuestOrderCreatedNotification(input: {
   const subject = `[CHAYA] ${input.tenantSlug} 새 주문`;
   const text = `새 주문이 접수되었습니다.\n주문 ID: ${input.orderId}\n합계: ${input.totalPrice.toLocaleString("ko-KR")}원${tablePart}\n\n주문 큐: ${ordersLink}`;
   const html = `<p>새 주문이 접수되었습니다.</p><p>주문 ID: <code>${input.orderId}</code></p><p>합계: ${input.totalPrice.toLocaleString("ko-KR")}원${tablePart ? `<br/>${tablePart}` : ""}</p><p><a href="${ordersLink}">주문 큐 열기</a></p>`;
+
+  if (recipients.length > 0 && !consumeGuestOrderResendCooldown(input.tenantSlug)) {
+    return;
+  }
 
   await trySendResendForEvent(eventId, subject, text, html, recipients);
 }

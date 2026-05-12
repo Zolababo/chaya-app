@@ -32,6 +32,15 @@ export function GET() {
           hasProjectUrl: hasSupabaseUrl,
           hasServiceRoleKey: Boolean(serviceRoleSecret),
         },
+        /** Phase 3: Resend 이메일 알림(키 이름만, 값 미포함). */
+        merchantOrderEmail: {
+          resendConfigured: Boolean(
+            process.env.RESEND_API_KEY?.trim() && process.env.RESEND_FROM_EMAIL?.trim(),
+          ),
+          siteUrlForMailLinks: Boolean(
+            process.env.NEXT_PUBLIC_SITE_URL?.trim() || process.env.VERCEL_URL?.trim(),
+          ),
+        },
       },
     },
     { status: 200 },

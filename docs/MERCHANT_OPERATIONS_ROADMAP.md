@@ -39,7 +39,17 @@
 - ✅ DB **`merchant_notification_events`** + RLS(승인 멤버·`platform_operators` SELECT).
 - ✅ **대시보드「최근 알림」** — 신규 손님 주문·주문 상태 변경 기록, 메일 발송 여부 뱃지.
 - ✅ **Resend(선택)** — `RESEND_API_KEY`·`RESEND_FROM_EMAIL` + 멤버 `invite_email` 있을 때만 신규 주문 메일.
-- ⬜ 웹 푸시 / 카카오 / 수신 옵트인·빈도 제한 등.
+- ✅ **신규주문 Resend 쿨다운** — 매장당 3분(인스턴스 메모리, 서버리스 한계 있음).
+- ⬜ 웹 푸시 / 카카오 / DB 기반 수신 옵트인·전역 레이트리밋 등.
+
+#### SQL 적용 후 권장 순서
+
+1. **마이그레이션** `20260512200000_merchant_notification_events.sql` 이 프로젝트에 반영됐는지 확인.
+2. **앱 배포** — `main` 최신이 Vercel(또는 호스트)에 올라가 있는지 확인.
+3. **`GET /health`** — `supabase.merchantDbReady` 가 true 인지, `merchantOrderEmail.resendConfigured` / `siteUrlForMailLinks` 로 메일 준비 상태만 확인(비밀 미노출).
+4. **동작 확인** — 손님 `/t/{tenant}` 에서 테스트 주문 → 점주 `/m/{tenant}/dashboard` 의 **최근 알림**에 `guest_order_created` 가 보이는지.
+5. **이메일(선택)** — Vercel 등에 `RESEND_API_KEY`, `RESEND_FROM_EMAIL` 설정 후 재배포. 멤버 행에 **`invite_email`** 이 있는지(`/ops/merchants` 초대) 확인.
+6. **링크 품질** — 메일 안 주문 큐 URL을 절대 경로로 쓰려면 **`NEXT_PUBLIC_SITE_URL`** 권장(없으면 `VERCEL_URL` 사용).
 
 ### Phase 4 — 권한·거버넌스
 
