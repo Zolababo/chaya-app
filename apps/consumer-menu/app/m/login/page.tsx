@@ -9,7 +9,7 @@ import { resolveServerUser } from "@/lib/supabase/resolve-server-user";
 export const dynamic = "force-dynamic";
 
 type Props = {
-  searchParams: Promise<{ next?: string; e?: string; phase?: string }>;
+  searchParams: Promise<{ next?: string; e?: string; phase?: string; reauth?: string }>;
 };
 
 function smsAlertMessage(code: string | undefined): string | null {
@@ -60,9 +60,10 @@ export default async function MerchantLoginPage({ searchParams }: Props) {
     useSms &&
     typeof sp.phase === "string" &&
     sp.phase.toLowerCase() === "confirm";
+  const forceReauth = typeof sp.reauth === "string" && sp.reauth === "1";
 
   /** 이미 세션이 있으면 로그인 폼을 건너뜁니다. `/m` 이 단일 가게면 대시보드로 이어집니다. */
-  if (!isConfirm) {
+  if (!isConfirm && !forceReauth) {
     const supabase = await createSupabaseServerClient();
     if (supabase) {
       const user = await resolveServerUser(supabase);
@@ -88,6 +89,10 @@ export default async function MerchantLoginPage({ searchParams }: Props) {
               ? "문자로 받은 숫자를 입력한 뒤 로그인하세요."
               : "등록된 휴대폰 번호로 문자 인증합니다. 초대만 받은 번호입니다."
             : "운영(`/ops`)에서 초대된 이메일·임시 비밀번호로 로그인합니다."}
+        </p>
+        <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+          이미 로그인된 기기에서는 자동으로 점주 화면으로 이동합니다. 계정을 바꾸려면 로그아웃하거나
+          <span className="font-mono"> ?reauth=1</span> 로 접속하세요.
         </p>
         {!useSms ? (
           <p className="mt-3 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">

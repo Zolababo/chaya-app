@@ -43,6 +43,10 @@ Vercel·Supabase·모바일까지 한 번에 점검하려면 **`docs/RUNTIME_GO_
 
 - 점주앱 접근은 **Supabase Auth**(이메일·비밀번호)와 **`merchant_tenant_members`** 매핑 테이블(마이그레이션 `20260510183000_merchant_tenant_members.sql`)로 처리합니다.
 - 로그인 URL: **`/m/login`** — 로그인 후 가게가 하나면 해당 `/m/{tenant}/orders`로, 여러 개면 `/m`에서 선택합니다.
+- 점주 홈 화면 바로가기: Chrome(Android)에서 **`/m/login` 화면을 연 상태로** 「홈 화면에 추가」를 사용하세요.
+  - 배포 확인: `/m/login/homescreen-manifest` JSON에 `"start_url":"/m/login"` 포함 여부 확인
+  - 기존 아이콘이 손님 화면으로 열리면, 기존 아이콘 삭제 후 `/m/login`에서 재설치
+- 계정 전환/강제 로그인: `?reauth=1` 쿼리로 자동 세션 이동을 건너뛰고 로그인 폼을 강제로 표시할 수 있습니다.
 - 역할: `owner`(주문+메뉴), `staff`(주문만; 메뉴 관리·링크 숨김).
 - Supabase **Authentication → Providers** 에서 Email 을 켜 두고, 점주용 사용자를 만든 뒤 SQL Editor에서 멤버를 묶습니다(예시):
 
