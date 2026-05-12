@@ -6,6 +6,7 @@ import { OrderStatusRefresh } from "@/components/order-status-refresh";
 import { requireMerchantForTenant } from "@/lib/merchant/merchant-access";
 import {
   listMerchantAuditEvents,
+  MERCHANT_AUDIT_CSV_MAX_ROWS,
   merchantAuditActionLabel,
   MERCHANT_AUDIT_ACTION_FILTERS,
 } from "@/lib/merchant/list-merchant-audit-events";
@@ -17,7 +18,7 @@ export const dynamic = "force-dynamic";
 
 type Props = {
   params: Promise<{ tenant: string }>;
-  searchParams: Promise<{ page?: string; action?: string }>;
+  searchParams: Promise<{ page?: string; action?: string; from?: string; to?: string }>;
 };
 
 function formatDetail(detail: Record<string, unknown>): string {
@@ -30,12 +31,33 @@ function formatDetail(detail: Record<string, unknown>): string {
   }
 }
 
-function auditQuerySuffix(page: number, action: string | null): string {
+function auditQuerySuffix(
+  page: number,
+  action: string | null,
+  fromYmd: string | null,
+  toYmd: string | null,
+): string {
   const q = new URLSearchParams();
   if (page > 1) q.set("page", String(page));
   if (action) q.set("action", action);
+  if (fromYmd) q.set("from", fromYmd);
+  if (toYmd) q.set("to", toYmd);
   const s = q.toString();
   return s ? `?${s}` : "";
+}
+
+function buildExportHref(
+  tEnc: string,
+  action: string | null,
+  fromYmd: string | null,
+  toYmd: string | null,
+): string {
+  const q = new URLSearchParams();
+  if (action) q.set("action", action);
+  if (fromYmd) q.set("from", fromYmd);
+  if (toYmd) q.set("to", toYmd);
+  const s = q.toString();
+  return `/m/${tEnc}/audit/export${s ? `?${s}` : ""}`;
 }
 
 export default async function MerchantAuditPage({ params, searchParams }: Props) {
@@ -43,6 +65,8 @@ export default async function MerchantAuditPage({ params, searchParams }: Props)
   const sp = await searchParams;
   const pageParam = typeof sp.page === "string" ? sp.page : undefined;
   const actionParam = typeof sp.action === "string" ? sp.action : undefined;
+  const fromParam = typeof sp.from === "string" ? sp.from : undefined;
+  const toParam = typeof sp.to === "string" ? sp.to : undefined;
 
   const { role } = await requireMerchantForTenant(tenant);
   const canManageMenus = role === "owner";
@@ -52,7 +76,13 @@ export default async function MerchantAuditPage({ params, searchParams }: Props)
 
   const [pendingCount, audit] = await Promise.all([
     countMerchantPendingOrders(tenant),
-    listMerchantAuditEvents({ tenantSlug: tenant, page: pageParam, action: actionParam }),
+    listMerchantAuditEvents({
+      tenantSlug: tenant,
+      page: pageParam,
+      action: actionParam,
+      fromYmd: fromParam,
+      toYmd: toParam,
+    }),
   ]);
 
   const tEnc = encodeURIComponent(tenant);
@@ -62,6 +92,11 @@ export default async function MerchantAuditPage({ params, searchParams }: Props)
     MERCHANT_AUDIT_ACTION_FILTERS.some((o) => o.value === actionParam && o.value !== "")
       ? actionParam
       : null;
+
+  const fromYmd = (fromParam ?? "").trim() || null;
+  const toYmd = (toParam ?? "").trim() || null;
+
+  const exportHref = buildExportHref(tEnc, actionFilter, fromYmd, toYmd);
 
   return (
     <div className="mx-auto min-h-dvh max-w-4xl px-4 py-8 pb-[max(2rem,env(safe-area-inset-bottom))]">
@@ -83,6 +118,30 @@ export default async function MerchantAuditPage({ params, searchParams }: Props)
 
       <section className="mb-6 rounded-xl border border-chaya-border bg-chaya-surface p-4 dark:border-zinc-700 dark:bg-zinc-950">
         <form method="get" className="flex flex-wrap items-end gap-3">
+          <div>
+            <label htmlFor="audit-from" className="mb-1 block text-xs font-semibold text-zinc-500">
+              시작일 (KST)
+            </label>
+            <input
+              id="audit-from"
+              name="from"
+              type="date"
+              defaultValue={fromYmd ?? ""}
+              className="min-h-[44px] rounded-lg border border-chaya-border bg-white px-3 py-2 text-sm dark:border-zinc-600 dark:bg-zinc-900"
+            />
+          </div>
+          <div>
+            <label htmlFor="audit-to" className="mb-1 block text-xs font-semibold text-zinc-500">
+              종료일 (KST)
+            </label>
+            <input
+              id="audit-to"
+              name="to"
+              type="date"
+              defaultValue={toYmd ?? ""}
+              className="min-h-[44px] rounded-lg border border-chaya-border bg-white px-3 py-2 text-sm dark:border-zinc-600 dark:bg-zinc-900"
+            />
+          </div>
           <div>
             <label htmlFor="audit-action" className="mb-1 block text-xs font-semibold text-zinc-500">
               유형
@@ -107,6 +166,21 @@ export default async function MerchantAuditPage({ params, searchParams }: Props)
             적용
           </button>
         </form>
+        <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
+          날짜를 비우면 전체 기간입니다. 한쪽만 쓰면 그날 하루로 봅니다. 기간은 최대 120일입니다.
+        </p>
+        <p className="mt-4 flex flex-wrap items-center gap-3 text-sm">
+          <a
+            href={exportHref}
+            className="inline-flex min-h-[44px] items-center rounded-lg border border-chaya-border px-4 py-2 font-semibold text-chaya-primary hover:bg-zinc-50 dark:border-zinc-600 dark:hover:bg-zinc-900"
+          >
+            CSV 다운로드
+          </a>
+          <span className="text-xs text-zinc-500 dark:text-zinc-400">
+            위 필터와 동일 조건 · 최대 {MERCHANT_AUDIT_CSV_MAX_ROWS.toLocaleString("ko-KR")}건 (초과 시 응답 헤더
+            <span className="font-mono"> X-Audit-Export-Truncated</span>)
+          </span>
+        </p>
       </section>
 
       {!audit.ok ? (
@@ -173,7 +247,7 @@ export default async function MerchantAuditPage({ params, searchParams }: Props)
               {audit.page > 1 ? (
                 <Link
                   className="rounded-lg border border-chaya-border px-4 py-2 hover:bg-zinc-50 dark:border-zinc-600 dark:hover:bg-zinc-900"
-                  href={`/m/${tEnc}/audit${auditQuerySuffix(audit.page - 1, actionFilter)}`}
+                  href={`/m/${tEnc}/audit${auditQuerySuffix(audit.page - 1, actionFilter, fromYmd, toYmd)}`}
                 >
                   이전
                 </Link>
@@ -183,7 +257,7 @@ export default async function MerchantAuditPage({ params, searchParams }: Props)
               {audit.page < Math.ceil(audit.total / audit.pageSize) ? (
                 <Link
                   className="rounded-lg border border-chaya-border px-4 py-2 hover:bg-zinc-50 dark:border-zinc-600 dark:hover:bg-zinc-900"
-                  href={`/m/${tEnc}/audit${auditQuerySuffix(audit.page + 1, actionFilter)}`}
+                  href={`/m/${tEnc}/audit${auditQuerySuffix(audit.page + 1, actionFilter, fromYmd, toYmd)}`}
                 >
                   다음
                 </Link>
@@ -196,7 +270,10 @@ export default async function MerchantAuditPage({ params, searchParams }: Props)
       )}
 
       <p className="mt-10 text-center text-xs text-zinc-500 dark:text-zinc-400">
-        <Link href={`/m/${tEnc}/dashboard`} className="font-semibold text-chaya-primary underline-offset-2 hover:underline">
+        <Link
+          href={`/m/${tEnc}/dashboard`}
+          className="font-semibold text-chaya-primary underline-offset-2 hover:underline"
+        >
           대시보드로
         </Link>
       </p>

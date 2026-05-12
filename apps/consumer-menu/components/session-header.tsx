@@ -2,6 +2,8 @@
 
 import { useSearchParams } from "next/navigation";
 
+import { CONSUMER_STAFF_CALL_IMPLEMENTED } from "@/lib/consumer/future-features";
+
 type Props = {
   tenant: string;
 };
@@ -29,9 +31,14 @@ export function SessionHeader({ tenant }: Props) {
         <button
           type="button"
           className="min-h-[44px] rounded-xl border border-chaya-border px-4 py-2 text-sm font-semibold text-zinc-500 dark:border-zinc-700 dark:text-zinc-500"
-          disabled
-          aria-disabled="true"
-          aria-label="직원 호출은 아직 사용할 수 없습니다"
+          disabled={!CONSUMER_STAFF_CALL_IMPLEMENTED}
+          aria-disabled={!CONSUMER_STAFF_CALL_IMPLEMENTED}
+          aria-label={
+            CONSUMER_STAFF_CALL_IMPLEMENTED
+              ? "직원 호출"
+              : "직원 호출은 준비 중입니다. 서버 라우트 POST /t/…/staff-call 연동 후 활성화됩니다."
+          }
+          title="향후: POST /t/{tenant}/staff-call (CONSUMER_STAFF_CALL_IMPLEMENTED)"
         >
           Call Staff
         </button>

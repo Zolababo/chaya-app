@@ -15,6 +15,12 @@ import { GUEST_SESSION_STORAGE_KEY } from "@/lib/guest-session/constants";
 import { syncGuestSessionCookieFromBrowser } from "@/lib/guest-session/sync-guest-session-cookie";
 
 import { submitGuestOrderAction } from "./actions";
+
+/**
+ * 주문 제출은 게스트 서버 액션으로 처리됩니다.
+ * 카드·간편결제 등은 `lib/consumer/future-features` 의 `CONSUMER_CHECKOUT_PAYMENT_IMPLEMENTED` 가
+ * `true`가 된 뒤 `POST /t/{tenant}/checkout/payment` 등 서버 경로에만 연동합니다.
+ */
 const LAST_ORDER_KEY = "chaya_last_order_id";
 
 type Props = {
