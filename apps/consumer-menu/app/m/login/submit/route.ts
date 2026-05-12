@@ -2,6 +2,8 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { sanitizeMerchantNextPath } from "@/lib/merchant/merchant-access";
+import { isRateLimited, rateLimitKeyFromRequest } from "@/lib/security/simple-rate-limit";
+import { denyIfUntrustedFormPost } from "@/lib/security/trusted-browser-post";
 import { getSupabaseServiceUrl } from "@/lib/supabase/resolve-service-config";
 
 /** 이메일·비밀번호 로그인(기본). SMS 모드에서는 `/m/login` 이 이 경로를 쓰지 않습니다. */
@@ -14,6 +16,9 @@ function redirectLogin(request: NextRequest, e: string, safeNext: string) {
 }
 
 export async function POST(request: NextRequest) {
+  const untrusted = denyIfUntrustedFormPost(request);
+  if (untrusted) return untrusted;
+
   let formData: FormData;
   try {
     formData = await request.formData();
@@ -25,6 +30,11 @@ export async function POST(request: NextRequest) {
   const password = String(formData.get("password") ?? "");
   const nextRaw = String(formData.get("next") ?? "").trim();
   const safeNext = sanitizeMerchantNextPath(nextRaw) ?? "/m";
+
+  const rlKey = rateLimitKeyFromRequest(request, "m-login-submit");
+  if (isRateLimited(rlKey, 25, 15 * 60 * 1000)) {
+    return redirectLogin(request, "rate_limit", safeNext);
+  }
 
   if (!email || !password) {
     return redirectLogin(request, "missing", safeNext);

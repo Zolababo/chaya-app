@@ -7,6 +7,8 @@ import {
   MERCHANT_OTP_PHONE_COOKIE,
   merchantOtpPhoneCookieOptions,
 } from "@/lib/merchant/merchant-otp-cookie";
+import { isRateLimited, rateLimitKeyFromRequest } from "@/lib/security/simple-rate-limit";
+import { denyIfUntrustedFormPost } from "@/lib/security/trusted-browser-post";
 import { getSupabaseServiceUrl } from "@/lib/supabase/resolve-service-config";
 
 function redirectLogin(request: NextRequest, e: string, safeNext: string) {
@@ -19,6 +21,9 @@ function redirectLogin(request: NextRequest, e: string, safeNext: string) {
 }
 
 export async function POST(request: NextRequest) {
+  const untrusted = denyIfUntrustedFormPost(request);
+  if (untrusted) return untrusted;
+
   let formData: FormData;
   try {
     formData = await request.formData();
@@ -29,6 +34,11 @@ export async function POST(request: NextRequest) {
   const token = String(formData.get("token") ?? "").trim().replace(/\s/g, "");
   const nextRaw = String(formData.get("next") ?? "").trim();
   const safeNext = sanitizeMerchantNextPath(nextRaw) ?? "/m";
+
+  const rlKey = rateLimitKeyFromRequest(request, "m-login-verify-otp");
+  if (isRateLimited(rlKey, 40, 15 * 60 * 1000)) {
+    return redirectLogin(request, "rate_limit", safeNext);
+  }
 
   if (!token || token.length < 4) {
     return redirectLogin(request, "missing", safeNext);

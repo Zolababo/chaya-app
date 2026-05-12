@@ -19,6 +19,8 @@ function alertMessage(code: string | undefined): string | null {
       return "이메일 인증이 완료되지 않았습니다.";
     case "no_anon":
       return "NEXT_PUBLIC_SUPABASE_URL·NEXT_PUBLIC_SUPABASE_ANON_KEY 설정을 확인해 주세요.";
+    case "rate_limit":
+      return "요청이 너무 잦습니다. 잠시 후 다시 시도해 주세요.";
     default:
       return null;
   }

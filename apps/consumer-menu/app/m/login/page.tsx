@@ -27,6 +27,8 @@ function smsAlertMessage(code: string | undefined): string | null {
       return "먼저 ‘인증번호 받기’를 진행하거나 페이지를 새로 시작해 주세요.";
     case "no_anon":
       return "NEXT_PUBLIC_SUPABASE_URL·NEXT_PUBLIC_SUPABASE_ANON_KEY 를 확인해 주세요.";
+    case "rate_limit":
+      return "요청이 너무 잦습니다. 잠시 후 다시 시도해 주세요.";
     default:
       return null;
   }
@@ -43,6 +45,8 @@ function emailAlertMessage(code: string | undefined): string | null {
       return "이메일 인증이 아직 완료되지 않았습니다.";
     case "no_anon":
       return "NEXT_PUBLIC_SUPABASE_URL·NEXT_PUBLIC_SUPABASE_ANON_KEY 를 확인해 주세요.";
+    case "rate_limit":
+      return "요청이 너무 잦습니다. 잠시 후 다시 시도해 주세요.";
     default:
       return null;
   }

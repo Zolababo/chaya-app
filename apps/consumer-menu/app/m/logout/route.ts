@@ -2,9 +2,19 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { sanitizeMerchantNextPath } from "@/lib/merchant/merchant-access";
+import { isRateLimited, rateLimitKeyFromRequest } from "@/lib/security/simple-rate-limit";
+import { denyIfUntrustedFormPost } from "@/lib/security/trusted-browser-post";
 import { getSupabaseServiceUrl } from "@/lib/supabase/resolve-service-config";
 
 export async function POST(request: NextRequest) {
+  const untrusted = denyIfUntrustedFormPost(request);
+  if (untrusted) return untrusted;
+
+  const rlKey = rateLimitKeyFromRequest(request, "m-logout");
+  if (isRateLimited(rlKey, 40, 10 * 60 * 1000)) {
+    return NextResponse.json({ error: "Too Many Requests" }, { status: 429 });
+  }
+
   let nextPath: string | null = null;
   try {
     const formData = await request.formData();

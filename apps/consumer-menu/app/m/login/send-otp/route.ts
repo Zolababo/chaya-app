@@ -8,6 +8,8 @@ import {
   merchantOtpPhoneCookieOptions,
 } from "@/lib/merchant/merchant-otp-cookie";
 import { normalizeKrPhoneToE164 } from "@/lib/merchant/phone-e164-kr";
+import { isRateLimited, rateLimitKeyFromRequest } from "@/lib/security/simple-rate-limit";
+import { denyIfUntrustedFormPost } from "@/lib/security/trusted-browser-post";
 import { getSupabaseServiceUrl } from "@/lib/supabase/resolve-service-config";
 
 function redirectLogin(request: NextRequest, e: string, safeNext: string) {
@@ -18,6 +20,9 @@ function redirectLogin(request: NextRequest, e: string, safeNext: string) {
 }
 
 export async function POST(request: NextRequest) {
+  const untrusted = denyIfUntrustedFormPost(request);
+  if (untrusted) return untrusted;
+
   let formData: FormData;
   try {
     formData = await request.formData();
@@ -28,6 +33,11 @@ export async function POST(request: NextRequest) {
   const phoneRaw = String(formData.get("phone") ?? "").trim();
   const nextRaw = String(formData.get("next") ?? "").trim();
   const safeNext = sanitizeMerchantNextPath(nextRaw) ?? "/m";
+
+  const rlKey = rateLimitKeyFromRequest(request, "m-login-send-otp");
+  if (isRateLimited(rlKey, 8, 15 * 60 * 1000)) {
+    return redirectLogin(request, "rate_limit", safeNext);
+  }
 
   const phone = normalizeKrPhoneToE164(phoneRaw);
   if (!phone) {

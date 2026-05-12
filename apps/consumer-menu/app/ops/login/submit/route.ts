@@ -2,6 +2,8 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { sanitizeOpsNextPath } from "@/lib/platform/ops-path";
+import { isRateLimited, rateLimitKeyFromRequest } from "@/lib/security/simple-rate-limit";
+import { denyIfUntrustedFormPost } from "@/lib/security/trusted-browser-post";
 import { getSupabaseServiceUrl } from "@/lib/supabase/resolve-service-config";
 
 function redirectLogin(request: NextRequest, e: string, safeNext: string) {
@@ -12,6 +14,9 @@ function redirectLogin(request: NextRequest, e: string, safeNext: string) {
 }
 
 export async function POST(request: NextRequest) {
+  const untrusted = denyIfUntrustedFormPost(request);
+  if (untrusted) return untrusted;
+
   let formData: FormData;
   try {
     formData = await request.formData();
@@ -23,6 +28,11 @@ export async function POST(request: NextRequest) {
   const password = String(formData.get("password") ?? "");
   const nextRaw = String(formData.get("next") ?? "").trim();
   const safeNext = sanitizeOpsNextPath(nextRaw) ?? "/ops";
+
+  const rlKey = rateLimitKeyFromRequest(request, "ops-login-submit");
+  if (isRateLimited(rlKey, 25, 15 * 60 * 1000)) {
+    return redirectLogin(request, "rate_limit", safeNext);
+  }
 
   if (!email || !password) {
     return redirectLogin(request, "missing", safeNext);
