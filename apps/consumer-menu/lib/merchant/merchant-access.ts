@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { cache } from "react";
 
 import { sanitizeInternalRedirectPath } from "@/lib/security/internal-redirect-path";
 import { createSupabaseServerClient } from "@/lib/supabase/create-server-session-client";
@@ -60,7 +61,10 @@ export function merchantLoginUrl(nextPath?: string | null): string {
   return "/m/login";
 }
 
-export async function requireMerchantForTenant(tenantRaw: string): Promise<{ role: MerchantRole }> {
+/** 레이아웃·페이지에서 동일 요청 내 중복 멤버십 조회를 합칩니다. */
+export const requireMerchantForTenant = cache(async function requireMerchantForTenant(
+  tenantRaw: string,
+): Promise<{ role: MerchantRole }> {
   const tenant = tenantRaw.trim();
   if (!tenant) {
     redirect("/m/login");
@@ -85,7 +89,7 @@ export async function requireMerchantForTenant(tenantRaw: string): Promise<{ rol
   }
 
   return { role: membership.role };
-}
+});
 
 export async function getMerchantTenantActionAccess(
   formData: FormData,

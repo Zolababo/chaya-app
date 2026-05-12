@@ -14,7 +14,9 @@ import { resolveServerUser } from "@/lib/supabase/resolve-server-user";
  * 폼 바운드 테넌트에 대한 점주 권한을 검사합니다.
  * 세션이 없으면 로그인으로, 세션은 있는데 매장 매핑이 없으면 forbidden 으로 보냅니다.
  */
-export async function requireMerchantOrderMutation(formData: FormData): Promise<{ role: MerchantRole }> {
+export async function requireMerchantOrderMutation(
+  formData: FormData,
+): Promise<{ role: MerchantRole; userId: string }> {
   const tenant = String(formData.get("tenant_slug") ?? "").trim();
   const nextPath = tenant ? `/m/${encodeURIComponent(tenant)}/dashboard` : "/m";
 
@@ -30,7 +32,7 @@ export async function requireMerchantOrderMutation(formData: FormData): Promise<
 
   const access = await getMerchantTenantActionAccess(formData);
   if (access) {
-    return { role: access.role };
+    return { role: access.role, userId: access.userId };
   }
 
   if (tenant) {

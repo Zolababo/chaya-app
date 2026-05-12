@@ -16,10 +16,21 @@ export const dynamic = "force-dynamic";
 
 type Props = {
   params: Promise<{ tenant: string }>;
+  searchParams: Promise<{ e?: string }>;
 };
 
-export default async function MerchantDashboardPage({ params }: Props) {
+function dashboardAlertMessage(code: string | undefined): string | null {
+  if (!code) return null;
+  if (code === "no_menus_access") {
+    return "메뉴 관리는 소장(OWNER) 계정만 사용할 수 있습니다.";
+  }
+  return null;
+}
+
+export default async function MerchantDashboardPage({ params, searchParams }: Props) {
   const { tenant } = await params;
+  const sp = await searchParams;
+  const dashAlert = dashboardAlertMessage(typeof sp.e === "string" ? sp.e : undefined);
   const { role } = await requireMerchantForTenant(tenant);
   const canManageMenus = role === "owner";
 
@@ -48,6 +59,15 @@ export default async function MerchantDashboardPage({ params }: Props) {
           </Link>
         </p>
       </header>
+
+      {dashAlert ? (
+        <p
+          role="alert"
+          className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100"
+        >
+          {dashAlert}
+        </p>
+      ) : null}
 
       <MerchantPreviewBanner tenantSlug={tenant} />
 

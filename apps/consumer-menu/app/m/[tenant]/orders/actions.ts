@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 
 import { requireMerchantOrderMutation } from "@/lib/merchant/require-merchant-action";
+import { recordMerchantAuditEvent } from "@/lib/merchant/record-merchant-audit";
 import { isMerchantOrderStatus } from "@/lib/orders/merchant-status-constants";
 import { createServiceSupabase } from "@/lib/supabase/create-service-client";
 
@@ -20,7 +21,7 @@ function redirectBack(tenant: string, opts?: { err?: string; ok?: string; status
 }
 
 export async function updateOrderStatusFromForm(formData: FormData): Promise<void> {
-  await requireMerchantOrderMutation(formData);
+  const { userId } = await requireMerchantOrderMutation(formData);
 
   const tenant = String(formData.get("tenant_slug") ?? "").trim();
   const orderId = String(formData.get("order_id") ?? "").trim();
@@ -50,6 +51,17 @@ export async function updateOrderStatusFromForm(formData: FormData): Promise<voi
   if (error) {
     redirectBack(tenant, { err: "db", statusFilter });
   }
+
+  void recordMerchantAuditEvent({
+    tenantSlug: tenant,
+    actorUserId: userId,
+    action: "order_status_update",
+    detail: {
+      order_id: orderId,
+      status,
+      previous_status: currentStatus || null,
+    },
+  });
 
   redirectBack(tenant, { ok: "status_saved", statusFilter });
 }
