@@ -1,7 +1,12 @@
 import { redirect } from "next/navigation";
 
 import type { MerchantRole } from "@/lib/merchant/merchant-access";
-import { getMerchantTenantActionAccess, merchantLoginUrl } from "@/lib/merchant/merchant-access";
+import {
+  fetchMerchantMembership,
+  getMerchantTenantActionAccess,
+  merchantAccessPendingUrl,
+  merchantLoginUrl,
+} from "@/lib/merchant/merchant-access";
 import { createSupabaseServerClient } from "@/lib/supabase/create-server-session-client";
 import { resolveServerUser } from "@/lib/supabase/resolve-server-user";
 
@@ -24,9 +29,16 @@ export async function requireMerchantOrderMutation(formData: FormData): Promise<
   }
 
   const access = await getMerchantTenantActionAccess(formData);
-  if (!access) {
-    redirect("/m/forbidden");
+  if (access) {
+    return { role: access.role };
   }
 
-  return { role: access.role };
+  if (tenant) {
+    const membership = await fetchMerchantMembership(supabase, user.id, tenant);
+    if (membership && membership.approvedAt == null) {
+      redirect(merchantAccessPendingUrl(tenant));
+    }
+  }
+
+  redirect("/m/forbidden");
 }

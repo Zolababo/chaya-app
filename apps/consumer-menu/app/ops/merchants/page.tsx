@@ -4,12 +4,12 @@ import { merchantLoginUsesSms } from "@/lib/merchant/merchant-login-mode";
 import { requirePlatformOperator } from "@/lib/platform/require-platform-operator";
 import { createSupabaseServerClient } from "@/lib/supabase/create-server-session-client";
 
-import { inviteMerchantFromOps, removeMerchantMembership } from "./actions";
+import { approveMerchantMembershipFromOps, inviteMerchantFromOps, removeMerchantMembership } from "./actions";
 
 export const dynamic = "force-dynamic";
 
 type Props = {
-  searchParams: Promise<{ e?: string; ok?: string; t?: string }>;
+  searchParams: Promise<{ e?: string; ok?: string; t?: string; pend?: string }>;
 };
 
 type MemberRow = {
@@ -20,6 +20,7 @@ type MemberRow = {
   created_at: string;
   invite_phone: string | null;
   invite_email: string | null;
+  approved_at: string | null;
 };
 
 function errText(code: string | undefined, useSms: boolean): string | null {
@@ -45,6 +46,10 @@ function errText(code: string | undefined, useSms: boolean): string | null {
       return "삭제 요청 값이 올바르지 않습니다.";
     case "delete_failed":
       return "행 삭제에 실패했습니다.";
+    case "approve_not_found":
+      return "승인할 멤버십을 찾지 못했습니다.";
+    case "approve_failed":
+      return "승인 저장에 실패했습니다. DB 마이그레이션(approved_at 컬럼) 적용 여부를 확인해 주세요.";
     default:
       return "처리 중 오류입니다.";
   }
@@ -62,7 +67,7 @@ export default async function OpsMerchantsPage({ searchParams }: Props) {
   if (supabase) {
     const { data, error } = await supabase
       .from("merchant_tenant_members")
-      .select("id,user_id,tenant_slug,role,created_at,invite_phone,invite_email")
+      .select("id,user_id,tenant_slug,role,created_at,invite_phone,invite_email,approved_at")
       .order("tenant_slug", { ascending: true })
       .order("created_at", { ascending: false });
     if (error) loadErr = error.message ?? "목록 로드 오류";
@@ -73,6 +78,7 @@ export default async function OpsMerchantsPage({ searchParams }: Props) {
   const ok = typeof sp.ok === "string" ? sp.ok : null;
   const newTenant = typeof sp.t === "string" && sp.t.trim() ? sp.t.trim() : null;
   const tEnc = newTenant ? encodeURIComponent(newTenant) : "";
+  const invitePending = sp.pend === "1";
 
   return (
     <div className="mx-auto min-h-dvh max-w-4xl px-4 py-10 pb-[max(2.5rem,env(safe-area-inset-bottom))]">
@@ -156,6 +162,12 @@ export default async function OpsMerchantsPage({ searchParams }: Props) {
           <p className="mt-3 text-xs text-emerald-900/85 dark:text-emerald-100/85">
             다음: 점주가 <span className="font-mono">/m/login</span> 으로 들어가 로그인 → 메뉴 관리에서 메뉴를 넣으면 손님 화면에 표시됩니다.
           </p>
+          {invitePending ? (
+            <p className="mt-3 rounded-lg border border-amber-300 bg-amber-100/80 px-3 py-2 text-xs font-medium text-amber-950 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-100">
+              이 초대는 <strong>승인 대기</strong> 상태입니다. 아래 목록에서 해당 행의 「승인」을 누른 뒤 점주에게 로그인하라고 안내하세요. (점주는 그 전까지
+              대시보드에 들어갈 수 없습니다.)
+            </p>
+          ) : null}
         </div>
       ) : ok === "1" ? (
         <p className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100">
@@ -165,6 +177,16 @@ export default async function OpsMerchantsPage({ searchParams }: Props) {
       {ok === "removed" ? (
         <p className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100">
           멤버십 행을 삭제했습니다. (Auth 사용자 자체는 Supabase에서 별도로 삭제할 수 있습니다.)
+        </p>
+      ) : null}
+      {ok === "approved" ? (
+        <p className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100">
+          멤버십을 승인했습니다. 점주에게 새로고침 후 다시 들어가 보라고 안내해 주세요.
+        </p>
+      ) : null}
+      {ok === "approved_already" ? (
+        <p className="mb-4 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-800 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
+          이미 승인된 멤버십입니다.
         </p>
       ) : null}
 
@@ -180,6 +202,10 @@ export default async function OpsMerchantsPage({ searchParams }: Props) {
           </li>
           <li>한글만 입력하면 글자가 지워질 수 있으니, <strong>영문·숫자·하이픈</strong>으로 정하는 것을 권장합니다.</li>
           <li>메뉴는 점주(owner)가 로그인 후 <strong>메뉴 관리</strong>에서 넣습니다.</li>
+          <li>
+            기본은 <strong>승인 후</strong> 점주앱이 열립니다. 아래 목록에서 「승인」을 누르면 즉시 이용 가능합니다. (테스트만 할 때는 초대 폼의
+            「초대 직시 접속 허용」을 켜세요.)
+          </li>
         </ul>
         <p className="mt-2 text-xs text-indigo-800/80 dark:text-indigo-200/80">
           자세한 단계·다음 기능 로드맵은 저장소 <span className="font-mono">docs/MERCHANT_FIELD_ONBOARDING.md</span> 를 참고하세요.
@@ -265,6 +291,22 @@ export default async function OpsMerchantsPage({ searchParams }: Props) {
               <option value="staff">staff — 주문만</option>
             </select>
           </div>
+          <div className="sm:col-span-2 rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-600 dark:bg-zinc-900/80">
+            <label className="flex cursor-pointer items-start gap-3 text-sm text-zinc-800 dark:text-zinc-200">
+              <input
+                type="checkbox"
+                name="approve_immediately"
+                value="on"
+                className="mt-1 h-4 w-4 shrink-0 rounded border-chaya-border"
+              />
+              <span>
+                <span className="font-semibold">초대 직시 접속 허용</span>
+                <span className="mt-0.5 block text-xs font-normal text-zinc-600 dark:text-zinc-400">
+                  체크하면 승인 절차 없이 바로 점주앱에 들어갈 수 있습니다. 현장 계약·본인 확인 전에는 끄는 것을 권장합니다.
+                </span>
+              </span>
+            </label>
+          </div>
           <div className="sm:col-span-2">
             <button
               type="submit"
@@ -286,9 +328,10 @@ export default async function OpsMerchantsPage({ searchParams }: Props) {
           <p className="text-sm text-zinc-600 dark:text-zinc-400">등록된 멤버십이 없습니다.</p>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-chaya-border dark:border-zinc-700">
-            <table className="min-w-[720px] w-full text-left text-sm">
+            <table className="min-w-[820px] w-full text-left text-sm">
               <thead className="border-b border-chaya-border bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
                 <tr>
+                  <th className="px-3 py-2 font-semibold">승인</th>
                   <th className="px-3 py-2 font-semibold">테넌트</th>
                   <th className="px-3 py-2 font-semibold">역할</th>
                   <th className="px-3 py-2 font-semibold">이메일 / 휴대폰</th>
@@ -300,8 +343,33 @@ export default async function OpsMerchantsPage({ searchParams }: Props) {
               <tbody className="divide-y divide-chaya-border bg-white dark:divide-zinc-800 dark:bg-zinc-950">
                 {rows.map((r) => {
                   const shown = [r.invite_email, r.invite_phone].filter(Boolean).join(" · ") || "—";
+                  const pendingApproval = r.approved_at == null;
                   return (
                     <tr key={r.id}>
+                      <td className="px-3 py-2 align-top">
+                        {pendingApproval ? (
+                          <form action={approveMerchantMembershipFromOps} className="inline">
+                            <input type="hidden" name="membership_id" value={r.id} />
+                            <button
+                              type="submit"
+                              className="rounded-lg bg-indigo-700 px-2 py-1 text-xs font-bold text-white dark:bg-indigo-300 dark:text-indigo-950"
+                            >
+                              승인
+                            </button>
+                          </form>
+                        ) : (
+                          <span className="text-xs tabular-nums text-zinc-500 dark:text-zinc-400">
+                            {r.approved_at
+                              ? new Date(r.approved_at).toLocaleString("ko-KR", {
+                                  month: "numeric",
+                                  day: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })
+                              : "—"}
+                          </span>
+                        )}
+                      </td>
                       <td className="px-3 py-2 font-medium">{r.tenant_slug}</td>
                       <td className="px-3 py-2">{r.role}</td>
                       <td className="px-3 py-2 text-zinc-700 dark:text-zinc-300">{shown}</td>

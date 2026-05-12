@@ -1,9 +1,10 @@
 -- Merchant live-readiness verification (run in Supabase SQL Editor)
 -- 목적: 점주 실사용 전, tenant/권한/주문/메뉴 최소 상태를 한 번에 확인합니다.
+-- `merchant_tenant_members.approved_at` 컬럼이 있어야 B·H가 의미 있습니다 (`20260512120000_merchant_tenant_members_approved_at.sql`).
 --
 -- 사용법:
 -- 1) 아래 tenant 값을 실제 매장 slug로 바꿉니다.
--- 2) 전체 실행 후 각 섹션 결과(A~G)를 점검표에 기록합니다.
+-- 2) 전체 실행 후 각 섹션 결과(A~H)를 점검표에 기록합니다.
 
 -- ====== params ======
 -- 예: 'demo', 'gangnam-1ho'
@@ -16,6 +17,7 @@ select
   'A.merchant_members' as section,
   m.tenant_slug,
   m.role,
+  m.approved_at,
   u.email,
   m.created_at
 from params p
@@ -35,6 +37,7 @@ select
     from public.merchant_tenant_members m
     where m.tenant_slug = p.tenant_slug
       and m.role = 'owner'
+      and m.approved_at is not null
   ) as has_owner
 from params p;
 
@@ -106,4 +109,17 @@ select
   count(*) as total_menus
 from params p
 left join public."ChayaMenus" m on m.tenant_slug = p.tenant_slug
+group by p.tenant_slug;
+
+-- ====== H. 승인 대기 멤버십 (접근 잠금 확인) ======
+with params as (
+  select 'demo'::text as tenant_slug
+)
+select
+  'H.pending_members' as section,
+  p.tenant_slug,
+  count(*) filter (where m.approved_at is null) as pending_count,
+  count(*) as total_members
+from params p
+join public.merchant_tenant_members m on m.tenant_slug = p.tenant_slug
 group by p.tenant_slug;

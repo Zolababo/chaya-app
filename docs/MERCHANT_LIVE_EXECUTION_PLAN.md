@@ -11,6 +11,7 @@
 
 ## 1) 사전 조건 (완료 여부)
 
+- [ ] `merchant_tenant_members.approved_at` 마이그레이션 적용 후 앱 배포(순서: DB → 앱)
 - [ ] `/m/login` 이메일 로그인 정상
 - [ ] `/ops/merchants` 점주 초대 정상
 - [ ] `merchant_tenant_members` 연결 확인
@@ -28,6 +29,7 @@
 
 - [ ] 각 tenant에 owner 계정 최소 1개 배정
 - [ ] staff 계정(필요 시) 배정
+- [ ] 신규 초대 후 **승인 대기** → `/ops/merchants` 에서 「승인」→ 점주 대시보드 진입까지 현장 리허설
 - [ ] 점주별 로그인 테스트 (실제 모바일 포함)
 
 ### C. 메뉴/카테고리 데이터 준비

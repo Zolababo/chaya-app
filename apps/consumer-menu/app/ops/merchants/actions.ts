@@ -81,10 +81,13 @@ export async function inviteMerchantFromOps(formData: FormData): Promise<void> {
     backToMerchants({ e: "no_session" });
   }
 
+  const approveImmediately = formData.get("approve_immediately") === "on";
+
   const { error: insertErr } = await supabase.from("merchant_tenant_members").insert({
     user_id: userId,
     tenant_slug,
     role,
+    approved_at: approveImmediately ? new Date().toISOString() : null,
     ...insertExtras,
   });
 
@@ -98,7 +101,9 @@ export async function inviteMerchantFromOps(formData: FormData): Promise<void> {
   }
 
   revalidatePath("/ops/merchants");
-  backToMerchants({ ok: "1", t: tenant_slug });
+  const qs: Record<string, string> = { ok: "1", t: tenant_slug };
+  if (!approveImmediately) qs.pend = "1";
+  backToMerchants(qs);
 }
 
 export async function removeMerchantMembership(formData: FormData): Promise<void> {
@@ -119,4 +124,44 @@ export async function removeMerchantMembership(formData: FormData): Promise<void
 
   revalidatePath("/ops/merchants");
   backToMerchants({ ok: "removed" });
+}
+
+export async function approveMerchantMembershipFromOps(formData: FormData): Promise<void> {
+  await requirePlatformOperator("/ops/merchants");
+
+  const id = String(formData.get("membership_id") ?? "").trim();
+  if (!UUID_ROW.test(id)) {
+    backToMerchants({ e: "bad_id" });
+  }
+
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) backToMerchants({ e: "no_session" });
+
+  const { data: existing, error: selErr } = await supabase
+    .from("merchant_tenant_members")
+    .select("id, approved_at")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (selErr || !existing) {
+    backToMerchants({ e: "approve_not_found" });
+  }
+
+  const ap = (existing as { approved_at?: string | null }).approved_at;
+  if (ap != null) {
+    revalidatePath("/ops/merchants");
+    backToMerchants({ ok: "approved_already" });
+  }
+
+  const { error } = await supabase
+    .from("merchant_tenant_members")
+    .update({ approved_at: new Date().toISOString() })
+    .eq("id", id);
+
+  if (error) {
+    backToMerchants({ e: "approve_failed" });
+  }
+
+  revalidatePath("/ops/merchants");
+  backToMerchants({ ok: "approved" });
 }
