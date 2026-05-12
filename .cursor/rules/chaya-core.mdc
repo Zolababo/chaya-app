@@ -17,4 +17,5 @@ alwaysApply: true
 
 - Keep changes minimal and scoped; avoid broad refactors while shipping feature fixes.
 - When adding a new flow, update docs/runbook/checklist in the same change.
+- When completing a scoped merchant-ops roadmap slice, refresh **`docs/MERCHANT_OPERATIONS_ROADMAP.md`** 진척도(%) if the estimate moved.
 - Validate with build/lint after non-trivial edits.
