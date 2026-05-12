@@ -5,7 +5,8 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "CHAYA 메뉴",
     short_name: "CHAYA",
-    description: "매장 주문 메뉴판 · 점주·운영 콘솔",
+    description:
+      "기본 시작은 손님 메뉴판(/)입니다. 점주앱 바로가기는 브라우저에서 /m/login 또는 /m/{가게}/dashboard 를 연 뒤 홈 화면에 추가하세요.",
     start_url: "/",
     display: "browser",
     background_color: "#fcf9f8",
