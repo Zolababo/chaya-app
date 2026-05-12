@@ -64,6 +64,8 @@ pnpm install
 pnpm exec turbo run build --filter=@chaya/consumer-menu
 ```
 
+**Turborepo / Vercel:** Production·Preview에서 설정한 환경 변수 이름은 `apps/consumer-menu/turbo.json` 의 `tasks.build.env` 에 **이름만** 선언해 두었습니다. 값은 계속 Vercel 대시보드(또는 CLI)에서만 주입하고, Turborepo가 캐시 키를 올바르게 잡도록 합니다. 자세한 변수 목록은 같은 앱의 `.env.example` 을 참고하세요.
+
 ---
 
 ## 5. 로컬 CLI 배포 (선택)
