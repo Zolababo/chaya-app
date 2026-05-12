@@ -9,7 +9,7 @@ import { inviteMerchantFromOps, removeMerchantMembership } from "./actions";
 export const dynamic = "force-dynamic";
 
 type Props = {
-  searchParams: Promise<{ e?: string; ok?: string }>;
+  searchParams: Promise<{ e?: string; ok?: string; t?: string }>;
 };
 
 type MemberRow = {
@@ -25,6 +25,8 @@ type MemberRow = {
 function errText(code: string | undefined, useSms: boolean): string | null {
   if (!code) return null;
   switch (code) {
+    case "bad_tenant_slug":
+      return "매장 주소(슬러그)는 영문 소문자·숫자·하이픈만, 2~120자로 정해 주세요. (예: gangnam-2ho)";
     case "bad_input":
       return useSms
         ? "테넌트 슬러그·휴대폰 번호(예: 01012345678)를 확인해 주세요."
@@ -52,6 +54,7 @@ export default async function OpsMerchantsPage({ searchParams }: Props) {
   await requirePlatformOperator("/ops/merchants");
   const useSms = merchantLoginUsesSms();
   const sp = await searchParams;
+  const siteBase = process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/+$/, "") || null;
 
   const supabase = await createSupabaseServerClient();
   let rows: MemberRow[] = [];
@@ -68,6 +71,8 @@ export default async function OpsMerchantsPage({ searchParams }: Props) {
 
   const errMsg = errText(typeof sp.e === "string" ? sp.e : undefined, useSms);
   const ok = typeof sp.ok === "string" ? sp.ok : null;
+  const newTenant = typeof sp.t === "string" && sp.t.trim() ? sp.t.trim() : null;
+  const tEnc = newTenant ? encodeURIComponent(newTenant) : "";
 
   return (
     <div className="mx-auto min-h-dvh max-w-4xl px-4 py-10 pb-[max(2.5rem,env(safe-area-inset-bottom))]">
@@ -102,7 +107,57 @@ export default async function OpsMerchantsPage({ searchParams }: Props) {
           {errMsg}
         </p>
       ) : null}
-      {ok === "1" ? (
+      {ok === "1" && newTenant ? (
+        <div
+          className="mb-6 rounded-xl border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-950 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-100"
+          role="status"
+        >
+          <p className="font-semibold">매장이 열렸습니다 — 주소는 아래와 같습니다.</p>
+          <p className="mt-1 text-emerald-900/90 dark:text-emerald-100/90">
+            슬러그 <span className="font-mono font-bold">{newTenant}</span> 로 손님·점주 화면이 나뉩니다. 점주에게 임시 비밀번호와 함께 알려 주세요.
+          </p>
+          <ul className="mt-3 space-y-2 font-mono text-xs sm:text-sm">
+            <li>
+              손님 메뉴판:{" "}
+              {siteBase ? (
+                <a
+                  className="break-all text-indigo-700 underline underline-offset-2 dark:text-indigo-300"
+                  href={`${siteBase}/t/${tEnc}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {siteBase}/t/{newTenant}
+                </a>
+              ) : (
+                <span className="break-all">/t/{newTenant}</span>
+              )}
+            </li>
+            <li>
+              점주 대시보드:{" "}
+              {siteBase ? (
+                <a
+                  className="break-all text-indigo-700 underline underline-offset-2 dark:text-indigo-300"
+                  href={`${siteBase}/m/${tEnc}/dashboard`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {siteBase}/m/{newTenant}/dashboard
+                </a>
+              ) : (
+                <span className="break-all">/m/{newTenant}/dashboard</span>
+              )}
+            </li>
+          </ul>
+          {!siteBase ? (
+            <p className="mt-2 text-xs text-emerald-900/80 dark:text-emerald-200/80">
+              전체 URL을 보이려면 Vercel에 <span className="font-mono">NEXT_PUBLIC_SITE_URL</span> 을 넣고 재배포하세요. 지금은 경로만 표시합니다.
+            </p>
+          ) : null}
+          <p className="mt-3 text-xs text-emerald-900/85 dark:text-emerald-100/85">
+            다음: 점주가 <span className="font-mono">/m/login</span> 으로 들어가 로그인 → 메뉴 관리에서 메뉴를 넣으면 손님 화면에 표시됩니다.
+          </p>
+        </div>
+      ) : ok === "1" ? (
         <p className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100">
           새 점주 계정을 만들고 매장과 연결했습니다.
         </p>
@@ -113,20 +168,42 @@ export default async function OpsMerchantsPage({ searchParams }: Props) {
         </p>
       ) : null}
 
+      <section className="mb-8 rounded-xl border border-indigo-200 bg-indigo-50/80 p-4 text-sm text-indigo-950 dark:border-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-100">
+        <h2 className="text-base font-semibold">현장에서 새 매장 추가 (운영자)</h2>
+        <p className="mt-2 text-indigo-900/90 dark:text-indigo-100/90">
+          별도 &quot;매장 등록&quot; 화면은 없습니다. 아래 폼에서 <strong>매장 주소(슬러그)</strong>를 정하고 점주 계정만 만들면, 그 순간 URL이 생깁니다.
+        </p>
+        <ul className="mt-2 list-inside list-disc space-y-1 text-indigo-900/85 dark:text-indigo-100/85">
+          <li>
+            슬러그 예: <span className="font-mono">mapo-bibim-2</span> → 손님 <span className="font-mono">/t/mapo-bibim-2</span>, 점주{" "}
+            <span className="font-mono">/m/mapo-bibim-2/…</span>
+          </li>
+          <li>한글만 입력하면 글자가 지워질 수 있으니, <strong>영문·숫자·하이픈</strong>으로 정하는 것을 권장합니다.</li>
+          <li>메뉴는 점주(owner)가 로그인 후 <strong>메뉴 관리</strong>에서 넣습니다.</li>
+        </ul>
+        <p className="mt-2 text-xs text-indigo-800/80 dark:text-indigo-200/80">
+          자세한 단계·다음 기능 로드맵은 저장소 <span className="font-mono">docs/MERCHANT_FIELD_ONBOARDING.md</span> 를 참고하세요.
+        </p>
+      </section>
+
       <section className="mb-12 rounded-xl border border-chaya-border bg-white p-5 dark:border-zinc-700 dark:bg-zinc-950">
         <h2 className="text-lg font-semibold">새 점주 초대</h2>
         <form action={inviteMerchantFromOps} className="mt-4 grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">
             <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400" htmlFor="tm">
-              테넌트 슬러그 (예: demo)
+              매장 주소 (슬러그) — 손님·점주 URL에 쓰임
             </label>
             <input
               id="tm"
               name="tenant_slug"
               required
               maxLength={120}
-              className="mt-1 w-full max-w-md rounded-lg border border-chaya-border px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
+              placeholder="예: gangnam-2ho"
+              className="mt-1 w-full max-w-md rounded-lg border border-chaya-border px-3 py-2 font-mono text-sm dark:border-zinc-700 dark:bg-zinc-900"
             />
+            <p className="mt-1 text-xs text-zinc-500">
+              저장 시 소문자로 바꾸고, 공백은 하이픈으로 바꾼 뒤 영문·숫자·하이픈만 남깁니다.
+            </p>
           </div>
           {useSms ? (
             <div className="sm:col-span-2">

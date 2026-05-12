@@ -8,6 +8,7 @@ import { normalizeKrPhoneToE164 } from "@/lib/merchant/phone-e164-kr";
 import { requirePlatformOperator } from "@/lib/platform/require-platform-operator";
 import { createServiceSupabase } from "@/lib/supabase/create-service-client";
 import { createSupabaseServerClient } from "@/lib/supabase/create-server-session-client";
+import { normalizeTenantSlug } from "@/lib/tenant/tenant-slug";
 
 const UUID_ROW = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -21,7 +22,11 @@ export async function inviteMerchantFromOps(formData: FormData): Promise<void> {
   await requirePlatformOperator("/ops/merchants");
 
   const useSms = merchantLoginUsesSms();
-  const tenant_slug = String(formData.get("tenant_slug") ?? "").trim();
+  const tenantRaw = String(formData.get("tenant_slug") ?? "").trim();
+  const tenant_slug = normalizeTenantSlug(tenantRaw);
+  if (!tenant_slug) {
+    backToMerchants({ e: "bad_tenant_slug" });
+  }
   const roleRaw = String(formData.get("role") ?? "owner").trim();
   const role = roleRaw === "staff" ? "staff" : "owner";
 
@@ -93,7 +98,7 @@ export async function inviteMerchantFromOps(formData: FormData): Promise<void> {
   }
 
   revalidatePath("/ops/merchants");
-  backToMerchants({ ok: "1" });
+  backToMerchants({ ok: "1", t: tenant_slug });
 }
 
 export async function removeMerchantMembership(formData: FormData): Promise<void> {
