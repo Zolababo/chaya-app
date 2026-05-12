@@ -11,6 +11,7 @@ alwaysApply: true
 - Follow existing route/query error-code patterns (`?e=...`, `?ok=...`) for user-facing flows.
 - For repetitive UI, extract reusable components instead of copying blocks.
 - Do not introduce new environment flags if an existing one already controls the behavior.
+- Follow the security baseline in this repo’s auth/supabase rule: **no secret keys in the client**, **RLS on by default**, **privileged and third-party APIs only via server**.
 
 # Change Discipline
 

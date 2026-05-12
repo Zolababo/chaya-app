@@ -14,7 +14,15 @@ alwaysApply: true
 - Preserve cookie options when writing auth cookies (`path`, `sameSite`, `maxAge`, etc.).
 - Avoid introducing frequent hard reload loops for authenticated pages.
 
+# Secrets and client boundary
+
+- **Never expose secret API keys to the frontend.** Do not prefix service keys, payment keys, or third-party tokens with `NEXT_PUBLIC_`, and never embed them in client bundles. The only `NEXT_PUBLIC_*` secrets pattern allowed here is the **Supabase anon key** (designed to be public under RLS).
+- **All privileged external API calls go through the server** (Route Handlers, Server Actions, or server-only modules under `lib/` imported only from server components / server entrypoints). The browser should call same-origin app routes, not third-party APIs with private keys.
+- **`SUPABASE_SERVICE_ROLE_KEY` (and `SUPABASE_SECRET_KEY`) are server-only.** Never import `createServiceSupabase` or any helper that reads the service role from `"use client"` components or shared modules that the client graph can reach.
+
 # Supabase Rules
 
-- RLS is mandatory; never bypass with broad client privileges.
-- Service-role actions must remain server-side only.
+- **RLS is mandatory for every table** shipped to production. Default is **RLS ON** with explicit policies; do not add tables with RLS disabled as a shortcut.
+- Prefer **session (authenticated) + RLS** for user-scoped reads/writes; tighten `anon` policies to the minimum required (e.g. guest order insert as already documented in migrations).
+- Never satisfy a feature by granting **overly broad anon/authenticated** policies; if a rule feels too wide, redesign or use a **server-only** path with membership checks plus minimal service-role use where policies cannot express the constraint.
+- Service-role actions must remain **server-side only**; they bypass RLS and must be guarded in application code (merchant/platform guards).
