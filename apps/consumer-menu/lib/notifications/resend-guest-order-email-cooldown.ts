@@ -1,11 +1,11 @@
-/** 동일 매장에 대한 Resend 신규주문 메일 폭주 방지(인스턴스 단위, 서버리스 한계 있음). */
+/** 동일 매장에 대한 신규주문 외부 알림 폭주 방지(Resend·웹 푸시·웹훅 묶음, 인스턴스 단위, 서버리스 한계 있음). */
 
 const COOLDOWN_MS = 3 * 60 * 1000;
 const MAX_KEYS = 500;
 const lastAttemptByTenant = new Map<string, number>();
 
 /**
- * @returns `true` 이면 이번에 Resend 호출을 진행해도 됨. `false` 이면 쿨다운으로 스킵.
+ * @returns `true` 이면 이번에 외부 알림(Resend / 웹 푸시 / 선택 웹훅)을 진행해도 됨. `false` 이면 쿨다운으로 스킵.
  */
 export function consumeGuestOrderResendCooldown(tenantSlug: string): boolean {
   const key = tenantSlug.trim().toLowerCase();

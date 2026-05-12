@@ -1,11 +1,13 @@
 import Link from "next/link";
 
 import { MerchantPreviewBanner } from "@/components/merchant-preview-banner";
+import { MerchantPushSettings } from "@/components/merchant-push-settings";
 import { MerchantSubnav } from "@/components/merchant-subnav";
 import { OrderStatusRefresh } from "@/components/order-status-refresh";
 import { requireMerchantForTenant } from "@/lib/merchant/merchant-access";
 import { listMenusForMerchant } from "@/lib/menus/list-menus-for-merchant";
 import { listRecentMerchantNotificationEvents } from "@/lib/notifications/list-merchant-notification-events";
+import { getMerchantVapidPublicKeyForClient } from "@/lib/notifications/merchant-push-config";
 import {
   countMerchantPendingOrders,
   getMerchantDashboard24hMetrics,
@@ -43,6 +45,8 @@ export default async function MerchantDashboardPage({ params, searchParams }: Pr
     listRecentMerchantNotificationEvents(tenant, 8),
   ]);
 
+  const vapidPublicKey = getMerchantVapidPublicKeyForClient();
+
   const recentOrders = list.ok ? list.rows.slice(0, 8) : [];
   const menuCount = menus.ok ? menus.items.length : null;
 
@@ -73,6 +77,13 @@ export default async function MerchantDashboardPage({ params, searchParams }: Pr
 
       <MerchantPreviewBanner tenantSlug={tenant} />
 
+      <section className="mb-6 rounded-xl border border-chaya-border bg-white p-4 dark:border-zinc-700 dark:bg-zinc-950" aria-label="브라우저 알림">
+        <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">알림 받기</h2>
+        <div className="mt-2">
+          <MerchantPushSettings tenant={tenant} vapidPublicKey={vapidPublicKey} />
+        </div>
+      </section>
+
       <MerchantSubnav tenant={tenant} pendingOrderCount={pendingCount} canManageMenus={canManageMenus} />
 
       <div className="mb-6">
@@ -82,9 +93,7 @@ export default async function MerchantDashboardPage({ params, searchParams }: Pr
       <section className="mb-8 rounded-xl border border-chaya-border bg-chaya-surface p-4 dark:border-zinc-700 dark:bg-zinc-950" aria-label="최근 알림">
         <h2 className="text-base font-semibold">최근 알림</h2>
         <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-          손님 신규 주문·상태 변경이 여기에 쌓입니다. 이메일은{" "}
-          <span className="font-mono">RESEND_API_KEY</span>·<span className="font-mono">RESEND_FROM_EMAIL</span> 이
-          있고 멤버에 <span className="font-mono">invite_email</span> 이 있을 때만 발송됩니다.
+          손님 신규 주문·상태 변경이 여기에 쌓입니다. 이메일(Resend)·브라우저 푸시·선택 웹훅(카카오 등 외부 연동)은 환경 설정과 멤버 설정에 따라 달라집니다.
         </p>
         {!notif.ok ? (
           <p className="mt-3 text-sm text-amber-800 dark:text-amber-200">{notif.message}</p>

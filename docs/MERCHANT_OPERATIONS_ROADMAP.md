@@ -35,18 +35,19 @@
 - ✅ 플랫폼 **`/ops/audit`** — 전 매장 조회·필터·CSV (`GET /ops/audit/export`). DB에 `merchant_audit_events_select_platform_operator` 정책 필요(`20260512160000_*` 마이그레이션).
 - ✅ **`/ops/merchants` 운영 액션 감사** — 초대·승인·연결 삭제·주문 메일 토글 성공 시 `merchant_audit_events`에 기록(액션 접두사 `ops.`; 이메일·전화·비밀번호는 detail에 넣지 않음). `SUPABASE_SERVICE_ROLE_KEY` 필요.
 
-### Phase 3 — 알림 (진행 중)
+### Phase 3 — 알림 ✅
 
 - ✅ DB **`merchant_notification_events`** + RLS(승인 멤버·`platform_operators` SELECT).
 - ✅ **대시보드「최근 알림」** — 신규 손님 주문·주문 상태 변경 기록, 메일 발송 여부 뱃지.
 - ✅ **Resend(선택)** — `RESEND_API_KEY`·`RESEND_FROM_EMAIL` + 멤버 `invite_email` 있을 때만 신규 주문 메일.
 - ✅ **멤버별 `notify_order_email`** — DB(기본 true) + Resend 필터 + **`/ops/merchants`에서 운영자 토글**(POST 서버 액션). 마이그레이션 `20260512210000_*` 적용 필요.
 - ✅ **신규주문 Resend 쿨다운** — 매장당 3분(인스턴스 메모리, 서버리스 한계 있음).
-- ⬜ 웹 푸시 / 카카오 등.
+- ✅ **웹 푸시** — VAPID + `merchant_push_subscriptions`(마이그레이션 `20260512220000_*`) + 대시보드에서 기기 구독; 신규 주문 시 `web-push` 발송(만료 구독 410/404 시 삭제). Resend·웹훅과 동일 **매장당 3분 쿨다운** 묶음.
+- ✅ **외부 알림 웹훅(카카오 등 연동용)** — `MERCHANT_ORDER_NOTIFY_WEBHOOK_URL`(+선택 `MERCHANT_ORDER_NOTIFY_WEBHOOK_SECRET`) 설정 시 신규 주문 JSON POST. 실제 알림톡은 별도 서비스·템플릿에서 처리.
 
 #### SQL 적용 후 권장 순서
 
-1. **마이그레이션** — `20260512200000_merchant_notification_events.sql` 및 **`20260512210000_merchant_tenant_members_notify_order_email.sql`** 이 프로젝트에 반영됐는지 확인.
+1. **마이그레이션** — `20260512200000_merchant_notification_events.sql`, **`20260512210000_merchant_tenant_members_notify_order_email.sql`**, **`20260512220000_merchant_push_subscriptions.sql`** 이 프로젝트에 반영됐는지 확인.
 2. **앱 배포** — `main` 최신이 Vercel(또는 호스트)에 올라가 있는지 확인.
 3. **`GET /health`** — `supabase.merchantDbReady` 가 true 인지, `merchantOrderEmail.resendConfigured` / `siteUrlForMailLinks` 로 메일 준비 상태만 확인(비밀 미노출).
 4. **동작 확인** — 손님 `/t/{tenant}` 에서 테스트 주문 → 점주 `/m/{tenant}/dashboard` 의 **최근 알림**에 `guest_order_created` 가 보이는지.

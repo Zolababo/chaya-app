@@ -32,7 +32,7 @@ export function GET() {
           hasProjectUrl: hasSupabaseUrl,
           hasServiceRoleKey: Boolean(serviceRoleSecret),
         },
-        /** Phase 3: Resend 이메일 알림(키 이름만, 값 미포함). */
+        /** Phase 3: outbound order notify (no secret values). */
         merchantOrderEmail: {
           resendConfigured: Boolean(
             process.env.RESEND_API_KEY?.trim() && process.env.RESEND_FROM_EMAIL?.trim(),
@@ -40,6 +40,16 @@ export function GET() {
           siteUrlForMailLinks: Boolean(
             process.env.NEXT_PUBLIC_SITE_URL?.trim() || process.env.VERCEL_URL?.trim(),
           ),
+        },
+        merchantWebPush: {
+          vapidConfigured: Boolean(
+            process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim() &&
+              process.env.VAPID_PRIVATE_KEY?.trim() &&
+              process.env.VAPID_SUBJECT?.trim(),
+          ),
+        },
+        merchantOrderNotifyWebhook: {
+          urlConfigured: Boolean(process.env.MERCHANT_ORDER_NOTIFY_WEBHOOK_URL?.trim()),
         },
       },
     },

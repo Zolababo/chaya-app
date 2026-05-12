@@ -3,6 +3,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { orderStatusLabel } from "@/lib/orders/order-status-label";
 import { createServiceSupabase } from "@/lib/supabase/create-service-client";
 
+import { tryPostMerchantOrderNotifyWebhook, isMerchantOrderNotifyWebhookConfigured } from "./merchant-order-notify-webhook";
+import { loadPushSubscriptionsForApprovedMembers, sendGuestOrderWebPush } from "./merchant-push-send";
 import { consumeGuestOrderResendCooldown } from "./resend-guest-order-email-cooldown";
 import { getServerSiteBaseUrl } from "./site-base-url";
 
@@ -157,6 +159,9 @@ export async function runMerchantGuestOrderCreatedNotification(input: {
   if (!eventId) return;
 
   const recipients = await loadInviteEmailsForTenant(svc, input.tenantSlug);
+  const pushSubs = await loadPushSubscriptionsForApprovedMembers(svc, input.tenantSlug);
+  const webhookOn = isMerchantOrderNotifyWebhookConfigured();
+
   const base = getServerSiteBaseUrl();
   const path = `/m/${encodeURIComponent(input.tenantSlug)}/orders`;
   const ordersLink = base ? `${base}${path}` : path;
@@ -165,11 +170,30 @@ export async function runMerchantGuestOrderCreatedNotification(input: {
   const text = `새 주문이 접수되었습니다.\n주문 ID: ${input.orderId}\n합계: ${input.totalPrice.toLocaleString("ko-KR")}원${tablePart}\n\n주문 큐: ${ordersLink}`;
   const html = `<p>새 주문이 접수되었습니다.</p><p>주문 ID: <code>${input.orderId}</code></p><p>합계: ${input.totalPrice.toLocaleString("ko-KR")}원${tablePart ? `<br/>${tablePart}` : ""}</p><p><a href="${ordersLink}">주문 큐 열기</a></p>`;
 
-  if (recipients.length > 0 && !consumeGuestOrderResendCooldown(input.tenantSlug)) {
+  const hasOutbound = recipients.length > 0 || pushSubs.length > 0 || webhookOn;
+  if (hasOutbound && !consumeGuestOrderResendCooldown(input.tenantSlug)) {
     return;
   }
 
   await trySendResendForEvent(eventId, subject, text, html, recipients);
+
+  await sendGuestOrderWebPush({
+    svc,
+    tenantSlug: input.tenantSlug,
+    orderId: input.orderId,
+    title: `[CHAYA] ${input.tenantSlug}`,
+    body: `${input.totalPrice.toLocaleString("ko-KR")}원${tablePart} · 탭하여 주문 큐`,
+    openUrl: ordersLink,
+    subscriptions: pushSubs,
+  });
+
+  void tryPostMerchantOrderNotifyWebhook({
+    tenantSlug: input.tenantSlug,
+    orderId: input.orderId,
+    kind: "guest_order_created",
+    totalPrice: input.totalPrice,
+    tableNo: input.tableNo,
+  });
 }
 
 export function fireMerchantGuestOrderCreatedNotification(input: {
