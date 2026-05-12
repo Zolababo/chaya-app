@@ -38,6 +38,12 @@ export function MerchantSubnav({ tenant, pendingOrderCount, canManageMenus = tru
           </span>
         ) : null}
       </Link>
+      <Link
+        href={`/m/${t}/audit`}
+        className="inline-flex min-h-[44px] items-center rounded-lg px-3 py-2 text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900"
+      >
+        활동 기록
+      </Link>
       {canManageMenus ? (
         <Link
           href={`/m/${t}/menus`}
