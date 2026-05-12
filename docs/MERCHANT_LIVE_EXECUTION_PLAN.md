@@ -75,3 +75,14 @@
 - [ ] 점주 1명 이상이 모바일 단독으로 운영 완료
 - [ ] 운영자가 점주 초대/권한 변경을 문서대로 재현 가능
 - [ ] fallback(기존 운영 경로) 연락 체계 준비 완료
+
+## 6) 지금 이후(런칭 직후 ~ 1주일)
+
+기능·DB·품절 E2E까지 확인했다면, **다음은 “운영 리듬”을 고정**하는 단계입니다.
+
+- [ ] **배포 호스트**가 실제 매장이 쓸 주소인지 확정(Vercel Production, `NEXT_PUBLIC_SITE_URL` 일치)
+- [ ] **하루 1회**: `verify_merchant_live_readiness.sql` 를 대표 tenant로 실행(F·G에서 `is_sold_out`·품절 개수까지 확인)
+- [ ] **점주/직원**: 대시보드 → 주문 큐 → 품절 처리 순서만 짧게 공유(내비 순서 그대로)
+- [ ] **문제 시**: Supabase 로그·Vercel 함수 로그 확인, `MERCHANT_LIVE_EXECUTION_PLAN` 4절 장애 대응 경로 유지
+
+자동 점검: 저장소 루트에서 `npm run smoke:merchant` (기본은 프로덕션 URL; 다른 호스트면 `--green-base` 로 지정)로 대시보드·주문·메뉴·실적·카테고리 응답을 병렬 확인할 수 있습니다.

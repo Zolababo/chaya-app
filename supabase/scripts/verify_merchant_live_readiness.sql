@@ -3,7 +3,7 @@
 --
 -- 사용법:
 -- 1) 아래 tenant 값을 실제 매장 slug로 바꿉니다.
--- 2) 전체 실행 후 각 섹션 결과를 점검표에 기록합니다.
+-- 2) 전체 실행 후 각 섹션 결과(A~G)를 점검표에 기록합니다.
 
 -- ====== params ======
 -- 예: 'demo', 'gangnam-1ho'
@@ -83,3 +83,27 @@ join public.orders o on o.tenant_slug = p.tenant_slug
 where o.created_at >= now() - interval '7 days'
 group by p.tenant_slug, o.status
 order by o.status;
+
+-- ====== F. ChayaMenus.is_sold_out 컬럼 존재 (앱 품절 기능) ======
+select
+  'F.is_sold_out_column' as section,
+  exists (
+    select 1
+    from information_schema.columns c
+    where c.table_schema = 'public'
+      and c.table_name = 'ChayaMenus'
+      and c.column_name = 'is_sold_out'
+  ) as column_exists;
+
+-- ====== G. 해당 tenant 품절 메뉴 수 (참고) ======
+with params as (
+  select 'demo'::text as tenant_slug
+)
+select
+  'G.sold_out_menus' as section,
+  p.tenant_slug,
+  count(*) filter (where m.is_sold_out is true) as sold_out_count,
+  count(*) as total_menus
+from params p
+left join public."ChayaMenus" m on m.tenant_slug = p.tenant_slug
+group by p.tenant_slug;

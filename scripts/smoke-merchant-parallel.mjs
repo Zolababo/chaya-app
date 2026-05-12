@@ -2,7 +2,7 @@
 
 /**
  * Merchant parallel smoke checks (Blue/Green).
- * - Green: /m/{tenant}/orders, /m/{tenant}/menus
+ * - Green: /m/{tenant}/dashboard, orders, menus, analytics, categories
  * - Blue: legacy merchant URL reachability
  */
 
@@ -121,34 +121,55 @@ async function main() {
   const { greenBase, blueBase, tenant, retries, retryDelayMs } = parseArgs(process.argv.slice(2));
   const greenRoot = greenBase.replace(/\/+$/, "");
   const blueRoot = blueBase.replace(/\/+$/, "");
-  const greenOrdersUrl = `${greenRoot}/m/${encodeURIComponent(tenant)}/orders`;
-  const greenMenusUrl = `${greenRoot}/m/${encodeURIComponent(tenant)}/menus`;
+  const enc = encodeURIComponent(tenant);
+  const greenDashboardUrl = `${greenRoot}/m/${enc}/dashboard`;
+  const greenOrdersUrl = `${greenRoot}/m/${enc}/orders`;
+  const greenMenusUrl = `${greenRoot}/m/${enc}/menus`;
+  const greenAnalyticsUrl = `${greenRoot}/m/${enc}/analytics`;
+  const greenCategoriesUrl = `${greenRoot}/m/${enc}/categories`;
   const blueUrl = `${blueRoot}/`;
 
+  const loginMarkers = [
+    ["점주 로그인", "이메일", "비밀번호"],
+    ["점주 로그인", "인증번호 받기"],
+    ["문자 인증", "인증번호"],
+  ];
+
   const checks = await Promise.all([
+    checkWithRetry({
+      label: "green /m/{tenant}/dashboard",
+      url: greenDashboardUrl,
+      retries,
+      retryDelayMs,
+      markerGroups: [["대시보드"], ...loginMarkers],
+    }),
     checkWithRetry({
       label: "green /m/{tenant}/orders",
       url: greenOrdersUrl,
       retries,
       retryDelayMs,
-      markerGroups: [
-        ["주문 큐"],
-        ["점주 로그인", "이메일", "비밀번호"],
-        ["점주 로그인", "인증번호 받기"],
-        ["문자 인증", "인증번호"],
-      ],
+      markerGroups: [["주문 큐"], ...loginMarkers],
     }),
     checkWithRetry({
       label: "green /m/{tenant}/menus",
       url: greenMenusUrl,
       retries,
       retryDelayMs,
-      markerGroups: [
-        ["메뉴 관리"],
-        ["점주 로그인", "이메일", "비밀번호"],
-        ["점주 로그인", "인증번호 받기"],
-        ["문자 인증", "인증번호"],
-      ],
+      markerGroups: [["메뉴 관리"], ...loginMarkers],
+    }),
+    checkWithRetry({
+      label: "green /m/{tenant}/analytics",
+      url: greenAnalyticsUrl,
+      retries,
+      retryDelayMs,
+      markerGroups: [["기간 실적"], ...loginMarkers],
+    }),
+    checkWithRetry({
+      label: "green /m/{tenant}/categories",
+      url: greenCategoriesUrl,
+      retries,
+      retryDelayMs,
+      markerGroups: [["카테고리"], ...loginMarkers],
     }),
     checkWithRetry({
       label: "blue merchant url",
