@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 
 import { GUEST_SESSION_STORAGE_KEY } from "@/lib/guest-session/constants";
+import { sanitizeGuestSessionId } from "@/lib/orders/guest-order-validation";
 import { createConsumerSupabase } from "@/lib/supabase/create-consumer-client";
 import { withSupabaseReadRetry } from "@/lib/supabase/transient-retry";
 
@@ -78,8 +79,15 @@ function normalizeOrderRow(raw: Record<string, unknown>): GuestOrderView | null 
   };
 }
 
-/** RPC `get_order_for_guest` — 없으면 null (`GuestSessionCookieSync` 로 쿠키가 있으면 세션 전달) */
-export async function fetchGuestOrder(tenant: string, orderId: string): Promise<GuestOrderView | null> {
+/**
+ * RPC `get_order_for_guest` — 없으면 null.
+ * `guestSessionIdOverride` 가 있으면 쿠키 대신 사용(상태 RPC 폴백 시 세션 일치).
+ */
+export async function fetchGuestOrder(
+  tenant: string,
+  orderId: string,
+  guestSessionIdOverride?: string | null,
+): Promise<GuestOrderView | null> {
   const slug = tenant.trim();
   if (!slug || !UUID_RE.test(orderId.trim())) {
     return null;
@@ -88,15 +96,18 @@ export async function fetchGuestOrder(tenant: string, orderId: string): Promise<
   const client = createConsumerSupabase();
   if (!client) return null;
 
-  const jar = await cookies();
-  const raw = jar.get(GUEST_SESSION_STORAGE_KEY)?.value;
-  let guestSessionId: string | null = null;
-  if (raw) {
-    try {
-      const decoded = decodeURIComponent(raw).trim();
-      if (decoded.length >= 8 && decoded.length <= 128) guestSessionId = decoded;
-    } catch {
-      guestSessionId = null;
+  let guestSessionId: string | null = sanitizeGuestSessionId(guestSessionIdOverride ?? null);
+
+  if (guestSessionId == null) {
+    const jar = await cookies();
+    const raw = jar.get(GUEST_SESSION_STORAGE_KEY)?.value;
+    if (raw) {
+      try {
+        const decoded = decodeURIComponent(raw).trim();
+        guestSessionId = sanitizeGuestSessionId(decoded);
+      } catch {
+        guestSessionId = null;
+      }
     }
   }
 

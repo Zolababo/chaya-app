@@ -3,6 +3,7 @@ import { withSupabaseReadRetry, withSupabaseWriteRetry } from "@/lib/supabase/tr
 
 import type { GuestOrderLine } from "./guest-order-validation";
 import {
+  GUEST_ORDER_LIMITS,
   sanitizeGuestOrderLines,
   sanitizeGuestSessionId,
   sanitizeTenantSlug,
@@ -34,12 +35,7 @@ export async function submitGuestOrder(input: {
   if (!linesCheck.ok) {
     return { ok: false, message: linesCheck.message };
   }
-  const orderedItems = linesCheck.items;
-
-  const total_price = orderedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  if (!Number.isFinite(total_price) || total_price < 0) {
-    return { ok: false, message: "주문 금액이 올바르지 않습니다." };
-  }
+  let orderedItems = linesCheck.items;
 
   const client = createConsumerSupabase();
   if (!client) {
@@ -65,6 +61,53 @@ export async function submitGuestOrder(input: {
         };
       }
     }
+    if ((soldRows ?? []).length !== menuIds.length) {
+      return {
+        ok: false,
+        message: "메뉴판이 바뀌었거나 일부 메뉴를 찾을 수 없습니다. 장바구니를 비운 뒤 다시 담아 주세요.",
+      };
+    }
+
+    const { data: priceRows, error: priceErr } = await withSupabaseReadRetry(() =>
+      client.from("ChayaMenus").select("id,name,price").eq("tenant_slug", slug).in("id", menuIds),
+    );
+    if (priceErr) {
+      console.error("[submitGuestOrder] menuPrice", priceErr.code ?? "", priceErr.message);
+      return { ok: false, message: "메뉴 가격을 확인하지 못했습니다. 잠시 후 다시 시도해 주세요." };
+    }
+
+    const canon = new Map<string, { name: string; price: number }>();
+    const maxName = GUEST_ORDER_LIMITS.maxMenuNameLen;
+    for (const r of priceRows ?? []) {
+      const rec = r as { id?: unknown; name?: unknown; price?: unknown };
+      if (typeof rec.id !== "string" || typeof rec.name !== "string") continue;
+      const p = typeof rec.price === "number" ? rec.price : Number(rec.price);
+      if (!Number.isFinite(p) || p < 0 || p > GUEST_ORDER_LIMITS.maxUnitPrice) continue;
+      const name = rec.name.trim().slice(0, maxName);
+      if (!name) continue;
+      canon.set(rec.id, { name, price: p });
+    }
+
+    if (canon.size !== menuIds.length) {
+      return {
+        ok: false,
+        message: "메뉴판이 바뀌었거나 일부 메뉴를 찾을 수 없습니다. 장바구니를 비운 뒤 다시 담아 주세요.",
+      };
+    }
+
+    orderedItems = orderedItems.map((line) => {
+      const row = canon.get(line.id);
+      if (!row) return line;
+      return { ...line, name: row.name, price: row.price };
+    });
+  }
+
+  const total_price = orderedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  if (!Number.isFinite(total_price) || total_price < 0) {
+    return { ok: false, message: "주문 금액이 올바르지 않습니다." };
+  }
+  if (total_price > GUEST_ORDER_LIMITS.maxTotalPrice) {
+    return { ok: false, message: "주문 합계가 허용 범위를 넘습니다." };
   }
 
   const row: Record<string, unknown> = {

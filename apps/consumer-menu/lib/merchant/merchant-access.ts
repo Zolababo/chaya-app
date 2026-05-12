@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
+import { sanitizeInternalRedirectPath } from "@/lib/security/internal-redirect-path";
 import { createSupabaseServerClient } from "@/lib/supabase/create-server-session-client";
 import { resolveServerUser } from "@/lib/supabase/resolve-server-user";
 
@@ -48,14 +49,9 @@ export async function fetchMerchantMembership(
   return { role, approvedAt };
 }
 
-/** 로그인 후 리디렉트용 경로 검증(`/m/*` 만 허용). */
+/** 로그인 후 리디렉트용 경로 검증(`/m/*` 만 허용, `..` 등 정규화 탈출 차단). */
 export function sanitizeMerchantNextPath(raw: string | undefined | null): string | null {
-  if (raw == null) return null;
-  const s = String(raw).trim();
-  if (!s.startsWith("/m")) return null;
-  if (s.startsWith("//") || s.includes("://")) return null;
-  if (s === "/m/login" || s.startsWith("/m/login?")) return "/m";
-  return s;
+  return sanitizeInternalRedirectPath(raw, "merchant");
 }
 
 export function merchantLoginUrl(nextPath?: string | null): string {

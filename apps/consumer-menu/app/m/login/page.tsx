@@ -51,10 +51,7 @@ function emailAlertMessage(code: string | undefined): string | null {
 export default async function MerchantLoginPage({ searchParams }: Props) {
   const useSms = merchantLoginUsesSms();
   const sp = await searchParams;
-  const safeNext =
-    typeof sp.next === "string" && sp.next.startsWith("/m") && !sp.next.startsWith("//")
-      ? sp.next
-      : "/m";
+  const safeNext = sanitizeMerchantNextPath(typeof sp.next === "string" ? sp.next : null) ?? "/m";
 
   const isConfirm =
     useSms &&

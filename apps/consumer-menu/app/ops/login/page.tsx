@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { sanitizeOpsNextPath } from "@/lib/platform/ops-path";
+
 export const dynamic = "force-dynamic";
 
 type Props = {
@@ -24,8 +26,7 @@ function alertMessage(code: string | undefined): string | null {
 
 export default async function OpsLoginPage({ searchParams }: Props) {
   const sp = await searchParams;
-  const safeNext =
-    typeof sp.next === "string" && sp.next.startsWith("/ops") && !sp.next.startsWith("//") ? sp.next : "/ops";
+  const safeNext = sanitizeOpsNextPath(typeof sp.next === "string" ? sp.next : null) ?? "/ops";
   const err = alertMessage(typeof sp.e === "string" ? sp.e : undefined);
 
   return (

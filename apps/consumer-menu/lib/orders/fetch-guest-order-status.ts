@@ -44,6 +44,6 @@ export async function fetchGuestOrderStatusOnly(
     error.code ?? "",
     error.message,
   );
-  const full = await fetchGuestOrder(tenant, orderId);
+  const full = await fetchGuestOrder(tenant, orderId, guestSessionId);
   return full?.status ?? null;
 }

@@ -20,7 +20,7 @@ export async function requireMerchantOrderMutation(formData: FormData): Promise<
 
   const supabase = await createSupabaseServerClient();
   if (!supabase) {
-    redirect("/m/forbidden");
+    redirect(merchantLoginUrl(nextPath));
   }
 
   const user = await resolveServerUser(supabase);
