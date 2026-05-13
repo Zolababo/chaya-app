@@ -11,6 +11,7 @@
  * - Verifies `/t/{tenant}/cart` SSR shell (“주문 확인”)
  * - Verifies `/t/{tenant}/barrier-free` SSR shell (“목록형 메뉴”)
  * - Verifies 결제·직원호출 스텁: GET → 405 (GET 에 부작용 없음, auth 규칙과 정합)
+ * - When `/health` includes `supabase.guestOrderRpcsProbe` with `probed: true`, asserts `allPresent` (C2 DB probe).
  */
 
 const DEFAULT_BASE_URL = "https://chaya-app.vercel.app";
@@ -102,6 +103,28 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/** @param {unknown} payload */
+function evaluateGuestOrderRpcProbe(payload) {
+  const probe = payload?.supabase?.guestOrderRpcsProbe;
+  if (!probe || typeof probe !== "object") {
+    return { ok: true, label: "SKIP (no guestOrderRpcsProbe — 구 배포일 수 있음)" };
+  }
+  if (probe.probed !== true) {
+    const reason = "skipReason" in probe ? String(probe.skipReason) : "unknown";
+    return { ok: true, label: `SKIP (${reason})` };
+  }
+  if (probe.allPresent === true) {
+    const ms = "durationMs" in probe ? Number(probe.durationMs) : 0;
+    return { ok: true, label: `allPresent=true (${ms}ms)` };
+  }
+  const rpcs = "rpcs" in probe ? probe.rpcs : undefined;
+  const err = "firstError" in probe ? probe.firstError : "";
+  return {
+    ok: false,
+    label: `allPresent=false rpcs=${JSON.stringify(rpcs)} firstError=${String(err).slice(0, 160)}`,
+  };
+}
+
 async function main() {
   const { base, tenant, expectedSha, shaRetries, shaRetryDelayMs } = parseArgs(
     process.argv.slice(2),
@@ -150,6 +173,12 @@ async function main() {
       if (expectedSha) {
         if (liveSha.startsWith(expectedSha)) {
           ok("/health deployment SHA", `${liveSha.slice(0, 12)} matches ${expectedSha}`);
+          const pr = evaluateGuestOrderRpcProbe(payload);
+          if (pr.ok) ok("/health guestOrderRpcsProbe", pr.label);
+          else {
+            fail("/health guestOrderRpcsProbe", pr.label);
+            failed = true;
+          }
           healthDone = true;
         } else if (attempt < shaRetries) {
           console.log(
@@ -163,9 +192,21 @@ async function main() {
         }
       } else if (liveSha) {
         ok("/health deployment SHA", liveSha.slice(0, 12));
+        const pr = evaluateGuestOrderRpcProbe(payload);
+        if (pr.ok) ok("/health guestOrderRpcsProbe", pr.label);
+        else {
+          fail("/health guestOrderRpcsProbe", pr.label);
+          failed = true;
+        }
         healthDone = true;
       } else {
         ok("/health deployment SHA", "SKIP (no deployment.gitCommitSha — 로컬/미설정 빌드일 수 있음)");
+        const pr = evaluateGuestOrderRpcProbe(payload);
+        if (pr.ok) ok("/health guestOrderRpcsProbe", pr.label);
+        else {
+          fail("/health guestOrderRpcsProbe", pr.label);
+          failed = true;
+        }
         healthDone = true;
       }
     }

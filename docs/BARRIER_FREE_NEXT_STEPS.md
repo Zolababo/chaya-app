@@ -92,13 +92,13 @@
 
 `{tenant}` 는 실제 `ChayaMenus.tenant_slug` 와 같은 값(예: `demo`)으로 바꿉니다.
 
-1. `GET https://chaya-app.vercel.app/health` → `supabase.configured`(및 필요 시 `hasUrl` 등) 확인. 배포가 맞는지 `deployment.gitCommitSha` 를 저장소 `main` 과 대조해 볼 수 있음.
+1. `GET https://chaya-app.vercel.app/health` → `supabase.configured`(및 필요 시 `hasUrl` 등) 확인. 배포가 맞는지 `deployment.gitCommitSha` 를 저장소 `main` 과 대조해 볼 수 있음. **`supabase.guestOrderRpcsProbe`** 가 있으면 `probed: true` 일 때 `allPresent: true` 인지 확인(손님 주문 RPC 3종이 서비스 롤로 호출 가능한지). 프로브를 끄려면 Vercel에 `CHAYA_HEALTH_SKIP_GUEST_RPC_PROBE=1`.
 2. `https://chaya-app.vercel.app/t/{tenant}` 에서 메뉴 담기 → 장바구니로 주문 제출. 브라우저 탭 제목이 `{tenant} · CHAYA 메뉴` 패턴으로 바뀌는지(메타데이터) 확인해 볼 수 있음.
 3. 접수 화면에서 **이 주문 주소 복사**·**(모바일·지원 브라우저) 다른 앱으로 공유** 가 동작하는지 확인.
 4. 하단 내비 **주문 현황** 에서 해당 주문이 목록에 보이는지, 행별 **링크 복사** 후 붙여넣어 같은 기기에서 열리는지, 상세 들어가 폴링·상태가 갱신되는지 확인.
 5. **시크릿 창**(또는 다른 기기)에서 같은 주문 URL만 연 경우, 세션이 없을 때 「찾을 수 없음」·빈 목록처럼 **의도한 제한**인지 확인.
 
-CLI에서 빠른 1차 확인은 아래로 실행할 수 있습니다. (`scripts/smoke-consumer-menu.mjs` — `/health`, `robots.txt`, `/t/{tenant}`, **`/t/{tenant}/orders`(주문 허브 SSR)**; `--expected-sha` 가 있으면 Vercel 반영 지연을 허용하기 위해 SHA 검증만 기본 **8회×12초** 재시도.)
+CLI에서 빠른 1차 확인은 아래로 실행할 수 있습니다. (`scripts/smoke-consumer-menu.mjs` — `/health`(게스트 RPC 프로브 포함), `robots.txt`, `/t/{tenant}`, **`/t/{tenant}/orders`(주문 허브 SSR)** 등; `--expected-sha` 가 있으면 Vercel 반영 지연을 허용하기 위해 SHA 검증만 기본 **8회×12초** 재시도.)
 
 ```bash
 pnpm smoke:consumer -- --expected-sha <main 커밋 앞 7~12자> --tenant <tenant_slug>

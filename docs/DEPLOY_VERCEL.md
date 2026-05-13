@@ -109,7 +109,7 @@ Vercel 프로덕션/프리뷰에서는 빌드 시 주입되는 **`deployment.env
 손님 주문·화면 동선은 반드시 브라우저로 한 번 확인하세요. 순서는 **`docs/BARRIER_FREE_NEXT_STEPS.md`** 의 「배포 후 앱 스모크 (손님 주문)」를 따르면 됩니다.
 자동 1차 점검은 저장소 루트에서 `pnpm smoke:consumer -- --expected-sha <커밋SHA앞부분> --tenant <slug>` 로 실행할 수 있습니다.  
 `--expected-sha` 가 있으면 기본값으로 **프로덕션에 새 커밋이 반영될 때까지** `/health`의 `deployment.gitCommitSha` 를 **최대 8회**(간격 기본 **12초**) 재확인합니다. 필요 시 `--sha-retries` / `--sha-retry-delay-ms` 로 조정합니다.  
-점검 항목에 **`/t/{tenant}/orders`(주문 허브)**·**`/t/{tenant}/cart`(주문 확인)**·**`/t/{tenant}/barrier-free`(목록형 메뉴)** SSR 마커, **`GET …/checkout/payment`·`GET …/staff-call` → 405**(GET 부작용 없음) 포함.
+점검 항목에 **`/t/{tenant}/orders`(주문 허브)**·**`/t/{tenant}/cart`(주문 확인)**·**`/t/{tenant}/barrier-free`(목록형 메뉴)** SSR 마커, **`GET …/checkout/payment`·`GET …/staff-call` → 405**(GET 부작용 없음), 배포 반영 후 **`/health` 의 `supabase.guestOrderRpcsProbe`**(`probed: true` 이면 손님 RPC 3종 DB 호출 확인) 포함.
 
 GitHub에서 **`Smoke consumer`** 워크플로(`.github/workflows/smoke-consumer.yml`)가 **매일 한 번**, **main에서 CI 성공 후**, **수동(workflow_dispatch)** 에 프로덕션 URL 스모크를 돌립니다(PR 브랜치 CI에는 반응하지 않음 — `workflow_run` + `head_branch == main`).  
 `workflow_run`(main 성공 분기)에서는 **해당 CI 커밋 SHA** 로 `--expected-sha` 를 넘겨 배포 반영까지 자동 재시도합니다.
