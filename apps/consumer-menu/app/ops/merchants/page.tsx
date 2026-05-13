@@ -316,6 +316,7 @@ export default async function OpsMerchantsPage({ searchParams }: Props) {
               <option value="staff">staff — 주문만 (상태 변경)</option>
               <option value="menu_editor">menu_editor — 메뉴·품절·수정 (삭제는 소장만)</option>
               <option value="viewer">viewer — 조회 전용 (상태·푸시 구독 불가)</option>
+              <option value="finance">finance — 정산·실적 조회 (권한은 viewer와 동일, 구분용)</option>
             </select>
           </div>
           <div className="sm:col-span-2 rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-600 dark:bg-zinc-900/80">

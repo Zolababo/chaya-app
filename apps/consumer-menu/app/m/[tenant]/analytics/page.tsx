@@ -57,6 +57,15 @@ export default async function MerchantAnalyticsPage({ params, searchParams }: Pr
         </p>
       </header>
 
+      {role === "finance" ? (
+        <p
+          role="status"
+          className="mb-4 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm text-indigo-950 dark:border-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-100"
+        >
+          정산(finance) 계정입니다. 권한은 조회 전용(viewer)과 같고, 주문·메뉴는 변경할 수 없습니다.
+        </p>
+      ) : null}
+
       <MerchantPreviewBanner tenantSlug={tenant} />
 
       <MerchantSubnav tenant={tenant} pendingOrderCount={pendingCount} canManageMenus={canManageMenus} />

@@ -13,7 +13,7 @@
 
 | 영역 | 비율 | 비고 |
 |------|------|------|
-| 점주 콘솔 운영 성숙도(로드맵 Phase 1–4 통합) | **~98%** | Phase 4: 역할 4종 + 메뉴 삭제는 owner 전용. 남음: 정산 전용 등 추가 역할·2인 승인(필요 시), 운영 설정(VAPID 등). |
+| 점주 콘솔 운영 성숙도(로드맵 Phase 1–4 통합) | **~99%** | Phase 4: 역할 5종(owner·staff·menu_editor·viewer·finance) + 메뉴 삭제 owner 전용 + 조회 전용 푸시 차단. 남음: 2인 승인·추가 세분(필요 시), 운영 설정(VAPID 등). |
 | 소비자 `/t` 주문·메뉴 MVP | **~63%** | 게스트 주문·장바구니·주문 조회 등 핵심 동작. **결제·직원 호출은 의도적으로 미구현** — `lib/consumer/future-features` 플래그·타입과 `POST …/checkout/payment`·`POST …/staff-call` 스텁(501)만 두어 이후 기능을 같은 경로에 붙일 수 있게 함. |
 
 숫자는 펜테스트·실매장 검증 없이 **저장소와 흐름 기준 추정**입니다. 이후 작업 마칠 때마다 이 표를 갱신합니다.
@@ -47,7 +47,7 @@
 
 #### SQL 적용 후 권장 순서
 
-1. **마이그레이션** — `20260512200000_merchant_notification_events.sql`, **`20260512210000_merchant_tenant_members_notify_order_email.sql`**, **`20260512220000_merchant_push_subscriptions.sql`**, **`20260513190000_merchant_tenant_members_phase4_roles.sql`**(역할 확장) 이 프로젝트에 반영됐는지 확인.
+1. **마이그레이션** — `20260512200000_merchant_notification_events.sql`, **`20260512210000_merchant_tenant_members_notify_order_email.sql`**, **`20260512220000_merchant_push_subscriptions.sql`**, **`20260513190000_merchant_tenant_members_phase4_roles.sql`**, **`20260514100000_merchant_tenant_members_finance_role.sql`** 가 프로젝트에 반영됐는지 확인.
 2. **앱 배포** — `main` 최신이 Vercel(또는 호스트)에 올라가 있는지 확인.
 3. **`GET /health`** — `supabase.merchantDbReady` 가 true 인지, `merchantOrderEmail.resendConfigured` / `siteUrlForMailLinks` 로 메일 준비 상태만 확인(비밀 미노출).
 4. **동작 확인** — 손님 `/t/{tenant}` 에서 테스트 주문 → 점주 `/m/{tenant}/dashboard` 의 **최근 알림**에 `guest_order_created` 가 보이는지.
@@ -56,10 +56,10 @@
 
 ### Phase 4 — 권한·거버넌스 (진행 중)
 
-- ✅ DB **`merchant_tenant_members.role`** 확장 — `menu_editor`(메뉴 편집·품절 등, **삭제 제외**; 주문은 조회만), `viewer`(조회 전용: 주문 상태 변경·웹 푸시 구독 불가). 마이그레이션 `20260513190000_*`.
+- ✅ DB **`merchant_tenant_members.role`** — `menu_editor`(메뉴 편집·품절 등, 삭제 제외; 주문 조회만), `viewer`·`finance`(조회 전용: 주문 상태·푸시 구독 불가; `finance`는 정산 구분용으로 viewer와 동일 권한). 마이그레이션 `20260513190000_*`, `20260514100000_*`.
 - ✅ 앱 — `lib/merchant/merchant-role-capabilities.ts` + 주문·메뉴 서버 액션·대시보드 푸시·`/ops/merchants` 초대 역할 선택.
 - ✅ **위험 작업 분리** — 메뉴 **삭제**는 `owner` 만; `menu_editor` 는 추가·수정·품절·이미지 등만 (`canDeleteMerchantMenu`).
-- **남음(선택):** 정산 전용 등 추가 역할, 변경 불가 필드·위험 작업 **2인 승인** 등.
+- **남음(선택):** 더 세분 역할(예: 매장별 커스텀), 변경 불가 필드·위험 작업 **2인 승인** 등.
 
 ## 제한 사항
 

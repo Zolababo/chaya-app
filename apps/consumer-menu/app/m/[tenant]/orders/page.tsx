@@ -41,7 +41,7 @@ function errorMessage(code: string | undefined): string | null {
     case "no_menus_access":
       return "메뉴 관리는 소장(owner) 또는 메뉴 담당(menu_editor)만 사용할 수 있습니다.";
     case "no_order_mutate":
-      return "이 계정 역할로는 주문 상태를 바꿀 수 없습니다. (menu_editor·viewer는 조회만)";
+      return "이 계정 역할로는 주문 상태를 바꿀 수 없습니다. (menu_editor·viewer·finance는 조회만)";
     default:
       return "처리 중 오류가 났습니다.";
   }

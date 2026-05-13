@@ -5,12 +5,12 @@ import { sanitizeInternalRedirectPath } from "@/lib/security/internal-redirect-p
 import { createSupabaseServerClient } from "@/lib/supabase/create-server-session-client";
 import { resolveServerUser } from "@/lib/supabase/resolve-server-user";
 
-export const MERCHANT_ROLES = ["owner", "staff", "menu_editor", "viewer"] as const;
+export const MERCHANT_ROLES = ["owner", "staff", "menu_editor", "viewer", "finance"] as const;
 export type MerchantRole = (typeof MERCHANT_ROLES)[number];
 
 export function parseMerchantRole(raw: string): MerchantRole | null {
   const r = raw.trim();
-  if (r === "owner" || r === "staff" || r === "menu_editor" || r === "viewer") return r;
+  if (r === "owner" || r === "staff" || r === "menu_editor" || r === "viewer" || r === "finance") return r;
   return null;
 }
 
