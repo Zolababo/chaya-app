@@ -1,26 +1,26 @@
 # Delivery Progress (Snapshot)
 
-최종 업데이트: 2026-05-06
+최종 업데이트: 2026-05-13
 
-## 앱별 진도율
+> **최신 Phase·%는 `docs/MERCHANT_OPERATIONS_ROADMAP.md`** 의 진척도 표와 **「소비자 `/t` — Phase 개요」** 를 따릅니다. 이 파일은 요약 스냅샷입니다.
 
-- 소비자앱 (`/t/*`): **88%**
-- 점주앱 (`/m/*`): **68%**
+## 앱별 진도율 (요약)
 
-## 산정 기준(요약)
+- 소비자앱 (`/t/*`): **~63%** (`MERCHANT_OPERATIONS_ROADMAP` 기준, MVP 중심·결제·직원호출 제외)
+- 점주앱 (`/m/*`): **~99%** (동 문서, Phase 1–4 통합)
 
-### 소비자앱 88%
+## 소비자 — Phase 한눈에
 
-- 완료: 메뉴/카테고리/장바구니/주문 허브/주문 상세/게스트 세션 검증 RPC/접근성 보강/스모크 루틴
-- 잔여: 추가 인스턴스(Supabase) 마이그레이션 검증, 실기기 접근성 수동 점검, 콜드링크 정책 확정
+| Phase | 요지 |
+|-------|------|
+| C1 MVP | 메뉴·장바구니·게스트 주문·조회·barrier-free·RPC — 상세는 `BARRIER_FREE_NEXT_STEPS.md` |
+| C2 검증 | 스모크·접근성·추가 DB 검증 반복 |
+| C3 결제 | `lib/consumer/future-features` 스텁 (미구현) |
+| C4 직원 호출 등 | 스텁 (미구현) |
+| C5 (선택) | 로그인·`consumer-log` — `ARCHITECTURE.md` |
 
-### 점주앱 68%
+## 다음 마일스톤 (예시)
 
-- 완료: 주문 큐, 상태 변경, 메뉴 CRUD, 기본 토큰 접근, 배너/진단 메시지, 병행 전환 런북
-- 잔여: 병행 운영 기록 3~7일, 실패 복구 운영 절차, 점주 온보딩 문구/연락 체계, 컷오버 확정
-
-## 다음 마일스톤
-
-1. `docs/MERCHANT_PARALLEL_VALIDATION_CHECKLIST.md` tenant별 실행 시작
-2. 3일 연속 장애 없는지 확인 후 `/m/*` 1차 전환 판단
-3. 전환 승인 시 데모 점주앱 read-only 공지 및 종료 일정 확정
+1. 소비자 **C2**: `pnpm smoke:consumer`, `BARRIER_FREE_EVIDENCE_TEMPLATE.md` 실기기 체크
+2. 점주: `MERCHANT_PARALLEL_VALIDATION_CHECKLIST.md` tenant별 병행 기록
+3. 결제·직원 호출을 열 때: `future-features` 플래그와 런북 갱신을 같은 PR에 포함
