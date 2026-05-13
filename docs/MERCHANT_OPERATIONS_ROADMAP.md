@@ -23,7 +23,7 @@
 | Phase | 이름 | 상태 | 내용 |
 |-------|------|------|------|
 | **C1** | 메뉴·게스트 주문 MVP | ✅ | `/t/[tenant]` 메뉴, 장바구니, 주문 제출·조회, `barrier-free`, 게스트 RPC·RLS (마이그레이션 순서는 `BARRIER_FREE_NEXT_STEPS`) |
-| **C2** | 신뢰·검증·하드닝 | 진행/반복 | `pnpm smoke:consumer`, 실기기 접근성, 추가 Supabase 인스턴스 검증, `HARDENING_ORDER` 계열 |
+| **C2** | 신뢰·검증·하드닝 | 진행/반복 | `pnpm smoke:consumer`(장바구니·편한 메뉴·결제/직원호출 GET 405 포함), 실기기 접근성, 추가 Supabase 인스턴스 검증, `HARDENING_ORDER` 계열 |
 | **C3** | 결제 | ⏸️ 의도적 보류 | `future-features` + `POST …/checkout/payment` 스텁(501); PG 붙일 때 구현 |
 | **C4** | 직원 호출·부가 | ⏸️ 의도적 보류 | `POST …/staff-call` 스텁, 헤더 버튼 비활성 |
 | **C5** | (선택) 로그인·소셜 | 미착수 | `ARCHITECTURE.md` — `consumer-log`, 소비자 로그인 시점 등 장기 |

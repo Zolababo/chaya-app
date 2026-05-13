@@ -1,13 +1,16 @@
 #!/usr/bin/env node
 
 /**
- * Consumer menu production smoke checks.
+ * Consumer menu production smoke checks (C2 하드닝 1차 자동화).
  * - Verifies /health payload basics
  * - Optionally compares deployment.gitCommitSha to expected SHA (--expected-sha); with retries
  *   (--sha-retries, --sha-retry-delay-ms) when production lags CI
  * - Verifies robots disallow for /m paths
  * - Verifies tenant page responds with menu marker text
  * - Verifies `/t/{tenant}/orders` guest hub shell (“주문 현황”)
+ * - Verifies `/t/{tenant}/cart` SSR shell (“주문 확인”)
+ * - Verifies `/t/{tenant}/barrier-free` SSR shell (“목록형 메뉴”)
+ * - Verifies 결제·직원호출 스텁: GET → 405 (GET 에 부작용 없음, auth 규칙과 정합)
  */
 
 const DEFAULT_BASE_URL = "https://chaya-app.vercel.app";
@@ -71,6 +74,22 @@ async function fetchText(url) {
   return { res, body };
 }
 
+async function fetchJson(url) {
+  const res = await fetch(url, {
+    headers: { "user-agent": "chaya-smoke-check/1.0", accept: "application/json" },
+    cache: "no-store",
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  });
+  const body = await res.text();
+  let json = null;
+  try {
+    json = JSON.parse(body);
+  } catch {
+    // ignore
+  }
+  return { res, body, json };
+}
+
 function ok(label, detail) {
   console.log(`PASS ${label}: ${detail}`);
 }
@@ -94,6 +113,10 @@ async function main() {
   const robotsUrl = `${root}/robots.txt`;
   const tenantUrl = `${root}/t/${encodeURIComponent(tenant)}`;
   const ordersHubUrl = `${root}/t/${encodeURIComponent(tenant)}/orders`;
+  const cartUrl = `${root}/t/${encodeURIComponent(tenant)}/cart`;
+  const barrierFreeUrl = `${root}/t/${encodeURIComponent(tenant)}/barrier-free`;
+  const paymentGetUrl = `${root}/t/${encodeURIComponent(tenant)}/checkout/payment`;
+  const staffCallGetUrl = `${root}/t/${encodeURIComponent(tenant)}/staff-call`;
 
   // 1) /health (expected SHA일 때 Vercel 프로덕션 전파 지연을 고려해 재시도)
   try {
@@ -207,6 +230,62 @@ async function main() {
   } catch (e) {
     fail("/t/{tenant}/orders request", e instanceof Error ? e.message : String(e));
     failed = true;
+  }
+
+  // 5) Cart page (SSR — 주문 제출 직전 동선)
+  try {
+    const { res, body } = await fetchText(cartUrl);
+    if (!res.ok) {
+      fail("/t/{tenant}/cart status", `${res.status}`);
+      failed = true;
+    } else if (body.includes("주문 확인")) {
+      ok("/t/{tenant}/cart", "checkout shell detected");
+    } else {
+      fail("/t/{tenant}/cart", "expected 「주문 확인」 not found");
+      failed = true;
+    }
+  } catch (e) {
+    fail("/t/{tenant}/cart request", e instanceof Error ? e.message : String(e));
+    failed = true;
+  }
+
+  // 6) Barrier-free list menu (SSR)
+  try {
+    const { res, body } = await fetchText(barrierFreeUrl);
+    if (!res.ok) {
+      fail("/t/{tenant}/barrier-free status", `${res.status}`);
+      failed = true;
+    } else if (body.includes("목록형 메뉴")) {
+      ok("/t/{tenant}/barrier-free", "barrier-free shell detected");
+    } else {
+      fail("/t/{tenant}/barrier-free", "expected 「목록형 메뉴」 not found");
+      failed = true;
+    }
+  } catch (e) {
+    fail("/t/{tenant}/barrier-free request", e instanceof Error ? e.message : String(e));
+    failed = true;
+  }
+
+  // 7–8) Future-feature routes: GET must stay idempotent (405), no state change
+  for (const [label, url] of [
+    ["GET /t/.../checkout/payment", paymentGetUrl],
+    ["GET /t/.../staff-call", staffCallGetUrl],
+  ]) {
+    try {
+      const { res, json } = await fetchJson(url);
+      if (res.status !== 405) {
+        fail(label, `expected status 405, got ${res.status}`);
+        failed = true;
+      } else if (json?.error === "Method Not Allowed") {
+        ok(label, "405 Method Not Allowed (GET safe)");
+      } else {
+        fail(label, `expected JSON error "Method Not Allowed", got ${JSON.stringify(json)}`);
+        failed = true;
+      }
+    } catch (e) {
+      fail(`${label} request`, e instanceof Error ? e.message : String(e));
+      failed = true;
+    }
   }
 
   if (failed) {
