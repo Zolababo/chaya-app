@@ -49,7 +49,7 @@
 
 1. **마이그레이션** — `20260512200000_merchant_notification_events.sql`, **`20260512210000_merchant_tenant_members_notify_order_email.sql`**, **`20260512220000_merchant_push_subscriptions.sql`**, **`20260513190000_merchant_tenant_members_phase4_roles.sql`**, **`20260514100000_merchant_tenant_members_finance_role.sql`** 가 프로젝트에 반영됐는지 확인.
 2. **앱 배포** — `main` 최신이 Vercel(또는 호스트)에 올라가 있는지 확인.
-3. **`GET /health`** — `supabase.merchantDbReady` 가 true 인지, `merchantOrderEmail.resendConfigured` / `siteUrlForMailLinks` 로 메일 준비 상태만 확인(비밀 미노출).
+3. **`GET /health`** — `supabase.merchantDbReady` 가 true 인지, `merchantOrderEmail.resendConfigured` / `siteUrlForMailLinks` 로 메일 준비 상태만 확인(비밀 미노출). 점주 역할·역할용 마이그레이션 파일명 힌트는 `supabase.merchantMemberRoles` 를 참고.
 4. **동작 확인** — 손님 `/t/{tenant}` 에서 테스트 주문 → 점주 `/m/{tenant}/dashboard` 의 **최근 알림**에 `guest_order_created` 가 보이는지.
 5. **이메일(선택)** — Vercel 등에 `RESEND_API_KEY`, `RESEND_FROM_EMAIL` 설정 후 재배포. 멤버 행에 **`invite_email`** 이 있는지(`/ops/merchants` 초대) 확인.
 6. **링크 품질** — 메일 안 주문 큐 URL을 절대 경로로 쓰려면 **`NEXT_PUBLIC_SITE_URL`** 권장(없으면 `VERCEL_URL` 사용).

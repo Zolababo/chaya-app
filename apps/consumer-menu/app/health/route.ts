@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { MERCHANT_ROLES } from "@/lib/merchant/merchant-access";
 import {
   getSupabaseServiceRoleKey,
   getSupabaseServiceUrl,
@@ -50,6 +51,14 @@ export function GET() {
         },
         merchantOrderNotifyWebhook: {
           urlConfigured: Boolean(process.env.MERCHANT_ORDER_NOTIFY_WEBHOOK_URL?.trim()),
+        },
+        /** 앱이 이해하는 점주 역할(비밀 없음). DB `role` CHECK는 아래 마이그레이션 적용 후 5종 모두 허용됩니다. */
+        merchantMemberRoles: {
+          supportedInApp: [...MERCHANT_ROLES],
+          dbCheckMigrations: [
+            "20260513190000_merchant_tenant_members_phase4_roles.sql",
+            "20260514100000_merchant_tenant_members_finance_role.sql",
+          ],
         },
       },
     },
