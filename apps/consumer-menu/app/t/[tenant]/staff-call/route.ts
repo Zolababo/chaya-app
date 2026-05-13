@@ -4,7 +4,8 @@ import { CONSUMER_STAFF_CALL_IMPLEMENTED } from "@/lib/consumer/future-features"
 
 /**
  * 직원 호출 — **구조만**. 연동 전까지 POST 는 501.
- * (프론트에 비밀키 없이, 향후 서버에서 알림/PG만 붙이면 됨.)
+ * (프론트에 비밀키 없이, 향후 서버에서 알림만 붙이면 됨.)
+ * 구현 시: `future-features` 의 `CONSUMER_STAFF_CALL_IMPLEMENTED` 및 `StaffCallRequestBody` 참고.
  */
 export async function POST() {
   if (!CONSUMER_STAFF_CALL_IMPLEMENTED) {

@@ -92,6 +92,12 @@ chaya-app/
 | **platform-console** | 플랫폼 관리자(당신) | 테넌트 생성·정지, 분쟁 대응용 조회, 감사 로그, 플래그. **최고 권한은 서버+RLS+감사로 삼중화.** |
 | **consumer-log** | 로그인 사용자 | 주문 **승인 완료** 이벤트 → **자동 타임라인** 기록, 이후 친구·공개 범위·피드는 단계적. |
 
+#### consumer-menu: 결제·직원 호출(의도적 스텁)
+
+- **지금은 구현하지 않는다**가 기본 전제다. 손님 주문 MVP는 **게스트 주문 제출**까지이며, 카드·간편결제와 **직원 호출**은 후순위다.
+- 확장점은 한곳에 모아 둔다: `apps/consumer-menu/lib/consumer/future-features.ts` 의 플래그(`CONSUMER_CHECKOUT_PAYMENT_IMPLEMENTED`, `CONSUMER_STAFF_CALL_IMPLEMENTED`)와 타입, 그리고 같은 앱의 **`POST /t/{tenant}/checkout/payment`** · **`POST /t/{tenant}/staff-call`** Route Handler(플래그가 `false`이면 **501**). 기능을 붙일 때는 **플래그를 `true`로 바꾼 뒤 해당 라우트와 UI만** 채우면 된다.
+- PG·푸시 등 비밀은 **서버 환경 변수 + Route Handler / Server Action**에만 둔다.
+
 ### 5.1 점주 기능: 레포 안의 위치와 「대외 소개」 기준 (중요)
 
 **손님 앱(`consumer-menu`)이 쓸 만해 보인다고 해서, 점주 기능이 같은 성숙도는 아니다.**  

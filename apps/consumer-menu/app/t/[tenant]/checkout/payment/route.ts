@@ -4,6 +4,7 @@ import { CONSUMER_CHECKOUT_PAYMENT_IMPLEMENTED } from "@/lib/consumer/future-fea
 
 /**
  * 결제 준비/의도 — **구조만**. PG 연동 전까지 POST 는 501.
+ * 구현 시: `future-features` 의 `CONSUMER_CHECKOUT_PAYMENT_IMPLEMENTED` 및 `CheckoutPaymentRequestBody` 참고.
  */
 export async function POST() {
   if (!CONSUMER_CHECKOUT_PAYMENT_IMPLEMENTED) {
