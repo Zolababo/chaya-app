@@ -91,6 +91,21 @@ values ('YOUR_AUTH_USER_UUID_HERE'::uuid);
 
 - “연결 삭제”는 **`merchant_tenant_members` 행만** 삭제합니다. Auth 사용자 삭제가 필요하면 Supabase 대시보드에서 처리합니다.
 
+## 5-c) 브라우저 웹 푸시 (선택, VAPID)
+
+**의미:** 점주 대시보드에서 **「이 기기에서 새 주문 알림」**을 켜려면, 서버가 Web Push로 서명할 **VAPID 키 쌍**이 Vercel(또는 호스트) 환경 변수에 있어야 합니다. 비밀키는 **저장소·채팅에 넣지 마세요.**
+
+1. **DB:** `supabase/migrations/20260512220000_merchant_push_subscriptions.sql` 을 Supabase에 적용합니다(이미 적용했다면 생략).
+2. **키 생성:** 로컬 터미널에서 `npx web-push generate-vapid-keys` 를 실행해 **Public key**와 **Private key** 두 줄을 받습니다.
+3. **Vercel 환경 변수**(Production 등):
+   - `NEXT_PUBLIC_VAPID_PUBLIC_KEY` = 위의 public  
+   - `VAPID_PRIVATE_KEY` = 위의 private  
+   - `VAPID_SUBJECT` = `mailto:운영담당이메일` 형태의 고정 문자열(연락용, URL이 아니어도 됨)
+4. 저장 후 **Redeploy** 합니다.
+5. **확인:** 브라우저에서 `GET /health` 의 `merchantWebPush.vapidConfigured` 가 `true` 인지, 점주 `/m/{tenant}/dashboard` 에서 알림 권한·구독이 되는지 확인합니다.
+
+프로덕션에서 키가 한 번이라도 유출됐다고 판단되면 **새 쌍을 만들어** 다시 넣는 것을 권장합니다.
+
 ## 6) 당장 권장 운영안
 
 - 이번 주: 병행 운영 + 누락 케이스 수집
