@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 
-import { canManageMerchantMenus } from "@/lib/merchant/merchant-role-capabilities";
+import { canDeleteMerchantMenu, canManageMerchantMenus } from "@/lib/merchant/merchant-role-capabilities";
 import { requireMerchantOrderMutation } from "@/lib/merchant/require-merchant-action";
 import { recordMerchantAuditEvent } from "@/lib/merchant/record-merchant-audit";
 import { tryRemoveMenuImageForTenant } from "@/lib/menus/remove-menu-image-from-url";
@@ -33,11 +33,25 @@ function parseSoldOutCheckbox(raw: FormDataEntryValue | null): boolean {
   return s === "on" || s === "true" || s === "1";
 }
 
-async function requireMenusOwner(formData: FormData): Promise<string> {
+async function requireMenusEditor(formData: FormData): Promise<string> {
   const { role, userId } = await requireMerchantOrderMutation(formData);
   if (!canManageMerchantMenus(role)) {
     const tenant = String(formData.get("tenant_slug") ?? "").trim();
     redirect(`/m/${encodeURIComponent(tenant || "_")}/dashboard?e=no_menus_access`);
+  }
+  return userId;
+}
+
+async function requireMenusOwnerForDelete(formData: FormData): Promise<string> {
+  const { role, userId } = await requireMerchantOrderMutation(formData);
+  if (!canManageMerchantMenus(role)) {
+    const tenant = String(formData.get("tenant_slug") ?? "").trim();
+    redirect(`/m/${encodeURIComponent(tenant || "_")}/dashboard?e=no_menus_access`);
+  }
+  if (!canDeleteMerchantMenu(role)) {
+    const tenant = String(formData.get("tenant_slug") ?? "").trim();
+    const preserveCategory = readPreserveCategory(formData);
+    redirectMenus(tenant || "_", "owner_only_delete", preserveCategory);
   }
   return userId;
 }
@@ -86,7 +100,7 @@ async function nextSortOrder(
 }
 
 export async function createMenuFromForm(formData: FormData): Promise<void> {
-  const actorUserId = await requireMenusOwner(formData);
+  const actorUserId = await requireMenusEditor(formData);
 
   const tenant = String(formData.get("tenant_slug") ?? "").trim();
   const name = trimStr(formData.get("name"), MAX_NAME);
@@ -131,7 +145,7 @@ export async function createMenuFromForm(formData: FormData): Promise<void> {
 }
 
 export async function updateMenuFromForm(formData: FormData): Promise<void> {
-  const actorUserId = await requireMenusOwner(formData);
+  const actorUserId = await requireMenusEditor(formData);
 
   const tenant = String(formData.get("tenant_slug") ?? "").trim();
   const menuId = String(formData.get("menu_id") ?? "").trim();
@@ -193,7 +207,7 @@ export async function updateMenuFromForm(formData: FormData): Promise<void> {
 }
 
 export async function setMenuSoldOutFromForm(formData: FormData): Promise<void> {
-  const actorUserId = await requireMenusOwner(formData);
+  const actorUserId = await requireMenusEditor(formData);
 
   const tenant = String(formData.get("tenant_slug") ?? "").trim();
   const menuId = String(formData.get("menu_id") ?? "").trim();
@@ -223,7 +237,7 @@ export async function setMenuSoldOutFromForm(formData: FormData): Promise<void> 
 }
 
 export async function deleteMenuFromForm(formData: FormData): Promise<void> {
-  const actorUserId = await requireMenusOwner(formData);
+  const actorUserId = await requireMenusOwnerForDelete(formData);
 
   const tenant = String(formData.get("tenant_slug") ?? "").trim();
   const menuId = String(formData.get("menu_id") ?? "").trim();

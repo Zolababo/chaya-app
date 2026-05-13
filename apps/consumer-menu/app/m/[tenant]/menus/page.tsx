@@ -6,7 +6,7 @@ import { MerchantPreviewBanner } from "@/components/merchant-preview-banner";
 import { MerchantSubnav } from "@/components/merchant-subnav";
 import { OrderStatusRefresh } from "@/components/order-status-refresh";
 import { requireMerchantForTenant } from "@/lib/merchant/merchant-access";
-import { canManageMerchantMenus } from "@/lib/merchant/merchant-role-capabilities";
+import { canDeleteMerchantMenu, canManageMerchantMenus } from "@/lib/merchant/merchant-role-capabilities";
 import { listMenusForMerchant } from "@/lib/menus/list-menus-for-merchant";
 import { countMerchantPendingOrders } from "@/lib/orders/list-orders-for-merchant";
 
@@ -28,8 +28,8 @@ function errorMessage(code: string | undefined): string | null {
       return "서버에 SUPABASE_SERVICE_ROLE_KEY 가 없습니다.";
     case "db":
       return "저장에 실패했습니다. DB 제약·RLS·필수 컬럼을 확인해 주세요.";
-    case "upload":
-      return "이미지 업로드에 실패했습니다. Storage 버킷(menu-images)·정책·파일 형식·용량을 확인해 주세요.";
+    case "owner_only_delete":
+      return "메뉴 삭제는 소장(owner)만 할 수 있습니다. 메뉴 담당(menu_editor)은 추가·수정·품절만 가능합니다.";
     default:
       return "처리 중 오류가 났습니다.";
   }
@@ -43,6 +43,7 @@ export default async function MerchantMenusPage({ params, searchParams }: Props)
   if (!canManageMerchantMenus(role)) {
     redirect(`/m/${encodeURIComponent(tenant)}/dashboard?e=no_menus_access`);
   }
+  const canDeleteMenus = canDeleteMerchantMenu(role);
 
   const [list, pendingCount] = await Promise.all([
     listMenusForMerchant(tenant),
@@ -332,19 +333,28 @@ export default async function MerchantMenusPage({ params, searchParams }: Props)
                             품절
                           </button>
                         </form>
-                      <form action={deleteMenuFromForm} className="shrink-0">
-                        <input type="hidden" name="tenant_slug" value={tenant} />
-                        <input type="hidden" name="menu_id" value={item.id} />
-                        {categoryFilter != null ? (
-                          <input type="hidden" name="preserve_category" value={categoryFilter} />
-                        ) : null}
-                        <MerchantConfirmSubmitButton
-                          confirmMessage={`「${item.name}」메뉴를 삭제할까요?`}
-                          className="rounded-lg border border-red-300 px-3 py-1 text-xs font-semibold text-red-700 dark:border-red-800 dark:text-red-300"
-                        >
-                          삭제
-                        </MerchantConfirmSubmitButton>
-                      </form>
+                        {canDeleteMenus ? (
+                          <form action={deleteMenuFromForm} className="shrink-0">
+                            <input type="hidden" name="tenant_slug" value={tenant} />
+                            <input type="hidden" name="menu_id" value={item.id} />
+                            {categoryFilter != null ? (
+                              <input type="hidden" name="preserve_category" value={categoryFilter} />
+                            ) : null}
+                            <MerchantConfirmSubmitButton
+                              confirmMessage={`「${item.name}」메뉴를 삭제할까요?`}
+                              className="rounded-lg border border-red-300 px-3 py-1 text-xs font-semibold text-red-700 dark:border-red-800 dark:text-red-300"
+                            >
+                              삭제
+                            </MerchantConfirmSubmitButton>
+                          </form>
+                        ) : (
+                          <span
+                            className="text-xs text-zinc-500 dark:text-zinc-400"
+                            title="소장(owner)만 삭제 가능"
+                          >
+                            삭제는 소장만
+                          </span>
+                        )}
                       </div>
                     </div>
                     <details className="mt-3 border-t border-chaya-border pt-3 dark:border-zinc-800">

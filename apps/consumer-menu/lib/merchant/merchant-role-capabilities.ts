@@ -5,6 +5,11 @@ export function canManageMerchantMenus(role: MerchantRole): boolean {
   return role === "owner" || role === "menu_editor";
 }
 
+/** 메뉴 행 삭제(DB·이미지 삭제) — 복구 어려움으로 소장만. */
+export function canDeleteMerchantMenu(role: MerchantRole): boolean {
+  return role === "owner";
+}
+
 /** 주문 상태 변경 등 주문 큐 변이. */
 export function canMutateMerchantOrders(role: MerchantRole): boolean {
   return role === "owner" || role === "staff";

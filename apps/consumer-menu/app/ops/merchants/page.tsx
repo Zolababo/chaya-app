@@ -314,7 +314,7 @@ export default async function OpsMerchantsPage({ searchParams }: Props) {
             >
               <option value="owner">owner — 주문 + 메뉴</option>
               <option value="staff">staff — 주문만 (상태 변경)</option>
-              <option value="menu_editor">menu_editor — 메뉴·카테고리만 (주문 조회만)</option>
+              <option value="menu_editor">menu_editor — 메뉴·품절·수정 (삭제는 소장만)</option>
               <option value="viewer">viewer — 조회 전용 (상태·푸시 구독 불가)</option>
             </select>
           </div>
