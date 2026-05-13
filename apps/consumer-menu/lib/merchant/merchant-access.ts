@@ -5,7 +5,14 @@ import { sanitizeInternalRedirectPath } from "@/lib/security/internal-redirect-p
 import { createSupabaseServerClient } from "@/lib/supabase/create-server-session-client";
 import { resolveServerUser } from "@/lib/supabase/resolve-server-user";
 
-export type MerchantRole = "owner" | "staff";
+export const MERCHANT_ROLES = ["owner", "staff", "menu_editor", "viewer"] as const;
+export type MerchantRole = (typeof MERCHANT_ROLES)[number];
+
+export function parseMerchantRole(raw: string): MerchantRole | null {
+  const r = raw.trim();
+  if (r === "owner" || r === "staff" || r === "menu_editor" || r === "viewer") return r;
+  return null;
+}
 
 export type MerchantMembershipRecord = {
   role: MerchantRole;
@@ -41,8 +48,8 @@ export async function fetchMerchantMembership(
   if (error || !row || typeof (row as { role?: unknown }).role !== "string") return null;
 
   const raw = row as { role: string; approved_at?: string | null };
-  const r = raw.role;
-  const role: MerchantRole = r === "staff" ? "staff" : "owner";
+  const role = parseMerchantRole(raw.role);
+  if (!role) return null;
 
   const ap = raw.approved_at;
   const approvedAt: string | null = ap == null ? null : typeof ap === "string" ? ap : null;

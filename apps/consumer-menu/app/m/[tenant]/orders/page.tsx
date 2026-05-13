@@ -7,6 +7,10 @@ import { MerchantSubnav } from "@/components/merchant-subnav";
 import { OrderStatusRefresh } from "@/components/order-status-refresh";
 import { requireMerchantForTenant } from "@/lib/merchant/merchant-access";
 import {
+  canManageMerchantMenus,
+  canMutateMerchantOrders,
+} from "@/lib/merchant/merchant-role-capabilities";
+import {
   countMerchantPendingOrders,
   listOrdersForMerchant,
 } from "@/lib/orders/list-orders-for-merchant";
@@ -35,7 +39,9 @@ function errorMessage(code: string | undefined): string | null {
     case "db":
       return "상태 저장에 실패했습니다. DB 권한·RLS·컬럼을 확인해 주세요.";
     case "no_menus_access":
-      return "메뉴 관리는 소장(OWNER) 계정만 사용할 수 있습니다.";
+      return "메뉴 관리는 소장(owner) 또는 메뉴 담당(menu_editor)만 사용할 수 있습니다.";
+    case "no_order_mutate":
+      return "이 계정 역할로는 주문 상태를 바꿀 수 없습니다. (menu_editor·viewer는 조회만)";
     default:
       return "처리 중 오류가 났습니다.";
   }
@@ -68,6 +74,8 @@ export default async function MerchantOrdersPage({ params, searchParams }: Props
   const statusFilter = isMerchantOrderStatus(rawFilter) ? rawFilter : null;
 
   const { role } = await requireMerchantForTenant(tenant);
+  const canManageMenus = canManageMerchantMenus(role);
+  const canMutateOrders = canMutateMerchantOrders(role);
 
   const [list, allOrdersForSummary, pendingCount] = await Promise.all([
     listOrdersForMerchant(tenant, statusFilter),
@@ -125,7 +133,7 @@ export default async function MerchantOrdersPage({ params, searchParams }: Props
 
       <MerchantPreviewBanner tenantSlug={tenant} />
 
-      <MerchantSubnav tenant={tenant} pendingOrderCount={pendingCount} canManageMenus={role === "owner"} />
+      <MerchantSubnav tenant={tenant} pendingOrderCount={pendingCount} canManageMenus={canManageMenus} />
 
       <div className="mb-6">
         <OrderStatusRefresh />
@@ -284,27 +292,36 @@ export default async function MerchantOrdersPage({ params, searchParams }: Props
                   <td className="px-3 py-2">{row.table_no ?? "—"}</td>
                   <td className="px-3 py-2 tabular-nums">{row.total_price.toLocaleString("ko-KR")}원</td>
                   <td className="px-3 py-2">
-                    <form action={updateOrderStatusFromForm} className="flex flex-wrap items-center gap-2">
-                      <input type="hidden" name="tenant_slug" value={tenant} />
-                      <input type="hidden" name="order_id" value={row.id} />
-                      <input type="hidden" name="current_status" value={row.status} />
-                      {statusFilter ? <input type="hidden" name="filter_status" value={statusFilter} /> : null}
-                      <select
-                        name="status"
-                        defaultValue={row.status}
-                        className="rounded-lg border border-chaya-border bg-white px-2 py-1 dark:border-zinc-700 dark:bg-zinc-900"
-                        aria-label={`주문 ${row.id.slice(0, 8)} 상태`}
+                    {canMutateOrders ? (
+                      <form action={updateOrderStatusFromForm} className="flex flex-wrap items-center gap-2">
+                        <input type="hidden" name="tenant_slug" value={tenant} />
+                        <input type="hidden" name="order_id" value={row.id} />
+                        <input type="hidden" name="current_status" value={row.status} />
+                        {statusFilter ? <input type="hidden" name="filter_status" value={statusFilter} /> : null}
+                        <select
+                          name="status"
+                          defaultValue={row.status}
+                          className="rounded-lg border border-chaya-border bg-white px-2 py-1 dark:border-zinc-700 dark:bg-zinc-900"
+                          aria-label={`주문 ${row.id.slice(0, 8)} 상태`}
+                        >
+                          {MERCHANT_ORDER_STATUSES.map((s) => (
+                            <option key={s} value={s}>
+                              {orderStatusLabel(s)}
+                            </option>
+                          ))}
+                        </select>
+                        <MerchantOrderStatusSubmit
+                          confirmMessage={`주문 ${row.id.slice(0, 8)} 상태를 변경합니다. 계속할까요?`}
+                        />
+                      </form>
+                    ) : (
+                      <span
+                        className="inline-flex rounded-full bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200"
+                        aria-label={`주문 ${row.id.slice(0, 8)} 현재 상태`}
                       >
-                        {MERCHANT_ORDER_STATUSES.map((s) => (
-                          <option key={s} value={s}>
-                            {orderStatusLabel(s)}
-                          </option>
-                        ))}
-                      </select>
-                      <MerchantOrderStatusSubmit
-                        confirmMessage={`주문 ${row.id.slice(0, 8)} 상태를 변경합니다. 계속할까요?`}
-                      />
-                    </form>
+                        {orderStatusLabel(row.status)}
+                      </span>
+                    )}
                     {row.guest_note ? (
                       <p className="mt-1 max-w-xs text-xs text-zinc-500 whitespace-pre-wrap">{row.guest_note}</p>
                     ) : null}

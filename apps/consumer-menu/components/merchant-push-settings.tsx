@@ -28,8 +28,8 @@ function errMessage(code: string): string {
       return "세션이 없습니다. 다시 로그인해 주세요.";
     case "push_save_failed":
       return "서버에 구독을 저장하지 못했습니다. DB 마이그레이션 적용 여부를 확인해 주세요.";
-    case "push_remove_failed":
-      return "구독 해제에 실패했습니다.";
+    case "push_role_forbidden":
+      return "조회 전용(viewer) 계정은 브라우저 알림 구독을 사용할 수 없습니다.";
     case "unsupported":
       return "이 브라우저에서는 웹 푸시를 지원하지 않습니다.";
     case "no_key":

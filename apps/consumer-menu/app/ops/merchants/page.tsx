@@ -226,7 +226,7 @@ export default async function OpsMerchantsPage({ searchParams }: Props) {
             <span className="font-mono">/m/mapo-bibim-2/…</span>
           </li>
           <li>한글만 입력하면 글자가 지워질 수 있으니, <strong>영문·숫자·하이픈</strong>으로 정하는 것을 권장합니다.</li>
-          <li>메뉴는 점주(owner)가 로그인 후 <strong>메뉴 관리</strong>에서 넣습니다.</li>
+          <li>메뉴는 소장(owner) 또는 메뉴 담당(menu_editor)이 로그인 후 <strong>메뉴 관리</strong>에서 넣습니다.</li>
           <li>
             기본은 <strong>승인 후</strong> 점주앱이 열립니다. 아래 목록에서 「승인」을 누르면 즉시 이용 가능합니다. (테스트만 할 때는 초대 폼의
             「초대 직시 접속 허용」을 켜세요.)
@@ -313,7 +313,9 @@ export default async function OpsMerchantsPage({ searchParams }: Props) {
               defaultValue="owner"
             >
               <option value="owner">owner — 주문 + 메뉴</option>
-              <option value="staff">staff — 주문만</option>
+              <option value="staff">staff — 주문만 (상태 변경)</option>
+              <option value="menu_editor">menu_editor — 메뉴·카테고리만 (주문 조회만)</option>
+              <option value="viewer">viewer — 조회 전용 (상태·푸시 구독 불가)</option>
             </select>
           </div>
           <div className="sm:col-span-2 rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-600 dark:bg-zinc-900/80">

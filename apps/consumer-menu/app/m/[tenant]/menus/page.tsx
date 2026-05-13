@@ -6,6 +6,7 @@ import { MerchantPreviewBanner } from "@/components/merchant-preview-banner";
 import { MerchantSubnav } from "@/components/merchant-subnav";
 import { OrderStatusRefresh } from "@/components/order-status-refresh";
 import { requireMerchantForTenant } from "@/lib/merchant/merchant-access";
+import { canManageMerchantMenus } from "@/lib/merchant/merchant-role-capabilities";
 import { listMenusForMerchant } from "@/lib/menus/list-menus-for-merchant";
 import { countMerchantPendingOrders } from "@/lib/orders/list-orders-for-merchant";
 
@@ -39,7 +40,7 @@ export default async function MerchantMenusPage({ params, searchParams }: Props)
   const { e, category: categoryParam } = await searchParams;
 
   const { role } = await requireMerchantForTenant(tenant);
-  if (role !== "owner") {
+  if (!canManageMerchantMenus(role)) {
     redirect(`/m/${encodeURIComponent(tenant)}/dashboard?e=no_menus_access`);
   }
 

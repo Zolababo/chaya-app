@@ -3,6 +3,7 @@ import Link from "next/link";
 import { MerchantPreviewBanner } from "@/components/merchant-preview-banner";
 import { MerchantSubnav } from "@/components/merchant-subnav";
 import { requireMerchantForTenant } from "@/lib/merchant/merchant-access";
+import { canManageMerchantMenus } from "@/lib/merchant/merchant-role-capabilities";
 import { countMerchantPendingOrders } from "@/lib/orders/list-orders-for-merchant";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +16,7 @@ export default async function MerchantReadinessPage({ params }: Props) {
   const { tenant } = await params;
 
   const { role } = await requireMerchantForTenant(tenant);
-  const canManageMenus = role === "owner";
+  const canManageMenus = canManageMerchantMenus(role);
 
   const pendingCount = await countMerchantPendingOrders(tenant);
 

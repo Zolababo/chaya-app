@@ -5,6 +5,10 @@ import { MerchantPushSettings } from "@/components/merchant-push-settings";
 import { MerchantSubnav } from "@/components/merchant-subnav";
 import { OrderStatusRefresh } from "@/components/order-status-refresh";
 import { requireMerchantForTenant } from "@/lib/merchant/merchant-access";
+import {
+  canManageMerchantMenus,
+  canUseMerchantWebPush,
+} from "@/lib/merchant/merchant-role-capabilities";
 import { listMenusForMerchant } from "@/lib/menus/list-menus-for-merchant";
 import { listRecentMerchantNotificationEvents } from "@/lib/notifications/list-merchant-notification-events";
 import { getMerchantVapidPublicKeyForClient } from "@/lib/notifications/merchant-push-config";
@@ -25,7 +29,7 @@ type Props = {
 function dashboardAlertMessage(code: string | undefined): string | null {
   if (!code) return null;
   if (code === "no_menus_access") {
-    return "메뉴 관리는 소장(OWNER) 계정만 사용할 수 있습니다.";
+    return "메뉴 관리는 소장(owner) 또는 메뉴 담당(menu_editor)만 사용할 수 있습니다. 주문만 처리하는 직원(staff)은 주문 큐를 이용해 주세요.";
   }
   return null;
 }
@@ -35,7 +39,8 @@ export default async function MerchantDashboardPage({ params, searchParams }: Pr
   const sp = await searchParams;
   const dashAlert = dashboardAlertMessage(typeof sp.e === "string" ? sp.e : undefined);
   const { role } = await requireMerchantForTenant(tenant);
-  const canManageMenus = role === "owner";
+  const canManageMenus = canManageMerchantMenus(role);
+  const showWebPush = canUseMerchantWebPush(role);
 
   const [pendingCount, metrics24h, list, menus, notif] = await Promise.all([
     countMerchantPendingOrders(tenant),
@@ -77,12 +82,14 @@ export default async function MerchantDashboardPage({ params, searchParams }: Pr
 
       <MerchantPreviewBanner tenantSlug={tenant} />
 
-      <section className="mb-6 rounded-xl border border-chaya-border bg-white p-4 dark:border-zinc-700 dark:bg-zinc-950" aria-label="브라우저 알림">
-        <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">알림 받기</h2>
-        <div className="mt-2">
-          <MerchantPushSettings tenant={tenant} vapidPublicKey={vapidPublicKey} />
-        </div>
-      </section>
+      {showWebPush ? (
+        <section className="mb-6 rounded-xl border border-chaya-border bg-white p-4 dark:border-zinc-700 dark:bg-zinc-950" aria-label="브라우저 알림">
+          <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">알림 받기</h2>
+          <div className="mt-2">
+            <MerchantPushSettings tenant={tenant} vapidPublicKey={vapidPublicKey} />
+          </div>
+        </section>
+      ) : null}
 
       <MerchantSubnav tenant={tenant} pendingOrderCount={pendingCount} canManageMenus={canManageMenus} />
 

@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 
+import { canManageMerchantMenus } from "@/lib/merchant/merchant-role-capabilities";
 import { requireMerchantOrderMutation } from "@/lib/merchant/require-merchant-action";
 import { recordMerchantAuditEvent } from "@/lib/merchant/record-merchant-audit";
 import { tryRemoveMenuImageForTenant } from "@/lib/menus/remove-menu-image-from-url";
@@ -34,7 +35,7 @@ function parseSoldOutCheckbox(raw: FormDataEntryValue | null): boolean {
 
 async function requireMenusOwner(formData: FormData): Promise<string> {
   const { role, userId } = await requireMerchantOrderMutation(formData);
-  if (role !== "owner") {
+  if (!canManageMerchantMenus(role)) {
     const tenant = String(formData.get("tenant_slug") ?? "").trim();
     redirect(`/m/${encodeURIComponent(tenant || "_")}/dashboard?e=no_menus_access`);
   }

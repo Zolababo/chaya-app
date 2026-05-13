@@ -101,7 +101,7 @@ chaya-app/
 ### 5.1 점주 기능: 레포 안의 위치와 「대외 소개」 기준 (중요)
 
 **손님 앱(`consumer-menu`)이 쓸 만해 보인다고 해서, 점주 기능이 같은 성숙도는 아니다.**  
-현재 레포에서는 점주 화면이 **별도 앱이 아니라**, 동일한 Next 앱 안의 **`/m/[tenant]/...`** 경로(주문 큐·메뉴 관리 등)로 **일부만** 제공된다. 접근은 **Supabase Auth + `merchant_tenant_members`(역할 owner/staff)** 를 기준으로 한다. 플랫폼 초대·감사·분쟁 스토리까지 맞추려면 향후 **`merchant-console` 별도 앱**(아래 표)으로 다듬을 여지가 있다.
+현재 레포에서는 점주 화면이 **별도 앱이 아니라**, 동일한 Next 앱 안의 **`/m/[tenant]/...`** 경로(주문 큐·메뉴 관리 등)로 **일부만** 제공된다. 접근은 **Supabase Auth + `merchant_tenant_members`(역할 owner / staff / menu_editor / viewer)** 를 기준으로 한다. 플랫폼 초대·감사·분쟁 스토리까지 맞추려면 향후 **`merchant-console` 별도 앱**(아래 표)으로 다듬을 여지가 있다.
 
 #### 정직하게 써야 할 표현
 

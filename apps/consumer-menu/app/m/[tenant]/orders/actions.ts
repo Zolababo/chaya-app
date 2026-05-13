@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 
+import { canMutateMerchantOrders } from "@/lib/merchant/merchant-role-capabilities";
 import { requireMerchantOrderMutation } from "@/lib/merchant/require-merchant-action";
 import { recordMerchantAuditEvent } from "@/lib/merchant/record-merchant-audit";
 import { fireMerchantOrderStatusChangedNotification } from "@/lib/notifications/merchant-notification-pipeline";
@@ -22,7 +23,7 @@ function redirectBack(tenant: string, opts?: { err?: string; ok?: string; status
 }
 
 export async function updateOrderStatusFromForm(formData: FormData): Promise<void> {
-  const { userId } = await requireMerchantOrderMutation(formData);
+  const { userId, role } = await requireMerchantOrderMutation(formData);
 
   const tenant = String(formData.get("tenant_slug") ?? "").trim();
   const orderId = String(formData.get("order_id") ?? "").trim();
@@ -30,6 +31,10 @@ export async function updateOrderStatusFromForm(formData: FormData): Promise<voi
   const currentStatus = String(formData.get("current_status") ?? "").trim();
   const filterRaw = String(formData.get("filter_status") ?? "").trim();
   const statusFilter = isMerchantOrderStatus(filterRaw) ? filterRaw : null;
+
+  if (!canMutateMerchantOrders(role)) {
+    redirectBack(tenant || "invalid", { err: "no_order_mutate", statusFilter });
+  }
 
   if (!tenant || !UUID_RE.test(orderId) || !isMerchantOrderStatus(status)) {
     redirectBack(tenant || "invalid", { err: "bad_input", statusFilter });

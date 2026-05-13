@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { requireMerchantForTenant } from "@/lib/merchant/merchant-access";
+import { canUseMerchantWebPush } from "@/lib/merchant/merchant-role-capabilities";
 import { createSupabaseServerClient } from "@/lib/supabase/create-server-session-client";
 
 const MAX_EP = 2048;
@@ -15,7 +16,10 @@ export async function saveMerchantPushSubscription(
   payload: { endpoint: string; p256dh: string; auth: string },
 ): Promise<PushActionResult> {
   const tenant = tenantRaw.trim();
-  await requireMerchantForTenant(tenant);
+  const { role } = await requireMerchantForTenant(tenant);
+  if (!canUseMerchantWebPush(role)) {
+    return { ok: false, code: "push_role_forbidden" };
+  }
 
   const endpoint = payload.endpoint.trim();
   const p256dh = payload.p256dh.trim();
@@ -60,7 +64,10 @@ export async function removeMerchantPushSubscription(
   payload: { endpoint: string },
 ): Promise<PushActionResult> {
   const tenant = tenantRaw.trim();
-  await requireMerchantForTenant(tenant);
+  const { role } = await requireMerchantForTenant(tenant);
+  if (!canUseMerchantWebPush(role)) {
+    return { ok: false, code: "push_role_forbidden" };
+  }
 
   const endpoint = payload.endpoint.trim();
   if (endpoint.length < 8 || endpoint.length > MAX_EP) {

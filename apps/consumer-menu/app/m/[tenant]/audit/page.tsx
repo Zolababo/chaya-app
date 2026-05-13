@@ -4,6 +4,7 @@ import { MerchantPreviewBanner } from "@/components/merchant-preview-banner";
 import { MerchantSubnav } from "@/components/merchant-subnav";
 import { OrderStatusRefresh } from "@/components/order-status-refresh";
 import { requireMerchantForTenant } from "@/lib/merchant/merchant-access";
+import { canManageMerchantMenus } from "@/lib/merchant/merchant-role-capabilities";
 import {
   listMerchantAuditEvents,
   MERCHANT_AUDIT_CSV_MAX_ROWS,
@@ -69,7 +70,7 @@ export default async function MerchantAuditPage({ params, searchParams }: Props)
   const toParam = typeof sp.to === "string" ? sp.to : undefined;
 
   const { role } = await requireMerchantForTenant(tenant);
-  const canManageMenus = role === "owner";
+  const canManageMenus = canManageMerchantMenus(role);
 
   const supabase = await createSupabaseServerClient();
   const user = supabase ? await resolveServerUser(supabase) : null;

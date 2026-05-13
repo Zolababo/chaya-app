@@ -13,7 +13,7 @@
 
 | 영역 | 비율 | 비고 |
 |------|------|------|
-| 점주 콘솔 운영 성숙도(로드맵 Phase 1–4 통합) | **~96%** | Phase 1–3 **코드·DB 스키마** 기준 완료(알림 피드·선택 Resend·웹 푸시·외부 웹훅 훅). 남음: **Phase 4**(세분 역할·거버넌스)와 **운영 설정**(VAPID·Resend·웹훅 URL 등 호스트에 반영). |
+| 점주 콘솔 운영 성숙도(로드맵 Phase 1–4 통합) | **~97%** | Phase 1–3 완료 + Phase 4 **1차**: DB·앱에 `menu_editor`·`viewer` 역할, `merchant-role-capabilities` 가드. 남음: 더 세분 역할·2인 승인 등(필요 시), **운영 설정**(VAPID·Resend 등). |
 | 소비자 `/t` 주문·메뉴 MVP | **~63%** | 게스트 주문·장바구니·주문 조회 등 핵심 동작. **결제·직원 호출은 의도적으로 미구현** — `lib/consumer/future-features` 플래그·타입과 `POST …/checkout/payment`·`POST …/staff-call` 스텁(501)만 두어 이후 기능을 같은 경로에 붙일 수 있게 함. |
 
 숫자는 펜테스트·실매장 검증 없이 **저장소와 흐름 기준 추정**입니다. 이후 작업 마칠 때마다 이 표를 갱신합니다.
@@ -47,17 +47,18 @@
 
 #### SQL 적용 후 권장 순서
 
-1. **마이그레이션** — `20260512200000_merchant_notification_events.sql`, **`20260512210000_merchant_tenant_members_notify_order_email.sql`**, **`20260512220000_merchant_push_subscriptions.sql`** 이 프로젝트에 반영됐는지 확인.
+1. **마이그레이션** — `20260512200000_merchant_notification_events.sql`, **`20260512210000_merchant_tenant_members_notify_order_email.sql`**, **`20260512220000_merchant_push_subscriptions.sql`**, **`20260513190000_merchant_tenant_members_phase4_roles.sql`**(역할 확장) 이 프로젝트에 반영됐는지 확인.
 2. **앱 배포** — `main` 최신이 Vercel(또는 호스트)에 올라가 있는지 확인.
 3. **`GET /health`** — `supabase.merchantDbReady` 가 true 인지, `merchantOrderEmail.resendConfigured` / `siteUrlForMailLinks` 로 메일 준비 상태만 확인(비밀 미노출).
 4. **동작 확인** — 손님 `/t/{tenant}` 에서 테스트 주문 → 점주 `/m/{tenant}/dashboard` 의 **최근 알림**에 `guest_order_created` 가 보이는지.
 5. **이메일(선택)** — Vercel 등에 `RESEND_API_KEY`, `RESEND_FROM_EMAIL` 설정 후 재배포. 멤버 행에 **`invite_email`** 이 있는지(`/ops/merchants` 초대) 확인.
 6. **링크 품질** — 메일 안 주문 큐 URL을 절대 경로로 쓰려면 **`NEXT_PUBLIC_SITE_URL`** 권장(없으면 `VERCEL_URL` 사용).
 
-### Phase 4 — 권한·거버넌스
+### Phase 4 — 권한·거버넌스 (진행 중)
 
-- `owner` / `staff` 이상의 **세분 역할**(예: 정산만, 메뉴만).
-- **변경 불가 필드**·위험 작업에 대한 2인 승인 등(필요 시).
+- ✅ DB **`merchant_tenant_members.role`** 확장 — `menu_editor`(메뉴·카테고리 CRUD, 주문은 조회만), `viewer`(조회 전용: 주문 상태 변경·웹 푸시 구독 불가). 마이그레이션 `20260513190000_*`.
+- ✅ 앱 — `lib/merchant/merchant-role-capabilities.ts`, 주문·메뉴 서버 액션·대시보드 푸시·`/ops/merchants` 초대 역할 선택.
+- **남음(선택):** 정산 전용 등 추가 역할, 변경 불가 필드·위험 작업 **2인 승인** 등.
 
 ## 제한 사항
 

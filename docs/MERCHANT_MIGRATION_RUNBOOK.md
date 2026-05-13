@@ -48,12 +48,13 @@ Vercel·Supabase·모바일까지 한 번에 점검하려면 **`docs/RUNTIME_GO_
   - 배포 확인: `/m/login/homescreen-manifest` JSON에 `"start_url":"/m/login"` 포함 여부 확인
   - 기존 아이콘이 손님 화면으로 열리면, 기존 아이콘 삭제 후 `/m/login`에서 재설치
 - 계정 전환/강제 로그인: `?reauth=1` 쿼리로 자동 세션 이동을 건너뛰고 로그인 폼을 강제로 표시할 수 있습니다.
-- 역할: `owner`(주문+메뉴), `staff`(주문만; 메뉴 관리·링크 숨김).
+- 역할: `owner`(주문+메뉴), `staff`(주문 처리·상태 변경), `menu_editor`(메뉴·카테고리만), `viewer`(조회 전용). 마이그레이션 `20260513190000_merchant_tenant_members_phase4_roles.sql` 적용 후 네 가지 모두 사용 가능.
 - Supabase **Authentication → Providers** 에서 Email 을 켜 두고, 점주용 사용자를 만든 뒤 SQL Editor에서 멤버를 묶습니다(예시):
 
 ```sql
 insert into public.merchant_tenant_members (user_id, tenant_slug, role)
 values ('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'::uuid, 'demo', 'owner');
+-- role 은 owner | staff | menu_editor | viewer (마이그레이션 `20260513190000_*` 적용 후)
 ```
 
 (`user_id` 는 `auth.users` 의 해당 행 UUID.)

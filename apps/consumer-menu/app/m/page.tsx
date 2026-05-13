@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { merchantAccessPendingUrl } from "@/lib/merchant/merchant-access";
+import { merchantAccessPendingUrl, parseMerchantRole } from "@/lib/merchant/merchant-access";
+import { merchantRoleBadgeKo } from "@/lib/merchant/merchant-role-capabilities";
 import { createSupabaseServerClient } from "@/lib/supabase/create-server-session-client";
 import { resolveServerUser } from "@/lib/supabase/resolve-server-user";
 
@@ -79,7 +80,7 @@ export default async function MerchantPortalHomePage() {
                   >
                     <span>{r.tenant_slug}</span>
                     <span className="ml-2 rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
-                      {r.role === "staff" ? "직원" : "소장"}
+                      {merchantRoleBadgeKo(parseMerchantRole(r.role) ?? "owner")}
                     </span>
                   </Link>
                 </li>

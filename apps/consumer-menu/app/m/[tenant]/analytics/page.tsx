@@ -4,6 +4,7 @@ import { MerchantPreviewBanner } from "@/components/merchant-preview-banner";
 import { MerchantSubnav } from "@/components/merchant-subnav";
 import { OrderStatusRefresh } from "@/components/order-status-refresh";
 import { requireMerchantForTenant } from "@/lib/merchant/merchant-access";
+import { canManageMerchantMenus } from "@/lib/merchant/merchant-role-capabilities";
 import { listMenusForMerchant } from "@/lib/menus/list-menus-for-merchant";
 import { countMerchantPendingOrders, getMerchantOrderMetricsSinceDays } from "@/lib/orders/list-orders-for-merchant";
 import { orderStatusLabel } from "@/lib/orders/order-status-label";
@@ -26,7 +27,7 @@ export default async function MerchantAnalyticsPage({ params, searchParams }: Pr
   const days = parseDays(typeof daysParam === "string" ? daysParam : undefined);
 
   const { role } = await requireMerchantForTenant(tenant);
-  const canManageMenus = role === "owner";
+  const canManageMenus = canManageMerchantMenus(role);
 
   const [pendingCount, metrics, menus] = await Promise.all([
     countMerchantPendingOrders(tenant),

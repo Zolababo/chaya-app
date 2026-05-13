@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { parseMerchantRole, type MerchantRole } from "@/lib/merchant/merchant-access";
 import { merchantLoginUsesSms } from "@/lib/merchant/merchant-login-mode";
 import { normalizeKrPhoneToE164 } from "@/lib/merchant/phone-e164-kr";
 import { recordMerchantAuditEvent } from "@/lib/merchant/record-merchant-audit";
@@ -29,7 +30,8 @@ export async function inviteMerchantFromOps(formData: FormData): Promise<void> {
     backToMerchants({ e: "bad_tenant_slug" });
   }
   const roleRaw = String(formData.get("role") ?? "owner").trim();
-  const role = roleRaw === "staff" ? "staff" : "owner";
+  const parsed = parseMerchantRole(roleRaw);
+  const role: MerchantRole = parsed ?? "owner";
 
   const service = createServiceSupabase();
   if (!service) {
