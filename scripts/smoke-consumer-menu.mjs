@@ -103,6 +103,14 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/** @param {string} html @param {string} tenant */
+function extractFirstMenuItemPath(html, tenant) {
+  const slug = tenant.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const re = new RegExp(`href="(/t/${slug}/menu/[^"#?]+)"`);
+  const m = html.match(re);
+  return m?.[1] ?? null;
+}
+
 /** @param {unknown} payload */
 function evaluateGuestOrderRpcProbe(payload) {
   const probe = payload?.supabase?.guestOrderRpcsProbe;
@@ -307,7 +315,78 @@ async function main() {
     failed = true;
   }
 
-  // 7–8) Future-feature routes: GET must stay idempotent (405), no state change
+  // 7) C2: cart copy — 오프라인 결제 안내·주문 CTA
+  try {
+    const { res, body } = await fetchText(cartUrl);
+    if (!res.ok) {
+      fail("/t/{tenant}/cart C2 copy", `${res.status}`);
+      failed = true;
+    } else {
+      const hasPay =
+        body.includes("카운터") || body.includes("결제는 매장") || body.includes("매장 카운터");
+      const hasCartShell = body.includes("주문 확인") && body.includes("메뉴에서 담은");
+      if (hasPay && hasCartShell) {
+        ok("/t/{tenant}/cart C2 copy", "offline payment + cart SSR shell");
+      } else {
+        fail("/t/{tenant}/cart C2 copy", `pay=${hasPay} cartShell=${hasCartShell}`);
+        failed = true;
+      }
+    }
+  } catch (e) {
+    fail("/t/{tenant}/cart C2 copy", e instanceof Error ? e.message : String(e));
+    failed = true;
+  }
+
+  // 8) C2: skip link marker
+  try {
+    const { res, body } = await fetchText(tenantUrl);
+    if (!res.ok) {
+      fail("/t/{tenant} skip link", `${res.status}`);
+      failed = true;
+    } else if (body.includes("본문으로")) {
+      ok("/t/{tenant} skip link", "skip-to-main marker");
+    } else {
+      fail("/t/{tenant} skip link", "expected 본문으로 not found");
+      failed = true;
+    }
+  } catch (e) {
+    fail("/t/{tenant} skip link", e instanceof Error ? e.message : String(e));
+    failed = true;
+  }
+
+  // 9) C2: menu item detail (first menu link from home)
+  try {
+    const { res, body } = await fetchText(tenantUrl);
+    if (!res.ok) {
+      fail("/t/{tenant}/menu/* probe", `${res.status}`);
+      failed = true;
+    } else {
+      const menuPath = extractFirstMenuItemPath(body, tenant);
+      if (!menuPath) {
+        ok("/t/{tenant}/menu/*", "SKIP (no menu item link — empty menu?)");
+      } else {
+        const detailUrl = `${root}${menuPath}`;
+        const detail = await fetchText(detailUrl);
+        if (!detail.res.ok) {
+          fail("/t/{tenant}/menu/* status", `${detail.res.status}`);
+          failed = true;
+        } else if (
+          detail.body.includes("장바구니에 담기") &&
+          detail.body.includes("수량")
+        ) {
+          ok("/t/{tenant}/menu/*", "detail qty + add-to-cart");
+        } else {
+          fail("/t/{tenant}/menu/*", "detail markers missing");
+          failed = true;
+        }
+      }
+    }
+  } catch (e) {
+    fail("/t/{tenant}/menu/* request", e instanceof Error ? e.message : String(e));
+    failed = true;
+  }
+
+  // 10–11) Future-feature routes: GET must stay idempotent (405), no state change
   for (const [label, url] of [
     ["GET /t/.../checkout/payment", paymentGetUrl],
     ["GET /t/.../staff-call", staffCallGetUrl],

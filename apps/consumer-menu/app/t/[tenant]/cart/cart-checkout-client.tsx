@@ -3,24 +3,29 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 
+import { SplitBillPanel } from "@/components/split-bill-panel";
 import {
+  cartLineKey,
   clearCart,
   readCart,
   writeCart,
   type CartLine,
 } from "@/lib/cart/local-cart";
+import { CONSUMER_SPLIT_BILL_UI_VISIBLE } from "@/lib/consumer/future-features";
+import { formatSelectedOptionsForNotes } from "@/lib/menus/menu-options";
 import { PREF_TABLE_MAX, readTablePref } from "@/lib/cart/table-pref";
 
 import { GUEST_SESSION_STORAGE_KEY } from "@/lib/guest-session/constants";
 import { syncGuestSessionCookieFromBrowser } from "@/lib/guest-session/sync-guest-session-cookie";
 
+import { ConsumerOfflinePaymentCallout } from "@/components/consumer-offline-payment-callout";
+import { useConsumerLocale } from "@/lib/i18n/consumer-locale-context";
+import { formatConsumerMoney } from "@/lib/i18n/format-consumer-money";
+import { withConsumerLang } from "@/lib/i18n/with-consumer-lang";
+
 import { submitGuestOrderAction } from "./actions";
 
-/**
- * 주문 제출은 게스트 서버 액션으로 처리됩니다.
- * 카드·간편결제 등은 `lib/consumer/future-features` 의 `CONSUMER_CHECKOUT_PAYMENT_IMPLEMENTED` 가
- * `true`가 된 뒤 `POST /t/{tenant}/checkout/payment` 등 서버 경로에만 연동합니다.
- */
+/** 주문 제출은 게스트 서버 액션. 온라인 결제는 `future-features` 플래그·스텁만 유지(당분간 미사용). */
 const LAST_ORDER_KEY = "chaya_last_order_id";
 
 type Props = {
@@ -47,6 +52,7 @@ function ensureGuestSession(): string {
 
 export function CartCheckoutClient({ tenant, initialLines, initialTableHint }: Props) {
   const router = useRouter();
+  const { locale, m } = useConsumerLocale();
   const [mounted, setMounted] = useState(false);
   const [lines, setLines] = useState<CartLine[]>([]);
   const [pending, startTransition] = useTransition();
@@ -88,17 +94,34 @@ export function CartCheckoutClient({ tenant, initialLines, initialTableHint }: P
   }, [lines, tenant, mounted]);
 
   const total = useMemo(
-    () => lines.reduce((sum, line) => sum + line.price * line.quantity, 0),
+    () => lines.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0),
     [lines],
   );
 
-  const setQty = (id: string, quantity: number) => {
+  const orderPayload = useMemo(
+    () =>
+      lines.map((line) => {
+        const optNote = formatSelectedOptionsForNotes(line.selectedOptions);
+        const combined =
+          [optNote, line.notes].filter(Boolean).join(" · ") || null;
+        return {
+          id: line.id,
+          name: line.name,
+          price: line.unitPrice,
+          quantity: line.quantity,
+          notes: combined,
+        };
+      }),
+    [lines],
+  );
+
+  const setQty = (index: number, quantity: number) => {
     const q = Math.max(1, Math.min(99, Math.floor(quantity)));
-    setLines((prev) => prev.map((l) => (l.id === id ? { ...l, quantity: q } : l)));
+    setLines((prev) => prev.map((l, i) => (i === index ? { ...l, quantity: q } : l)));
   };
 
-  const removeLine = (id: string) => {
-    setLines((prev) => prev.filter((l) => l.id !== id));
+  const removeLine = (index: number) => {
+    setLines((prev) => prev.filter((_, i) => i !== index));
   };
 
   const submit = () => {
@@ -114,7 +137,7 @@ export function CartCheckoutClient({ tenant, initialLines, initialTableHint }: P
       try {
         const res = await submitGuestOrderAction(
           tenant,
-          JSON.stringify(lines),
+          JSON.stringify(orderPayload),
           guestSessionId,
           tableNo.trim() || null,
           guestNote.trim() || null,
@@ -130,7 +153,7 @@ export function CartCheckoutClient({ tenant, initialLines, initialTableHint }: P
           /* ignore quota / private mode */
         }
         clearCart(tenant);
-        router.push(`/t/${tenant}/orders/${res.orderId}`);
+        router.push(withConsumerLang(`/t/${tenant}/orders/${res.orderId}`, locale));
       } finally {
         if (!orderSucceeded) submitLock.current = false;
       }
@@ -144,7 +167,7 @@ export function CartCheckoutClient({ tenant, initialLines, initialTableHint }: P
         aria-live="polite"
         className="rounded-xl border border-chaya-border bg-chaya-surface px-4 py-6 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:bg-zinc-950"
       >
-        장바구니 불러오는 중…
+        {m.cart.loading}
       </p>
     );
   }
@@ -152,16 +175,13 @@ export function CartCheckoutClient({ tenant, initialLines, initialTableHint }: P
   if (lines.length === 0) {
     return (
       <div className="rounded-xl border border-chaya-border bg-chaya-surface p-6 dark:border-zinc-700 dark:bg-zinc-950">
-        <p className="text-zinc-600 dark:text-zinc-400">
-          담긴 메뉴가 없습니다. 메뉴판에서 <span className="font-medium">담기</span> 또는 상세 화면에서 수량을
-          정한 뒤 담아 주세요.
-        </p>
+        <p className="text-zinc-600 dark:text-zinc-400">{m.cart.empty}</p>
         <a
-          href={`/t/${tenant}`}
+          href={withConsumerLang(`/t/${tenant}`, locale)}
           className="mt-4 inline-block min-h-[44px] min-w-[44px] py-3 font-semibold text-chaya-primary underline-offset-4 hover:underline"
-          aria-label="메뉴판으로 돌아가기"
+          aria-label={m.cart.emptyCtaAria}
         >
-          메뉴로 돌아가기
+          {m.cart.emptyCta}
         </a>
       </div>
     );
@@ -171,55 +191,67 @@ export function CartCheckoutClient({ tenant, initialLines, initialTableHint }: P
     <div className="space-y-6">
       <ul
         className="divide-y divide-chaya-border rounded-xl border border-chaya-border dark:divide-zinc-800 dark:border-zinc-700"
-        aria-label="담긴 메뉴 목록"
+        aria-label={m.cart.listLabel}
       >
-        {lines.map((line) => (
-          <li key={line.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+        {lines.map((line, index) => {
+          const rowKey = cartLineKey(line.id, line.selectedOptions);
+          const optNote = formatSelectedOptionsForNotes(line.selectedOptions);
+          return (
+          <li key={rowKey} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="font-semibold">{line.name}</p>
+              {optNote ? <p className="text-xs text-zinc-500">{optNote}</p> : null}
+              {line.notes && line.notes !== optNote ? (
+                <p className="text-xs text-zinc-500">{line.notes}</p>
+              ) : null}
               <p className="text-sm text-zinc-500">
-                품목 합계 {(line.price * line.quantity).toLocaleString("ko-KR")}원{" "}
+                {m.cart.lineTotal} {formatConsumerMoney(line.unitPrice * line.quantity, locale)}{" "}
                 <span className="text-zinc-400">
-                  (단가 {line.price.toLocaleString("ko-KR")}원 × {line.quantity}개)
+                  ({m.cart.unitPrice} {formatConsumerMoney(line.unitPrice, locale)} {m.cart.multiply}{" "}
+                  {line.quantity}
+                  {m.cart.each ? ` ${m.cart.each}` : ""})
                 </span>
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <label className="sr-only" htmlFor={`qty-${line.id}`}>
-                {line.name} 수량
+              <label className="sr-only" htmlFor={`qty-${rowKey}`}>
+                {line.name} {m.cart.qtySr}
               </label>
               <input
-                id={`qty-${line.id}`}
+                id={`qty-${rowKey}`}
                 type="number"
                 inputMode="numeric"
                 min={1}
                 max={99}
                 className="min-h-[44px] w-24 rounded-lg border border-chaya-border bg-white px-2 py-2 text-center text-base dark:border-zinc-700 dark:bg-zinc-900"
                 value={line.quantity}
-                onChange={(e) => setQty(line.id, Number(e.target.value))}
+                onChange={(e) => setQty(index, Number(e.target.value))}
               />
               <button
                 type="button"
                 className="min-h-[44px] rounded-lg px-3 text-sm font-semibold text-red-600 underline-offset-2 hover:underline dark:text-red-400"
-                aria-label={`${line.name} 줄 장바구니에서 삭제`}
-                onClick={() => removeLine(line.id)}
+                aria-label={`${line.name} ${m.cart.removeAria}`}
+                onClick={() => removeLine(index)}
               >
-                삭제
+                {m.cart.remove}
               </button>
             </div>
           </li>
-        ))}
+          );
+        })}
       </ul>
 
       <div className="flex items-center justify-between rounded-xl border border-chaya-border bg-chaya-surface px-4 py-3 dark:border-zinc-700 dark:bg-zinc-950">
-        <span className="font-medium text-zinc-600 dark:text-zinc-400">합계</span>
-        <span className="text-lg font-bold">{total.toLocaleString("ko-KR")}원</span>
+        <span className="font-medium text-zinc-600 dark:text-zinc-400">{m.cart.total}</span>
+        <span className="text-lg font-bold">{formatConsumerMoney(total, locale)}</span>
       </div>
+
+      {CONSUMER_SPLIT_BILL_UI_VISIBLE ? <SplitBillPanel total={total} /> : null}
 
       <div className="space-y-4 rounded-xl border border-chaya-border bg-chaya-surface p-4 dark:border-zinc-700 dark:bg-zinc-950">
         <div>
           <label htmlFor="cart-table-no" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            테이블 번호 <span className="font-normal text-zinc-500">(선택)</span>
+            {m.cart.tableLabel} <span className="font-normal text-zinc-500">{m.cart.optional}</span>
           </label>
           <input
             id="cart-table-no"
@@ -228,14 +260,14 @@ export function CartCheckoutClient({ tenant, initialLines, initialTableHint }: P
             maxLength={PREF_TABLE_MAX}
             autoComplete="off"
             className="mt-1 min-h-[44px] w-full rounded-lg border border-chaya-border bg-white px-3 py-2 text-base text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-            placeholder="예: 12"
+            placeholder={m.cart.tablePlaceholder}
             value={tableNo}
             onChange={(e) => setTableNo(e.target.value)}
           />
         </div>
         <div>
           <label htmlFor="cart-guest-note" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            요청사항 <span className="font-normal text-zinc-500">(선택)</span>
+            {m.cart.noteLabel} <span className="font-normal text-zinc-500">{m.cart.optional}</span>
           </label>
           <textarea
             id="cart-guest-note"
@@ -243,12 +275,12 @@ export function CartCheckoutClient({ tenant, initialLines, initialTableHint }: P
             maxLength={500}
             aria-describedby="cart-guest-note-count"
             className="mt-1 min-h-[88px] w-full resize-y rounded-lg border border-chaya-border bg-white px-3 py-2 text-base text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-            placeholder="알레르기, 덜 맵게 등"
+            placeholder={m.cart.notePlaceholder}
             value={guestNote}
             onChange={(e) => setGuestNote(e.target.value)}
           />
           <p id="cart-guest-note-count" className="mt-1 text-right text-xs text-zinc-400">
-            {guestNote.length}/500자
+            {m.cart.noteCount.replace("{count}", String(guestNote.length))}
           </p>
         </div>
       </div>
@@ -259,8 +291,10 @@ export function CartCheckoutClient({ tenant, initialLines, initialTableHint }: P
         </p>
       ) : null}
 
+      <ConsumerOfflinePaymentCallout />
+
       <p id="checkout-guest-order-hint" className="text-center text-sm text-zinc-600 dark:text-zinc-400">
-        접수 후 주문 확인·목록은 <strong className="font-medium text-zinc-800 dark:text-zinc-200">이 폰·이 브라우저</strong>에서 하단 「주문 현황」으로 보는 것이 가장 안전합니다.
+        {m.cart.submitHint}
       </p>
 
       <button
@@ -269,15 +303,17 @@ export function CartCheckoutClient({ tenant, initialLines, initialTableHint }: P
         disabled={pending || lines.length === 0}
         aria-busy={pending}
         aria-describedby="checkout-guest-order-hint"
-        aria-label={pending ? "주문 전송 중" : `총 ${total.toLocaleString("ko-KR")}원 주문 보내기`}
+        aria-label={
+          pending
+            ? m.cart.submitAriaPending
+            : `${m.cart.total} ${formatConsumerMoney(total, locale)}, ${m.cart.submit}`
+        }
         onClick={submit}
       >
-        {pending ? "주문 전송 중…" : "주문 보내기"}
+        {pending ? m.cart.submitPending : m.cart.submit}
       </button>
 
-      <p className="text-center text-xs text-zinc-500">
-        장바구니는 가게(`tenant`)마다 이 기기 브라우저에만 저장됩니다.
-      </p>
+      <p className="text-center text-xs text-zinc-500">{m.cart.storageNote}</p>
     </div>
   );
 }

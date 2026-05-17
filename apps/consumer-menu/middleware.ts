@@ -1,7 +1,23 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
+import { getLocaleCookieName } from "@/lib/i18n/get-consumer-locale";
+import { isAppLocale } from "@/lib/i18n/locales";
 import { updateSupabaseAuthSession } from "@/lib/supabase/supabase-middleware";
+
+const LOCALE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
+
+function applyLocaleCookie(request: NextRequest, response: NextResponse): NextResponse {
+  const lang = request.nextUrl.searchParams.get("lang")?.trim();
+  if (lang && isAppLocale(lang)) {
+    response.cookies.set(getLocaleCookieName(), lang, {
+      path: "/",
+      maxAge: LOCALE_COOKIE_MAX_AGE,
+      sameSite: "lax",
+    });
+  }
+  return response;
+}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -10,9 +26,13 @@ export async function middleware(request: NextRequest) {
     return updateSupabaseAuthSession(request);
   }
 
+  if (pathname.startsWith("/t/")) {
+    return applyLocaleCookie(request, NextResponse.next({ request }));
+  }
+
   return NextResponse.next({ request });
 }
 
 export const config = {
-  matcher: ["/m/:path*", "/ops/:path*"],
+  matcher: ["/m/:path*", "/ops/:path*", "/t/:path*"],
 };

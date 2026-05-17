@@ -47,7 +47,9 @@ export async function GET() {
             process.env.RESEND_API_KEY?.trim() && process.env.RESEND_FROM_EMAIL?.trim(),
           ),
           siteUrlForMailLinks: Boolean(
-            process.env.NEXT_PUBLIC_SITE_URL?.trim() || process.env.VERCEL_URL?.trim(),
+            process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
+              process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim() ||
+              process.env.VERCEL_URL?.trim(),
           ),
         },
         merchantWebPush: {

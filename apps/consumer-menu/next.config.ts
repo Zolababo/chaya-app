@@ -34,6 +34,12 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   /** 개발 시 이펙트 이중 실행 등으로 부작용 조기 발견 */
   reactStrictMode: true,
+  /** 폰 사진 업로드(메뉴 이미지 server action). 기본 1MB면 저장 버튼이 동작하지 않는 것처럼 보임 */
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "6mb",
+    },
+  },
   turbopack: {
     root: workspaceRoot,
   },

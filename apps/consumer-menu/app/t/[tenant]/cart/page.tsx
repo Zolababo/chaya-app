@@ -1,11 +1,14 @@
+import { ConsumerOfflinePaymentCallout } from "@/components/consumer-offline-payment-callout";
 import { PREF_TABLE_MAX } from "@/lib/cart/table-pref";
+import { consumerMessages } from "@/lib/i18n/consumer-messages";
+import { getConsumerLocale } from "@/lib/i18n/get-consumer-locale";
 import { listMenusForTenant } from "@/lib/menus/queries";
 
 import { CartCheckoutClient } from "./cart-checkout-client";
 
 type Props = {
   params: Promise<{ tenant: string }>;
-  searchParams: Promise<{ table?: string | string[] }>;
+  searchParams: Promise<{ table?: string | string[]; lang?: string | string[] }>;
 };
 
 export default async function CartPage({ params, searchParams }: Props) {
@@ -14,17 +17,19 @@ export default async function CartPage({ params, searchParams }: Props) {
   const tableRaw = sp.table;
   const tableFromUrl =
     typeof tableRaw === "string" ? tableRaw.trim().slice(0, PREF_TABLE_MAX) : "";
+  const langRaw = sp.lang;
+  const locale = await getConsumerLocale(typeof langRaw === "string" ? langRaw : null);
+  const m = consumerMessages(locale);
   const menu = await listMenusForTenant(tenant);
 
   return (
     <div className="space-y-6" aria-labelledby="cart-page-heading">
       <div>
         <h1 id="cart-page-heading" className="text-2xl font-bold">
-          주문 확인
+          {m.cart.pageTitle}
         </h1>
-        <p className="mt-1 text-zinc-600 dark:text-zinc-400">
-          메뉴에서 담은 품목은 이 브라우저에만 저장됩니다. Supabase `orders` 로 주문을 보냅니다.
-        </p>
+        <p className="mt-1 text-zinc-600 dark:text-zinc-400">{m.cart.pageIntro}</p>
+        <ConsumerOfflinePaymentCallout className="mt-3" />
       </div>
 
       {menu.notice ? (

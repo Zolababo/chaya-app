@@ -18,12 +18,12 @@
 npm run smoke:consumer -- --tenant <tenant_slug>
 ```
 
-- [ ] `/health` OK (`supabase.guestOrderRpcsProbe` 가 `probed: true` 이면 `allPresent` 확인)
-- [ ] `/t/{tenant}` 메뉴 페이지 OK
-- [ ] `/t/{tenant}/orders` 주문 허브 OK
-- [ ] `/t/{tenant}/cart` 주문 확인(장바구니·SSR) OK
-- [ ] `/t/{tenant}/barrier-free` 목록형 메뉴 OK
-- [ ] `GET …/checkout/payment`·`GET …/staff-call` → **405** (GET 부작용 없음)
+- [x] `/health` OK (`guestOrderRpcsProbe.allPresent` — 2026-05-15 프로덕션 `demo`)
+- [x] `/t/{tenant}` 메뉴 페이지 OK
+- [x] `/t/{tenant}/orders` 주문 허브 OK
+- [x] `/t/{tenant}/cart` 주문 확인(장바구니·SSR) OK
+- [x] `/t/{tenant}/barrier-free` 목록형 메뉴 OK
+- [x] `GET …/checkout/payment`·`GET …/staff-call` → **405**
 
 ## 3) 수동 동선
 

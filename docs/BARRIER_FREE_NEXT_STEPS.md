@@ -52,7 +52,14 @@
 - [x] 전역 404(`app/not-found.tsx`)·점주 `/m/*` 보조: 새로고침 영역·필터 칩 터치·오류 `aria-live`, 장바구니 요청사항 글자 수 `aria-describedby`
 - [x] **프로덕션 Supabase**: `get_order_status_for_guest` 세션 검증(`20260505140000_*`) 적용·시그니처 `uuid, text, text`·주문 현황 동작 확인
 - [ ] **Supabase 추가 인스턴스**(스테이징 등): 마이그레이션 **1~8** 순서 적용 후 `verify_guest_order_rpcs.sql` ①~⑤. **운영 DB만 두고 검증을 끝냈다면** 팀 기준으로 완료 표기.
+- [x] 소비자 UI(스티치·한국어): 하단 탭 한국어 라벨, 헤더 테이블 표시, 주문 진행 단계, 메뉴 장바구니 고정 바, 결제·직원호출 버튼 숨김
+- [x] 셀프바 안내 **제거** (`CONSUMER_SELF_BAR_HINT_ENABLED = false`, 메뉴 상단 미노출)
+- [x] **C2 자동 검증** — `pnpm smoke:consumer` 프로덕션 전 항목 PASS (`docs/CONSUMER_C2_VERIFICATION.md`)
 - [ ] 수동 접근성 점검 체크리스트 (아래 항목을 실제 기기에서 확인)
+- [ ] C2 수동 동선·실매장 (`docs/CONSUMER_C2_MANUAL_RUNBOOK.md` — 3~4단계)
+- [x] C2 스모크 확장 (카운터 안내·스킵 링크·메뉴 상세 마커)
+- [x] QR·테넌트 연결 UI (`MerchantConsumerQrPanel` + `docs/CONSUMER_TENANT_QR_SETUP.md`)
+- [x] 메뉴 상세: 수량·요청사항(줄)·장바구니 담기 (`/t/.../menu/[itemId]`)
 - [x] 스킵 링크: 클릭 시 `#` 대신 `main`에 포커스·스크롤 (`SkipToMainLink` 클라이언트 컴포넌트)
 
 ### Supabase 손님 주문 (RPC·RLS) 적용 순서
@@ -165,8 +172,9 @@ ORDER BY 1;
 
 ### 이 코드베이스 다음에 할 일 (우선순위 참고)
 
+0. **QR·외부 주문 남용 방지 (C6)** — `docs/QR_AND_GUEST_ORDERS.md` **§4 KEEP**: 토큰 QR·점주 주문 중지·rate limit 등 **필수 후속·현재 보류**. 주문 URL `guest_session` 조회 차단은 **유지**. **지금은 다른 항목(1–5) 우선.**  
 1. **제품 합의** (`docs/QR_AND_GUEST_ORDERS.md` §3): QR 경로 기본안, 테이블 번호 필수 여부, 과거 주문 찾기(세션만 vs 주문번호+전화 등). **(음성 테스트 없이 진행 가능)**  
-2. **콜드 링크·SMS**(정책 → 구현): 세션 없이 주문 URL만 열었을 때 UX·보안(서명 토큰·만료·OTP 등) 합의 후 RPC·앱 설계.  
+2. **콜드 링크·SMS**(정책 → 구현): 의도적 공유·만료 코드 등 — C6 §4와 겹치면 **한 번에 설계** (세션 없이 주문 URL만 열었을 때 UX).  
 3. **관측**: Vercel/Supabase 로그·알림, 주문 실패율, `pnpm smoke:consumer`·`/health` 를 배포 후 루틴에 넣기.  
 4. **회원 연동**: 비회원 `guest_session_id` → 로그인 후 주문 묶기(claim) 정책·구현.  
 5. **실기기 접근성**(여건 될 때): 위 체크리스트 TalkBack·VoiceOver로 마무리, 이슈만 트래커에 기록.

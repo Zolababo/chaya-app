@@ -1,43 +1,54 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { MerchantConfirmSubmitButton } from "@/components/merchant-confirm-submit";
+import { MenuTranslationFields } from "@/components/menu-translation-fields";
+import { MerchantMenuCatalog } from "@/components/merchant-menu-catalog";
 import { MerchantPreviewBanner } from "@/components/merchant-preview-banner";
 import { MerchantSubnav } from "@/components/merchant-subnav";
 import { OrderStatusRefresh } from "@/components/order-status-refresh";
 import { requireMerchantForTenant } from "@/lib/merchant/merchant-access";
 import { canDeleteMerchantMenu, canManageMerchantMenus } from "@/lib/merchant/merchant-role-capabilities";
+import { MERCHANT_OPTIONS_INPUT_PLACEHOLDER } from "@/lib/menus/menu-options";
 import { listMenusForMerchant } from "@/lib/menus/list-menus-for-merchant";
 import { countMerchantPendingOrders } from "@/lib/orders/list-orders-for-merchant";
 
-import { createMenuFromForm, deleteMenuFromForm, setMenuSoldOutFromForm, updateMenuFromForm } from "./actions";
+import { createMenuFromForm } from "./actions";
 
 export const dynamic = "force-dynamic";
 
 type Props = {
   params: Promise<{ tenant: string }>;
-  searchParams: Promise<{ e?: string; category?: string }>;
+  searchParams: Promise<{ e?: string; ok?: string; warn?: string; hint?: string; category?: string }>;
 };
 
-function errorMessage(code: string | undefined): string | null {
+function errorMessage(code: string | undefined, hint?: string | null): string | null {
   if (!code) return null;
   switch (code) {
     case "bad_input":
-      return "이름·가격 등 입력값을 확인해 주세요.";
+      return hint?.trim() || "이름·가격 등 입력값을 확인해 주세요.";
     case "no_service":
       return "서버에 SUPABASE_SERVICE_ROLE_KEY 가 없습니다.";
     case "db":
       return "저장에 실패했습니다. DB 제약·RLS·필수 컬럼을 확인해 주세요.";
     case "owner_only_delete":
       return "메뉴 삭제는 소장(owner)만 할 수 있습니다. 메뉴 담당(menu_editor)은 추가·수정·품절만 가능합니다.";
+    case "bad_options":
+      return hint?.trim() || "옵션 입력 형식을 확인해 주세요.";
+    case "upload":
+      return hint?.trim() || "이미지 업로드에 실패했습니다. Supabase Storage 버킷 menu-images 가 있는지 확인해 주세요.";
     default:
       return "처리 중 오류가 났습니다.";
   }
 }
 
+const categoryChipActive =
+  "inline-flex min-h-[44px] shrink-0 items-center rounded-full bg-chaya-primary px-4 py-2 text-xs font-semibold text-chaya-on-primary shadow-sm sm:text-sm";
+const categoryChipIdle =
+  "inline-flex min-h-[44px] shrink-0 items-center rounded-full border border-chaya-border bg-chaya-surface px-4 py-2 text-xs font-semibold text-zinc-600 shadow-sm dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300 sm:text-sm";
+
 export default async function MerchantMenusPage({ params, searchParams }: Props) {
   const { tenant } = await params;
-  const { e, category: categoryParam } = await searchParams;
+  const { e, ok, warn, hint, category: categoryParam } = await searchParams;
 
   const { role } = await requireMerchantForTenant(tenant);
   if (!canManageMerchantMenus(role)) {
@@ -49,7 +60,10 @@ export default async function MerchantMenusPage({ params, searchParams }: Props)
     listMenusForMerchant(tenant),
     countMerchantPendingOrders(tenant),
   ]);
-  const errMsg = errorMessage(e);
+  const errMsg = errorMessage(e, hint);
+  const savedOk = ok === "saved" || ok === "image_saved";
+  const imageSavedOk = ok === "image_saved";
+  const warnMsg = typeof warn === "string" && warn.trim() ? warn.trim() : null;
   const categoryFilter =
     typeof categoryParam === "string" && categoryParam.trim() ? categoryParam.trim() : null;
   const displayItems =
@@ -86,6 +100,16 @@ export default async function MerchantMenusPage({ params, searchParams }: Props)
         <OrderStatusRefresh />
       </div>
 
+      {savedOk ? (
+        <p
+          role="status"
+          className="mb-4 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-900 dark:border-green-900 dark:bg-green-950/40 dark:text-green-100"
+        >
+          {imageSavedOk ? "메뉴 사진을 저장했습니다." : "메뉴를 저장했습니다."}
+          {warnMsg ? ` (${warnMsg})` : null}
+        </p>
+      ) : null}
+
       {errMsg ? (
         <p
           role="alert"
@@ -108,44 +132,70 @@ export default async function MerchantMenusPage({ params, searchParams }: Props)
         <>
           {categoryTabs.length > 0 ? (
             <nav
-              className="mb-6 flex flex-wrap gap-2"
-              aria-label="카테고리로 메뉴 목록 필터"
+              className="mb-4 flex gap-1.5 overflow-x-auto pb-1.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              aria-label="카테고리 (손님 메뉴판과 동일)"
             >
               <Link
                 href={`/m/${encodeURIComponent(tenant)}/menus`}
-                className={
-                  categoryFilter == null
-                    ? "inline-flex min-h-[40px] items-center rounded-full bg-chaya-primary px-4 py-2 text-sm font-semibold text-chaya-on-primary"
-                    : "inline-flex min-h-[40px] items-center rounded-full border border-chaya-border bg-chaya-surface px-4 py-2 text-sm font-semibold text-zinc-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200"
-                }
+                className={categoryFilter == null ? categoryChipActive : categoryChipIdle}
               >
                 전체
               </Link>
-              {categoryTabs.map((c) => {
-                const active = categoryFilter === c;
-                return (
-                  <Link
-                    key={c}
-                    href={`/m/${encodeURIComponent(tenant)}/menus?category=${encodeURIComponent(c)}`}
-                    className={
-                      active
-                        ? "inline-flex min-h-[40px] items-center rounded-full bg-chaya-primary px-4 py-2 text-sm font-semibold text-chaya-on-primary"
-                        : "inline-flex min-h-[40px] items-center rounded-full border border-chaya-border bg-chaya-surface px-4 py-2 text-sm font-semibold text-zinc-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200"
-                    }
-                  >
-                    {c}
-                  </Link>
-                );
-              })}
+              {categoryTabs.map((c) => (
+                <Link
+                  key={c}
+                  href={`/m/${encodeURIComponent(tenant)}/menus?category=${encodeURIComponent(c)}`}
+                  className={categoryFilter === c ? categoryChipActive : categoryChipIdle}
+                >
+                  {c}
+                </Link>
+              ))}
             </nav>
           ) : null}
 
-          <section className="mb-10 rounded-xl border border-chaya-border bg-chaya-surface p-4 dark:border-zinc-700 dark:bg-zinc-950">
-            <h2 className="mb-3 text-lg font-semibold">새 메뉴 추가</h2>
+          <section className="mx-auto mb-8 max-w-lg">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-chaya-border bg-chaya-surface px-4 py-3 dark:border-zinc-700 dark:bg-zinc-950">
+              <p className="text-sm text-zinc-700 dark:text-zinc-300">
+                아래 목록은 손님 메뉴판과 같은 카테고리·순서·썸네일 형태입니다. 수정 후 손님 화면에서 확인하세요.
+              </p>
+              <Link
+                href={`/t/${encodeURIComponent(tenant)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex min-h-[44px] shrink-0 items-center justify-center rounded-xl bg-chaya-primary px-4 py-2 text-sm font-semibold text-chaya-on-primary"
+              >
+                손님 메뉴판 열기
+              </Link>
+            </div>
+            <h2 className="mb-3 text-lg font-semibold">
+              등록된 메뉴 (
+              {categoryFilter ? `${displayItems.length} / 전체 ${list.items.length}` : list.items.length})
+            </h2>
+            {list.items.length === 0 ? (
+              <p className="text-zinc-600 dark:text-zinc-400">아직 메뉴가 없습니다. 아래에서 추가해 주세요.</p>
+            ) : categoryFilter && displayItems.length === 0 ? (
+              <p className="text-zinc-600 dark:text-zinc-400">
+                이 카테고리에 해당하는 메뉴가 없습니다. 필터를 바꾸거나 메뉴의 카테고리를 수정해 주세요.
+              </p>
+            ) : (
+              <MerchantMenuCatalog
+                tenant={tenant}
+                items={displayItems}
+                categoryFilter={categoryFilter}
+                canDeleteMenus={canDeleteMenus}
+                listLabel={
+                  categoryFilter ? `${categoryFilter} 카테고리 메뉴` : "전체 메뉴 (손님 화면 미리보기)"
+                }
+              />
+            )}
+          </section>
+
+          <details className="mx-auto max-w-lg rounded-xl border border-chaya-border bg-chaya-surface dark:border-zinc-700 dark:bg-zinc-950">
+            <summary className="cursor-pointer px-4 py-3 text-lg font-semibold">새 메뉴 추가</summary>
             <form
               action={createMenuFromForm}
               encType="multipart/form-data"
-              className="grid gap-3 sm:grid-cols-2"
+              className="grid gap-3 border-t border-chaya-border p-4 sm:grid-cols-2 dark:border-zinc-800"
             >
               <input type="hidden" name="tenant_slug" value={tenant} />
               {categoryFilter != null ? (
@@ -228,6 +278,9 @@ export default async function MerchantMenusPage({ params, searchParams }: Props)
                 </label>
               </div>
               <div className="sm:col-span-2">
+                <MenuTranslationFields translations={{}} idPrefix="new" />
+              </div>
+              <div className="sm:col-span-2">
                 <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400" htmlFor="new-file">
                   이미지 파일
                 </label>
@@ -235,10 +288,23 @@ export default async function MerchantMenusPage({ params, searchParams }: Props)
                   id="new-file"
                   name="file"
                   type="file"
-                  accept="image/jpeg,image/png,image/webp,image/gif"
-                  className="mt-1 block w-full text-sm text-zinc-600 file:mr-3 file:rounded-lg file:border-0 file:bg-zinc-200 file:px-3 file:py-2 file:text-sm file:font-medium dark:text-zinc-400 dark:file:bg-zinc-800"
+                  accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif,image/*"
+                  className="mt-1 block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-chaya-primary file:px-3 file:py-2 file:text-sm file:font-medium file:text-chaya-on-primary"
                 />
-                <p className="mt-1 text-xs text-zinc-500">파일을 선택하면 아래 URL 보다 우선합니다. 최대 5MB.</p>
+                <p className="mt-1 text-xs text-zinc-500">최대 5MB. 선택 시 URL보다 우선합니다.</p>
+              </div>
+              <div className="sm:col-span-2">
+                <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400" htmlFor="new-options">
+                  옵션 (선택)
+                </label>
+                <textarea
+                  id="new-options"
+                  name="options_json"
+                  rows={3}
+                  maxLength={12000}
+                  placeholder={MERCHANT_OPTIONS_INPUT_PLACEHOLDER}
+                  className="mt-1 w-full rounded-lg border border-chaya-border bg-white px-3 py-2 font-mono text-xs dark:border-zinc-700 dark:bg-zinc-900"
+                />
               </div>
               <div className="sm:col-span-2">
                 <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400" htmlFor="new-img">
@@ -247,7 +313,7 @@ export default async function MerchantMenusPage({ params, searchParams }: Props)
                 <input
                   id="new-img"
                   name="imageUrl"
-                  type="url"
+                  type="text"
                   maxLength={2000}
                   className="mt-1 w-full rounded-lg border border-chaya-border bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
                 />
@@ -255,221 +321,13 @@ export default async function MerchantMenusPage({ params, searchParams }: Props)
               <div className="sm:col-span-2">
                 <button
                   type="submit"
-                  className="rounded-xl bg-chaya-primary px-4 py-2 font-semibold text-chaya-on-primary"
+                  className="min-h-[44px] rounded-xl bg-chaya-primary px-4 py-2 font-semibold text-chaya-on-primary"
                 >
                   추가
                 </button>
               </div>
             </form>
-          </section>
-
-          <section>
-            <h2 className="mb-3 text-lg font-semibold">
-              등록된 메뉴 (
-              {categoryFilter ? `${displayItems.length} / 전체 ${list.items.length}` : list.items.length})
-            </h2>
-            {list.items.length === 0 ? (
-              <p className="text-zinc-600 dark:text-zinc-400">아직 메뉴가 없습니다. 위에서 추가해 주세요.</p>
-            ) : categoryFilter && displayItems.length === 0 ? (
-              <p className="text-zinc-600 dark:text-zinc-400">
-                이 카테고리에 해당하는 메뉴가 없습니다. 필터를 바꾸거나 메뉴의 카테고리를 수정해 주세요.
-              </p>
-            ) : (
-              <ul className="space-y-4">
-                {displayItems.map((item) => (
-                  <li
-                    key={item.id}
-                    className="rounded-xl border border-chaya-border bg-chaya-surface p-4 dark:border-zinc-700 dark:bg-zinc-950"
-                  >
-                    <div className="flex flex-wrap items-start justify-between gap-2">
-                      <div>
-                        <p className="font-semibold">
-                          {item.name}
-                          {item.isSoldOut ? (
-                            <span className="ml-2 rounded-md bg-zinc-200 px-1.5 py-0.5 text-xs font-semibold text-zinc-800 dark:bg-zinc-800 dark:text-zinc-100">
-                              품절
-                            </span>
-                          ) : null}
-                          <span className="ml-2 font-mono text-xs font-normal text-zinc-500">#{item.sortOrder}</span>
-                        </p>
-                        <p className="text-sm text-chaya-primary dark:text-orange-400">
-                          {item.price.toLocaleString("ko-KR")}원
-                          {item.category ? (
-                            <span className="text-zinc-500 dark:text-zinc-400"> · {item.category}</span>
-                          ) : null}
-                        </p>
-                        {item.description ? (
-                          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">{item.description}</p>
-                        ) : null}
-                      </div>
-                      <div className="flex shrink-0 flex-wrap items-center gap-2">
-                        <form action={setMenuSoldOutFromForm} className="inline">
-                          <input type="hidden" name="tenant_slug" value={tenant} />
-                          <input type="hidden" name="menu_id" value={item.id} />
-                          <input type="hidden" name="is_sold_out" value="false" />
-                          {categoryFilter != null ? (
-                            <input type="hidden" name="preserve_category" value={categoryFilter} />
-                          ) : null}
-                          <button
-                            type="submit"
-                            disabled={!item.isSoldOut}
-                            className="rounded-lg border border-chaya-border px-2 py-1 text-xs font-semibold text-zinc-800 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-600 dark:text-zinc-100"
-                          >
-                            판매
-                          </button>
-                        </form>
-                        <form action={setMenuSoldOutFromForm} className="inline">
-                          <input type="hidden" name="tenant_slug" value={tenant} />
-                          <input type="hidden" name="menu_id" value={item.id} />
-                          <input type="hidden" name="is_sold_out" value="true" />
-                          {categoryFilter != null ? (
-                            <input type="hidden" name="preserve_category" value={categoryFilter} />
-                          ) : null}
-                          <button
-                            type="submit"
-                            disabled={item.isSoldOut}
-                            className="rounded-lg border border-amber-600/50 bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-950 disabled:cursor-not-allowed disabled:opacity-40 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100"
-                          >
-                            품절
-                          </button>
-                        </form>
-                        {canDeleteMenus ? (
-                          <form action={deleteMenuFromForm} className="shrink-0">
-                            <input type="hidden" name="tenant_slug" value={tenant} />
-                            <input type="hidden" name="menu_id" value={item.id} />
-                            {categoryFilter != null ? (
-                              <input type="hidden" name="preserve_category" value={categoryFilter} />
-                            ) : null}
-                            <MerchantConfirmSubmitButton
-                              confirmMessage={`「${item.name}」메뉴를 삭제할까요?`}
-                              className="rounded-lg border border-red-300 px-3 py-1 text-xs font-semibold text-red-700 dark:border-red-800 dark:text-red-300"
-                            >
-                              삭제
-                            </MerchantConfirmSubmitButton>
-                          </form>
-                        ) : (
-                          <span
-                            className="text-xs text-zinc-500 dark:text-zinc-400"
-                            title="소장(owner)만 삭제 가능"
-                          >
-                            삭제는 소장만
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <details className="mt-3 border-t border-chaya-border pt-3 dark:border-zinc-800">
-                      <summary className="cursor-pointer text-sm font-medium text-chaya-primary">수정</summary>
-                      <form
-                        action={updateMenuFromForm}
-                        encType="multipart/form-data"
-                        className="mt-3 grid gap-3 sm:grid-cols-2"
-                      >
-                        <input type="hidden" name="tenant_slug" value={tenant} />
-                        <input type="hidden" name="menu_id" value={item.id} />
-                        {categoryFilter != null ? (
-                          <input type="hidden" name="preserve_category" value={categoryFilter} />
-                        ) : null}
-                        <div className="sm:col-span-2">
-                          <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">이름 *</label>
-                          <input
-                            name="name"
-                            required
-                            maxLength={200}
-                            defaultValue={item.name}
-                            className="mt-1 w-full rounded-lg border border-chaya-border bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">가격(원) *</label>
-                          <input
-                            name="price"
-                            type="text"
-                            inputMode="numeric"
-                            required
-                            defaultValue={String(item.price)}
-                            className="mt-1 w-full rounded-lg border border-chaya-border bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">카테고리</label>
-                          <input
-                            name="category"
-                            maxLength={120}
-                            defaultValue={item.category ?? ""}
-                            className="mt-1 w-full rounded-lg border border-chaya-border bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">표시 순서</label>
-                          <input
-                            name="sort_order"
-                            type="number"
-                            min={0}
-                            max={2000000}
-                            inputMode="numeric"
-                            required
-                            defaultValue={String(item.sortOrder)}
-                            className="mt-1 w-full rounded-lg border border-chaya-border bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
-                          />
-                        </div>
-                        <div className="sm:col-span-2">
-                          <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">설명</label>
-                          <textarea
-                            name="description"
-                            rows={2}
-                            maxLength={2000}
-                            defaultValue={item.description ?? ""}
-                            className="mt-1 w-full rounded-lg border border-chaya-border bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
-                          />
-                        </div>
-                        <div className="sm:col-span-2 flex items-center gap-2">
-                          <input
-                            id={`sold-out-${item.id}`}
-                            name="is_sold_out"
-                            type="checkbox"
-                            value="on"
-                            defaultChecked={item.isSoldOut}
-                            className="h-4 w-4 rounded border-chaya-border"
-                          />
-                          <label htmlFor={`sold-out-${item.id}`} className="text-sm text-zinc-700 dark:text-zinc-300">
-                            품절로 표시 (손님 화면에서 담기 비활성)
-                          </label>
-                        </div>
-                        <div className="sm:col-span-2">
-                          <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">새 이미지 파일</label>
-                          <input
-                            name="file"
-                            type="file"
-                            accept="image/jpeg,image/png,image/webp,image/gif"
-                            className="mt-1 block w-full text-sm text-zinc-600 file:mr-3 file:rounded-lg file:border-0 file:bg-zinc-200 file:px-3 file:py-2 file:text-sm file:font-medium dark:text-zinc-400 dark:file:bg-zinc-800"
-                          />
-                          <p className="mt-1 text-xs text-zinc-500">선택 시 업로드한 주소가 URL 입력보다 우선합니다.</p>
-                        </div>
-                        <div className="sm:col-span-2">
-                          <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">이미지 URL</label>
-                          <input
-                            name="imageUrl"
-                            type="url"
-                            maxLength={2000}
-                            defaultValue={item.imageUrl ?? ""}
-                            className="mt-1 w-full rounded-lg border border-chaya-border bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
-                          />
-                        </div>
-                        <div className="sm:col-span-2">
-                          <button
-                            type="submit"
-                            className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900"
-                          >
-                            변경 저장
-                          </button>
-                        </div>
-                      </form>
-                    </details>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
+          </details>
         </>
       )}
     </div>

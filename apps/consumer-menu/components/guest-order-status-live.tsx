@@ -5,7 +5,8 @@ import { useCallback, useEffect, useState } from "react";
 
 import { GUEST_SESSION_STORAGE_KEY } from "@/lib/guest-session/constants";
 import { fetchGuestOrderStatusAction } from "@/lib/orders/fetch-guest-order-status-action";
-import { orderStatusLabel } from "@/lib/orders/order-status-label";
+import { useConsumerLocale } from "@/lib/i18n/consumer-locale-context";
+import { orderStatusLabelForLocale } from "@/lib/i18n/order-status-for-locale";
 import { ORDER_STATUS_POLL_MS } from "@/lib/orders/status-poll";
 
 type Props = {
@@ -15,6 +16,7 @@ type Props = {
 };
 
 export function GuestOrderStatusLive({ tenant, orderId, initialStatus }: Props) {
+  const { locale } = useConsumerLocale();
   const router = useRouter();
   const [status, setStatus] = useState(initialStatus);
   const [reducedMotion, setReducedMotion] = useState(false);
@@ -63,7 +65,7 @@ export function GuestOrderStatusLive({ tenant, orderId, initialStatus }: Props) 
     return () => document.removeEventListener("visibilitychange", onVisibility);
   }, [pull]);
 
-  const statusText = orderStatusLabel(status);
+  const statusText = orderStatusLabelForLocale(status, locale);
 
   return (
     <div className="space-y-4">

@@ -1,6 +1,8 @@
 import Link from "next/link";
 
+import { MerchantConsumerQrPanel } from "@/components/merchant-consumer-qr-panel";
 import { MerchantPreviewBanner } from "@/components/merchant-preview-banner";
+import { getServerSiteBaseUrl } from "@/lib/notifications/site-base-url";
 import { MerchantPushSettings } from "@/components/merchant-push-settings";
 import { MerchantSubnav } from "@/components/merchant-subnav";
 import { OrderStatusRefresh } from "@/components/order-status-refresh";
@@ -51,6 +53,7 @@ export default async function MerchantDashboardPage({ params, searchParams }: Pr
   ]);
 
   const vapidPublicKey = getMerchantVapidPublicKeyForClient();
+  const siteBase = getServerSiteBaseUrl();
 
   const recentOrders = list.ok ? list.rows.slice(0, 8) : [];
   const menuCount = menus.ok ? menus.items.length : null;
@@ -63,12 +66,6 @@ export default async function MerchantDashboardPage({ params, searchParams }: Pr
         <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
           최근 24시간 접수 및 대기 현황을 한 곳에서 봅니다. 상세 처리는 주문 큐에서 진행하세요.
         </p>
-        <p className="mt-1 text-sm">
-          손님 메뉴판:{" "}
-          <Link className="font-medium text-chaya-primary underline-offset-2 hover:underline" href={`/t/${tenant}`}>
-            /t/{tenant}
-          </Link>
-        </p>
       </header>
 
       {dashAlert ? (
@@ -79,6 +76,8 @@ export default async function MerchantDashboardPage({ params, searchParams }: Pr
           {dashAlert}
         </p>
       ) : null}
+
+      <MerchantConsumerQrPanel tenantSlug={tenant} siteBase={siteBase} />
 
       <MerchantPreviewBanner tenantSlug={tenant} />
 

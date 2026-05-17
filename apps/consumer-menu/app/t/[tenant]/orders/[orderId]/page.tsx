@@ -3,16 +3,24 @@ import Link from "next/link";
 import { CopyCurrentOrderUrlButton } from "@/components/copy-current-order-url-button";
 import { GuestOrderDetailSessionRetry } from "@/components/guest-order-detail-session-retry";
 import { GuestOrderStatusLive } from "@/components/guest-order-status-live";
+import { consumerMessages } from "@/lib/i18n/consumer-messages";
+import { formatConsumerMoney } from "@/lib/i18n/format-consumer-money";
+import { getConsumerLocale } from "@/lib/i18n/get-consumer-locale";
+import { withConsumerLang } from "@/lib/i18n/with-consumer-lang";
 import { fetchGuestOrder } from "@/lib/orders/fetch-guest-order";
 
 export const dynamic = "force-dynamic";
 
 type Props = {
   params: Promise<{ tenant: string; orderId: string }>;
+  searchParams: Promise<{ lang?: string }>;
 };
 
-export default async function OrderStatusPage({ params }: Props) {
+export default async function OrderStatusPage({ params, searchParams }: Props) {
   const { tenant, orderId } = await params;
+  const sp = await searchParams;
+  const locale = await getConsumerLocale(typeof sp.lang === "string" ? sp.lang : null);
+  const m = consumerMessages(locale);
   const order = await fetchGuestOrder(tenant, orderId);
 
   if (order == null) {
@@ -20,23 +28,16 @@ export default async function OrderStatusPage({ params }: Props) {
       <div className="mx-auto max-w-lg space-y-4 text-center" role="alert" aria-live="assertive">
         <GuestOrderDetailSessionRetry />
         <h1 id="order-not-found-heading" className="text-2xl font-bold">
-          주문을 찾을 수 없습니다
+          {m.orderDetail.notFoundTitle}
         </h1>
-        <p className="text-zinc-600 dark:text-zinc-400">
-          주문 확인은 <strong className="font-medium text-zinc-800 dark:text-zinc-200">주문할 때 쓴 같은 폰·같은 브라우저</strong>에서 여는 것이 가장 안전합니다. 주문 번호와 가게 경로(`/t/…`)가 맞는지도 확인해 주세요. 다른
-          폰이나 시크릿 창·데이터 삭제 후에는 같은 주문이 안 보일 수 있습니다.
-        </p>
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          Supabase RPC{" "}
-          <code className="rounded bg-zinc-200 px-1 font-mono text-xs dark:bg-zinc-800">get_order_for_guest</code>{" "}
-          마이그레이션 적용 여부도 확인해 주세요.
-        </p>
+        <p className="text-zinc-600 dark:text-zinc-400">{m.orderDetail.notFoundBody}</p>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">{m.orderDetail.notFoundRpc}</p>
         <Link
-          href={`/t/${tenant}/cart`}
+          href={withConsumerLang(`/t/${tenant}/cart`, locale)}
           className="inline-flex min-h-[48px] items-center justify-center rounded-xl bg-chaya-primary px-6 py-3 font-semibold text-chaya-on-primary"
-          aria-label="장바구니로 이동"
+          aria-label={m.orderDetail.toCartAria}
         >
-          장바구니로
+          {m.orderDetail.toCart}
         </Link>
       </div>
     );
@@ -51,21 +52,18 @@ export default async function OrderStatusPage({ params }: Props) {
         >
           ✓
         </div>
-        <p className="sr-only">주문 접수 완료</p>
+        <p className="sr-only">{m.orderDetail.receivedSr}</p>
         <h1 id="order-received-heading" className="text-2xl font-bold">
-          주문이 접수되었습니다
+          {m.orderDetail.receivedTitle}
         </h1>
         <p className="mt-2 text-zinc-600 dark:text-zinc-400">
-          주문 번호 <span className="font-mono font-semibold">{order.id.slice(0, 8)}</span>…
+          {m.orderDetail.orderNo}{" "}
+          <span className="font-mono font-semibold">{order.id.slice(0, 8)}</span>…
         </p>
         {order.created_at ? (
-          <p className="mt-1 text-sm text-zinc-500">
-            {new Date(order.created_at).toLocaleString("ko-KR")}
-          </p>
+          <p className="mt-1 text-sm text-zinc-500">{new Date(order.created_at).toLocaleString()}</p>
         ) : null}
-        <p className="mx-auto mt-3 max-w-md text-sm text-zinc-600 dark:text-zinc-400">
-          나중에 이 화면을 다시 보려면 <strong className="font-medium text-zinc-800 dark:text-zinc-200">이 폰·이 브라우저</strong>에서 하단 「주문 현황」이나 방금 받은 링크를 사용해 주세요.
-        </p>
+        <p className="mx-auto mt-3 max-w-md text-sm text-zinc-600 dark:text-zinc-400">{m.orderDetail.revisitHint}</p>
         <CopyCurrentOrderUrlButton />
         <GuestOrderStatusLive tenant={tenant} orderId={order.id} initialStatus={order.status} />
       </div>
@@ -73,17 +71,17 @@ export default async function OrderStatusPage({ params }: Props) {
       {(order.table_no || order.guest_note) && (
         <div
           className="rounded-xl border border-chaya-border bg-chaya-surface p-4 text-left dark:border-zinc-700 dark:bg-zinc-950"
-          aria-label="테이블 번호와 요청 사항"
+          aria-label={m.orderDetail.metaLabel}
         >
           {order.table_no ? (
             <p className="text-sm">
-              <span className="font-medium text-zinc-600 dark:text-zinc-400">테이블</span>{" "}
+              <span className="font-medium text-zinc-600 dark:text-zinc-400">{m.orderDetail.tableLabel}</span>{" "}
               <span className="font-semibold">{order.table_no}</span>
             </p>
           ) : null}
           {order.guest_note ? (
             <p className={`text-sm ${order.table_no ? "mt-2" : ""}`}>
-              <span className="font-medium text-zinc-600 dark:text-zinc-400">요청</span>{" "}
+              <span className="font-medium text-zinc-600 dark:text-zinc-400">{m.orderDetail.requestLabel}</span>{" "}
               <span className="whitespace-pre-wrap">{order.guest_note}</span>
             </p>
           ) : null}
@@ -92,44 +90,38 @@ export default async function OrderStatusPage({ params }: Props) {
 
       <div className="rounded-xl border border-chaya-border bg-chaya-surface p-4 dark:border-zinc-700 dark:bg-zinc-950">
         <h2 id="order-lines-heading" className="mb-3 font-semibold text-zinc-800 dark:text-zinc-200">
-          주문 내역
+          {m.orderDetail.linesHeading}
         </h2>
-        <ul
-          className="divide-y divide-chaya-border dark:divide-zinc-800"
-          aria-labelledby="order-lines-heading"
-        >
+        <ul className="divide-y divide-chaya-border dark:divide-zinc-800" aria-labelledby="order-lines-heading">
           {order.lines.map((line, i) => (
             <li key={`${line.name}-${i}`} className="flex justify-between py-2 text-sm">
               <span>
-                {line.name}{" "}
-                <span className="text-zinc-500">
-                  × {line.quantity}
-                </span>
+                {line.name} <span className="text-zinc-500">× {line.quantity}</span>
               </span>
-              <span className="tabular-nums">{(line.price * line.quantity).toLocaleString("ko-KR")}원</span>
+              <span className="tabular-nums">{formatConsumerMoney(line.price * line.quantity, locale)}</span>
             </li>
           ))}
         </ul>
         <div className="mt-3 flex justify-between border-t border-chaya-border pt-3 font-semibold dark:border-zinc-800">
-          <span>합계</span>
-          <span className="tabular-nums">{order.total_price.toLocaleString("ko-KR")}원</span>
+          <span>{m.orderDetail.total}</span>
+          <span className="tabular-nums">{formatConsumerMoney(order.total_price, locale)}</span>
         </div>
       </div>
 
-      <nav className="flex flex-wrap justify-center gap-3" aria-label="다음 이동">
+      <nav className="flex flex-wrap justify-center gap-3" aria-label={m.orderDetail.toOrdersAria}>
         <Link
-          href={`/t/${tenant}/orders`}
+          href={withConsumerLang(`/t/${tenant}/orders`, locale)}
           className="flex min-h-[48px] items-center justify-center rounded-xl border border-chaya-border px-6 py-3 font-semibold text-chaya-primary dark:border-zinc-700"
-          aria-label="비회원 주문 목록으로"
+          aria-label={m.orderDetail.toOrdersAria}
         >
-          주문 목록
+          {m.orderDetail.toOrders}
         </Link>
         <Link
-          href={`/t/${tenant}`}
+          href={withConsumerLang(`/t/${tenant}`, locale)}
           className="flex min-h-[48px] items-center justify-center rounded-xl border border-chaya-border px-6 py-3 font-semibold text-chaya-primary dark:border-zinc-700"
-          aria-label="메뉴판으로 돌아가기"
+          aria-label={m.orderDetail.toMenuAria}
         >
-          메뉴로 돌아가기
+          {m.orderDetail.toMenu}
         </Link>
       </nav>
     </div>

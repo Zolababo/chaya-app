@@ -94,8 +94,9 @@ chaya-app/
 
 #### consumer-menu: 결제·직원 호출(의도적 스텁)
 
-- **지금은 구현하지 않는다**가 기본 전제다. 손님 주문 MVP는 **게스트 주문 제출**까지이며, 카드·간편결제와 **직원 호출**은 후순위다.
-- 확장점은 한곳에 모아 둔다: `apps/consumer-menu/lib/consumer/future-features.ts` 의 플래그(`CONSUMER_CHECKOUT_PAYMENT_IMPLEMENTED`, `CONSUMER_STAFF_CALL_IMPLEMENTED`)와 타입, 그리고 같은 앱의 **`POST /t/{tenant}/checkout/payment`** · **`POST /t/{tenant}/staff-call`** Route Handler(플래그가 `false`이면 **501**). 기능을 붙일 때는 **플래그를 `true`로 바꾼 뒤 해당 라우트와 UI만** 채우면 된다.
+- **결제:** 손님은 **주문 내역·합계만** 확인하고 **매장 카운터에서 오프라인 결제**. 앱 내 카드·PG UI는 **노출하지 않음**(`CONSUMER_CHECKOUT_PAYMENT_UI_VISIBLE` = false).
+- **구조만 유지:** `future-features.ts` 플래그·타입, **`POST /t/{tenant}/checkout/payment`**(501). 사용량이 커질 때 PG 연동 시 UI·`CONSUMER_CHECKOUT_PAYMENT_IMPLEMENTED` 를 함께 켠다.
+- **직원 호출:** 후순위. **`POST /t/{tenant}/staff-call`**(501), `CONSUMER_STAFF_CALL_IMPLEMENTED`.
 - PG·푸시 등 비밀은 **서버 환경 변수 + Route Handler / Server Action**에만 둔다.
 
 ### 5.1 점주 기능: 레포 안의 위치와 「대외 소개」 기준 (중요)

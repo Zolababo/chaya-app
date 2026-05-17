@@ -5,6 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
+import { useConsumerLocale } from "@/lib/i18n/consumer-locale-context";
+import { withConsumerLang } from "@/lib/i18n/with-consumer-lang";
 import { CHAYA_CART_CHANGED_EVENT, cartTotalQty } from "@/lib/cart/local-cart";
 
 type Props = {
@@ -12,10 +14,14 @@ type Props = {
 };
 
 export function BottomNav({ tenant }: Props) {
+  const { locale, m } = useConsumerLocale();
   const pathname = usePathname();
   const slug = tenant.trim();
   const [cartCount, setCartCount] = useState(0);
-  const base = `/t/${tenant}`;
+  const basePath = `/t/${tenant}`;
+  const base = withConsumerLang(basePath, locale);
+  const cartHref = withConsumerLang(`${basePath}/cart`, locale);
+  const ordersHref = withConsumerLang(`${basePath}/orders`, locale);
 
   const refreshCartCount = useCallback(() => {
     setCartCount(cartTotalQty(slug));
@@ -43,13 +49,13 @@ export function BottomNav({ tenant }: Props) {
     };
   }, [slug, refreshCartCount]);
 
-  const onMenu = pathname === base || pathname === `${base}/`;
-  const onCart = pathname.startsWith(`${base}/cart`);
-  const onOrders = pathname.startsWith(`${base}/orders`);
+  const onMenu = pathname === basePath || pathname === `${basePath}/`;
+  const onCart = pathname.startsWith(`${basePath}/cart`);
+  const onOrders = pathname.startsWith(`${basePath}/orders`);
 
   const itemClass = (active: boolean) =>
     [
-      "flex min-h-[56px] min-w-[72px] flex-col items-center justify-center gap-1 rounded-xl px-4 py-2 text-xs font-semibold tracking-wide transition-colors",
+      "flex min-h-[56px] min-w-[72px] flex-col items-center justify-center gap-0.5 rounded-xl px-3 py-2 text-[11px] font-semibold tracking-tight transition-colors sm:min-w-[80px] sm:text-xs",
       active
         ? "bg-chaya-primary text-chaya-on-primary shadow-sm"
         : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800",
@@ -60,41 +66,41 @@ export function BottomNav({ tenant }: Props) {
   return (
     <nav
       className="fixed bottom-0 left-0 z-50 flex w-full justify-around border-t border-chaya-border bg-chaya-surface pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-4px_24px_rgba(0,0,0,0.06)] dark:border-zinc-800 dark:bg-zinc-950"
-      aria-label="주요 메뉴"
+      aria-label={m.nav.menu}
     >
       <Link
         href={base}
         className={itemClass(onMenu)}
         aria-current={onMenu ? "page" : undefined}
-        aria-label="메뉴판"
+        aria-label={m.menu.boardTitle}
       >
         <Menu className={`size-6 ${iconClass(onMenu)}`} aria-hidden strokeWidth={2} />
-        <span aria-hidden>Menu</span>
+        <span>{m.nav.menu}</span>
       </Link>
       <Link
-        href={`${base}/cart`}
+        href={cartHref}
         className={itemClass(onCart)}
         aria-current={onCart ? "page" : undefined}
-        aria-label={cartCount > 0 ? `장바구니, 품목 ${cartCount}개` : "장바구니"}
+        aria-label={cartCount > 0 ? `${m.nav.cart}, ${cartCount}` : m.nav.cart}
       >
         <span className="relative inline-flex" aria-hidden>
-          <ShoppingCart className={`size-6 ${iconClass(onCart)}`} aria-hidden strokeWidth={2} />
+          <ShoppingCart className={`size-6 ${iconClass(onCart)}`} strokeWidth={2} />
           {cartCount > 0 ? (
             <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white shadow-sm">
               {cartCount > 99 ? "99+" : cartCount}
             </span>
           ) : null}
         </span>
-        <span aria-hidden>Cart</span>
+        <span>{m.nav.cart}</span>
       </Link>
       <Link
-        href={`${base}/orders`}
+        href={ordersHref}
         className={itemClass(onOrders)}
         aria-current={onOrders ? "page" : undefined}
-        aria-label="주문 현황"
+        aria-label={m.nav.orders}
       >
-        <ClipboardList className={`size-6 ${iconClass(onOrders)}`} aria-hidden strokeWidth={2} />
-        <span aria-hidden>Orders</span>
+        <ClipboardList className={`size-6 ${iconClass(onOrders)}`} strokeWidth={2} aria-hidden />
+        <span>{m.nav.orders}</span>
       </Link>
     </nav>
   );

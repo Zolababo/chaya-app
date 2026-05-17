@@ -1,22 +1,37 @@
 import Link from "next/link";
 
 import { MenuBoard } from "@/components/menu-board";
+import { getConsumerLocale } from "@/lib/i18n/get-consumer-locale";
+import { consumerMessages } from "@/lib/i18n/consumer-messages";
 import { collectCategories, listMenusForTenant } from "@/lib/menus/queries";
 
 type Props = {
   params: Promise<{ tenant: string }>;
+  searchParams: Promise<{ lang?: string }>;
 };
 
-export default async function MenuHomePage({ params }: Props) {
+export default async function MenuHomePage({ params, searchParams }: Props) {
   const { tenant } = await params;
+  const { lang } = await searchParams;
+  const locale = await getConsumerLocale(lang);
+  const m = consumerMessages(locale);
   const result = await listMenusForTenant(tenant);
   const categories = collectCategories(result.items);
 
   return (
     <div className="space-y-4 sm:space-y-5">
       <h1 id="menu-home-heading" className="sr-only">
-        메뉴판
+        {m.menu.boardTitle}
       </h1>
+
+      <ol className="flex flex-wrap gap-2 text-xs font-medium text-zinc-600 dark:text-zinc-400" aria-label="주문 순서">
+        <li className="rounded-full bg-chaya-primary/10 px-3 py-1.5 text-chaya-primary dark:bg-orange-950/40 dark:text-orange-300">
+          {m.flow.step1}
+        </li>
+        <li className="rounded-full border border-chaya-border px-3 py-1.5 dark:border-zinc-700">{m.flow.step2}</li>
+        <li className="rounded-full border border-chaya-border px-3 py-1.5 dark:border-zinc-700">{m.flow.step3}</li>
+      </ol>
+
       {result.notice ? (
         <p
           role={result.ok ? "status" : "alert"}
@@ -31,49 +46,19 @@ export default async function MenuHomePage({ params }: Props) {
         </p>
       ) : null}
 
-      <p className="text-center text-sm text-chaya-muted dark:text-zinc-400">
-        글 위주 목록으로 보고 싶을 때만:{" "}
-        <Link
-          href={`/t/${tenant}/barrier-free`}
-          className="inline-flex min-h-[44px] items-center justify-center font-semibold text-chaya-primary underline-offset-4 hover:underline dark:text-orange-400"
-          aria-label="목록형 메뉴로 이동. 일반 메뉴와 같은 장바구니를 씁니다."
-        >
-          목록형 메뉴
-        </Link>
-        <span className="sr-only"> (같은 장바구니와 연결됩니다)</span>
-      </p>
-
-      <section
-        className="rounded-xl bg-chaya-info p-3 text-white shadow-md sm:rounded-2xl sm:p-4"
-        aria-labelledby="info-heading"
-        lang="en"
-      >
-        <h2 id="info-heading" className="text-base font-semibold leading-tight sm:text-lg">
-          Self-Bar Location
-        </h2>
-        <p className="mt-1 text-xs text-white/90 sm:text-sm">
-          Visit the center aisle for fresh kimchi, sauces, and utensils.
-        </p>
-      </section>
-
       {result.items.length === 0 ? (
-        <p className="text-center text-sm text-chaya-muted dark:text-zinc-400">
-          표시할 메뉴가 없습니다.
-        </p>
+        <p className="text-center text-sm text-chaya-muted dark:text-zinc-400">{m.menu.empty}</p>
       ) : (
         <MenuBoard tenant={tenant} items={result.items} categories={categories} />
       )}
 
       <p className="text-center text-xs text-chaya-muted dark:text-zinc-500">
-        데이터:{" "}
-        {!result.ok
-          ? "연결 문제로 데모 목록 표시 중"
-          : result.source === "demo"
-            ? "로컬 데모"
-            : "Supabase ChayaMenus"}
-        {result.source === "demo" && result.ok
-          ? " — `.env`에 NEXT_PUBLIC_SUPABASE_* 를 넣으면 실제 메뉴를 불러옵니다."
-          : null}
+        <Link
+          href={`/t/${tenant}/barrier-free`}
+          className="font-medium text-chaya-primary underline-offset-2 hover:underline dark:text-orange-400"
+        >
+          {m.menu.listType}
+        </Link>
       </p>
     </div>
   );

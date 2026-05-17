@@ -1,6 +1,11 @@
+import type { MenuTranslationsMap } from "@/lib/i18n/menu-translations";
+
+import type { MenuOptionGroup } from "./menu-options";
+
 /** 레거시 admin(`ChayaMenus`)과 동일한 필드명을 가정합니다. */
 export type ChayaMenuRow = {
   id: string;
+  /** 한국어(기본) 메뉴명 — DB `name` */
   name: string;
   description: string | null;
   price: number;
@@ -10,6 +15,10 @@ export type ChayaMenuRow = {
   sortOrder: number;
   /** 품절 시 손님 장바구니 담기 비활성화 (`20260511150000_chaya_menus_is_sold_out.sql`). */
   isSoldOut: boolean;
+  /** `options_json` 컬럼 파싱 결과. 없으면 빈 배열. */
+  optionGroups: MenuOptionGroup[];
+  /** `translations_json` — ko 외 locale */
+  translations: MenuTranslationsMap;
 };
 
 export type MenuListResult = {

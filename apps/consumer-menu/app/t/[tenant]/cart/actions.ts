@@ -13,7 +13,7 @@ function parseLines(raw: unknown): GuestOrderLine[] | null {
     const o = entry as Record<string, unknown>;
     const id = o.id;
     const name = o.name;
-    const price = o.price;
+    const price = o.unitPrice ?? o.price;
     const quantity = o.quantity;
     if (typeof id !== "string" || typeof name !== "string") return null;
     const p = typeof price === "number" ? price : Number(price);

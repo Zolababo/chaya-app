@@ -82,10 +82,11 @@ Google Stitch로 잡은 **매장 QR 주문** UI를 `consumer-menu` 앱에 옮길
 
 ## 4. 다음 구현 순서 (참고)
 
-1. `BottomNav` + `TenantHeader`만으로 **빈 페이지 4개** 라우트 연결.  
-2. 메뉴 홈에 **정적 목 데이터**로 `CategoryRail` + `MenuItemCard`.  
-3. 상세·카트·상태 순으로 **데이터 연동**(Supabase `ChayaMenus` 등).  
-4. 배리어프리: 각 컴포넌트에 **라벨·역할·포커스** 체크리스트 적용.
+1. ~~`BottomNav` + `SessionHeader`~~ ✅ (`bottom-nav.tsx`, `session-header.tsx`)  
+2. ~~메뉴·카트·주문 데이터 연동~~ ✅ (`MenuBoard`, `CartCheckoutClient`, 게스트 RPC)  
+3. ~~주문 현황 진행 UI~~ ✅ (`OrderProgressSteps`, `GuestOrderStatusLive`)  
+4. ~~메뉴 하단 장바구니 바~~ ✅ (`MenuCartStickyBar`) — 벤토 그리드 대신 **콤팩트 목록**은 배리어프리·스캔 밀도 우선  
+5. ~~메뉴 상세 수량·요청(줄)·담기~~ ✅ · ~~옵션 그룹·더치페이~~ ✅ (`MenuItemOptionGroups`, `SplitBillPanel`) · 남음: InfoBanner CMS, PG/직원호출(의도적 보류)
 
 ---
 

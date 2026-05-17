@@ -14,7 +14,7 @@
 | 영역 | 비율 | 비고 |
 |------|------|------|
 | 점주 콘솔 운영 성숙도(로드맵 Phase 1–4 통합) | **~99%** | Phase 4: 역할 5종(owner·staff·menu_editor·viewer·finance) + 메뉴 삭제 owner 전용 + 조회 전용 푸시 차단. 남음: 2인 승인·추가 세분(필요 시), 운영 설정(VAPID 등). |
-| 소비자 `/t` 주문·메뉴 MVP | **~63%** | 게스트 주문·장바구니·주문 조회 등 핵심 동작. **결제·직원 호출은 의도적으로 미구현** — `lib/consumer/future-features` 플래그·타입과 `POST …/checkout/payment`·`POST …/staff-call` 스텁(501)만 두어 이후 기능을 같은 경로에 붙일 수 있게 함. |
+| 소비자 `/t` 주문·메뉴 MVP | **~90%** | C2 자동 확장·QR 패널·메뉴 상세. 남음: C2 수동(런북)·실매장. C6 보류. 결제·직원호출 숨김. |
 
 ### 소비자 `/t` — Phase 개요 (점주와 별도 축)
 
@@ -23,10 +23,11 @@
 | Phase | 이름 | 상태 | 내용 |
 |-------|------|------|------|
 | **C1** | 메뉴·게스트 주문 MVP | ✅ | `/t/[tenant]` 메뉴, 장바구니, 주문 제출·조회, `barrier-free`, 게스트 RPC·RLS (마이그레이션 순서는 `BARRIER_FREE_NEXT_STEPS`) |
-| **C2** | 신뢰·검증·하드닝 | 진행/반복 | `pnpm smoke:consumer`(장바구니·편한 메뉴·GET 405·`/health` 게스트 RPC 프로브), 실기기 접근성, `verify_guest_order_rpcs.sql`, `HARDENING_ORDER` 계열 |
-| **C3** | 결제 | ⏸️ 의도적 보류 | `future-features` + `POST …/checkout/payment` 스텁(501); PG 붙일 때 구현 |
+| **C2** | 신뢰·검증·하드닝 | **자동 확장 완료** | 스모크: 카운터 안내·스킵·메뉴 상세 (`CONSUMER_C2_VERIFICATION.md`). 수동: `CONSUMER_C2_MANUAL_RUNBOOK.md` |
+| **C3** | 결제(PG) | ⏸️ 숨김·구조만 | 손님 UX는 **카운터 오프라인 결제**; `checkout/payment` 스텁(501). PG는 사용량 확대 후 UI·플래그로 개방 |
 | **C4** | 직원 호출·부가 | ⏸️ 의도적 보류 | `POST …/staff-call` 스텁, 헤더 버튼 비활성 |
 | **C5** | (선택) 로그인·소셜 | 미착수 | `ARCHITECTURE.md` — `consumer-log`, 소비자 로그인 시점 등 장기 |
+| **C6** | QR·외부 주문 남용 방지 | **KEEP · 보류** | **필수 후속** — 토큰 QR·점주 주문 중지·rate limit (`docs/QR_AND_GUEST_ORDERS.md` §4). **유지:** 주문 URL `guest_session` 조회 차단. C2 수동 등 **다른 소비자 작업 우선**. |
 
 **`docs/DELIVERY_PROGRESS.md`** 에는 예전 스냅샷(88% 등)이 남아 있을 수 있으니, **진척 숫자는 이 표(위 `~63%`)와 본 문서의 Phase 표를 기준**으로 보는 것을 권장합니다.
 

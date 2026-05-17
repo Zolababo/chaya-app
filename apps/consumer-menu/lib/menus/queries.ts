@@ -1,7 +1,21 @@
 import { createConsumerSupabase } from "@/lib/supabase/create-consumer-client";
 import { withSupabaseReadRetry } from "@/lib/supabase/transient-retry";
 
+import { parseMenuTranslationsMap } from "@/lib/i18n/menu-translations";
+
+import {
+  CHAYA_MENU_SELECT_BASE,
+  CHAYA_MENU_SELECT_FULL,
+  CHAYA_MENU_SELECT_WITH_OPTIONS,
+  isMissingOptionsJsonColumn,
+  isMissingTranslationsJsonColumn,
+} from "./chaya-menus-select";
+import { parseMenuOptionGroups } from "./menu-options";
 import type { ChayaMenuRow, MenuListResult } from "./types";
+
+const MENU_SELECT_BASE = CHAYA_MENU_SELECT_BASE;
+const MENU_SELECT_WITH_OPTIONS = CHAYA_MENU_SELECT_WITH_OPTIONS;
+const MENU_SELECT_FULL = CHAYA_MENU_SELECT_FULL;
 
 const DEMO_ITEMS: ChayaMenuRow[] = [
   {
@@ -13,6 +27,8 @@ const DEMO_ITEMS: ChayaMenuRow[] = [
     imageUrl: null,
     sortOrder: 0,
     isSoldOut: false,
+    optionGroups: [],
+    translations: {},
   },
 ];
 
@@ -52,7 +68,26 @@ function normalizeRow(raw: Record<string, unknown>): ChayaMenuRow | null {
     imageUrl: typeof raw.imageUrl === "string" ? raw.imageUrl : null,
     sortOrder: sortOrderNorm,
     isSoldOut,
+    optionGroups: parseMenuOptionGroups(raw.options_json),
+    translations: parseMenuTranslationsMap(raw.translations_json),
   };
+}
+
+type MenuQueryClient = NonNullable<ReturnType<typeof createConsumerSupabase>>;
+
+async function queryMenusForTenant(
+  client: MenuQueryClient,
+  slug: string,
+  select: string,
+) {
+  return withSupabaseReadRetry(() =>
+    client
+      .from("ChayaMenus")
+      .select(select)
+      .eq("tenant_slug", slug)
+      .order("sort_order", { ascending: true })
+      .order("name", { ascending: true }),
+  );
 }
 
 /** 목록 조회. DB 컬럼 `tenant_slug` 가 URL 세그먼트 `tenant` 와 일치하는 행만 반환합니다. */
@@ -72,14 +107,19 @@ export async function listMenusForTenant(tenant: string): Promise<MenuListResult
     return { ok: true, source: "demo", items: DEMO_ITEMS };
   }
 
-  const { data, error } = await withSupabaseReadRetry(() =>
-    client
-      .from("ChayaMenus")
-      .select("id,name,description,price,category,imageUrl,sort_order,is_sold_out")
-      .eq("tenant_slug", slug)
-      .order("sort_order", { ascending: true })
-      .order("name", { ascending: true }),
-  );
+  let { data, error } = await queryMenusForTenant(client, slug, MENU_SELECT_FULL);
+
+  if (error && isMissingTranslationsJsonColumn(error)) {
+    const withoutTr = await queryMenusForTenant(client, slug, MENU_SELECT_WITH_OPTIONS);
+    data = withoutTr.data;
+    error = withoutTr.error;
+  }
+
+  if (error && isMissingOptionsJsonColumn(error)) {
+    const fallback = await queryMenusForTenant(client, slug, MENU_SELECT_BASE);
+    data = fallback.data;
+    error = fallback.error;
+  }
 
   if (error) {
     return {
@@ -91,8 +131,13 @@ export async function listMenusForTenant(tenant: string): Promise<MenuListResult
     };
   }
 
-  const items = (data ?? [])
-    .map((row) => normalizeRow(row as Record<string, unknown>))
+  const rows = (data ?? []) as unknown[];
+  const items = rows
+    .map((row) =>
+      row && typeof row === "object"
+        ? normalizeRow(row as Record<string, unknown>)
+        : null,
+    )
     .filter((row): row is ChayaMenuRow => row !== null);
 
   if (items.length === 0) {
@@ -100,7 +145,7 @@ export async function listMenusForTenant(tenant: string): Promise<MenuListResult
       ok: true,
       source: "supabase",
       items: [],
-      notice: `이 가게(${slug})에 등록된 메뉴가 없습니다. Supabase에서 해당 행의 tenant_slug를 확인해 주세요.`,
+      notice: `이 가게(${slug})에 등록된 메뉴가 없습니다. 점주 메뉴 관리(/m/${slug}/menus)에서 추가했는지, Supabase ChayaMenus.tenant_slug 가 URL과 같은지 확인해 주세요.`,
     };
   }
 
@@ -122,22 +167,51 @@ export async function getMenuById(tenant: string, itemId: string): Promise<Chaya
 
   if (!slug) return null;
 
-  const { data, error } = await withSupabaseReadRetry(() =>
+  const primary = await withSupabaseReadRetry(() =>
     client
       .from("ChayaMenus")
-      .select("id,name,description,price,category,imageUrl,sort_order,is_sold_out")
+      .select(MENU_SELECT_FULL)
       .eq("id", itemId)
       .eq("tenant_slug", slug)
       .maybeSingle(),
   );
 
+  let row: unknown = primary.data;
+  let error = primary.error;
+
+  if (error && isMissingTranslationsJsonColumn(error)) {
+    const withoutTr = await withSupabaseReadRetry(() =>
+      client
+        .from("ChayaMenus")
+        .select(MENU_SELECT_WITH_OPTIONS)
+        .eq("id", itemId)
+        .eq("tenant_slug", slug)
+        .maybeSingle(),
+    );
+    row = withoutTr.data;
+    error = withoutTr.error;
+  }
+
+  if (error && isMissingOptionsJsonColumn(error)) {
+    const fallback = await withSupabaseReadRetry(() =>
+      client
+        .from("ChayaMenus")
+        .select(MENU_SELECT_BASE)
+        .eq("id", itemId)
+        .eq("tenant_slug", slug)
+        .maybeSingle(),
+    );
+    row = fallback.data;
+    error = fallback.error;
+  }
+
   if (error) {
     return DEMO_ITEMS.find((r) => r.id === itemId) ?? null;
   }
 
-  if (!data) return null;
+  if (!row || typeof row !== "object") return null;
 
-  return normalizeRow(data as Record<string, unknown>);
+  return normalizeRow(row as Record<string, unknown>);
 }
 
 export function collectCategories(items: ChayaMenuRow[]): string[] {
