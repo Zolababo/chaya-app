@@ -1,25 +1,34 @@
 import { BarrierFreeMenuClient } from "./barrier-free-menu-client";
+import { consumerMessages } from "@/lib/i18n/consumer-messages";
+import { getConsumerLocale } from "@/lib/i18n/get-consumer-locale";
 import { collectCategories, listMenusForTenant } from "@/lib/menus/queries";
 
 type Props = {
   params: Promise<{ tenant: string }>;
+  searchParams: Promise<{ lang?: string }>;
 };
 
-export default async function BarrierFreeMenuPage({ params }: Props) {
+export default async function BarrierFreeMenuPage({ params, searchParams }: Props) {
   const { tenant } = await params;
+  const sp = await searchParams;
+  const locale = await getConsumerLocale(typeof sp.lang === "string" ? sp.lang : null);
+  const m = consumerMessages(locale);
   const result = await listMenusForTenant(tenant);
   const categories = collectCategories(result.items);
+
+  const dataLabel = !result.ok
+    ? m.barrierFree.dataFail
+    : result.source === "demo"
+      ? m.barrierFree.dataDemo
+      : m.barrierFree.dataDb;
 
   return (
     <div className="space-y-6" aria-labelledby="barrier-free-heading">
       <header className="space-y-2">
         <h1 id="barrier-free-heading" className="text-2xl font-bold">
-          목록형 메뉴
+          {m.barrierFree.pageTitle}
         </h1>
-        <p className="text-sm text-chaya-muted dark:text-zinc-400">
-          모바일에서 TalkBack·VoiceOver 등으로 읽기 쉽게 줄인 보조 화면입니다. 터치로도 그대로 사용할 수 있으며, 담기는 아래 메뉴·장바구니와 같은 저장소를
-          씁니다. 기본 메뉴판이 더 편하면 하단 내비의 「메뉴판」으로 돌아가면 됩니다.
-        </p>
+        <p className="text-sm text-chaya-muted dark:text-zinc-400">{m.barrierFree.pageIntro}</p>
       </header>
 
       {result.notice ? (
@@ -38,14 +47,7 @@ export default async function BarrierFreeMenuPage({ params }: Props) {
 
       <BarrierFreeMenuClient tenant={tenant} items={result.items} categories={categories} />
 
-      <p className="text-center text-xs text-chaya-muted dark:text-zinc-500">
-        데이터:{" "}
-        {!result.ok
-          ? "연결 실패로 데모 목록 사용 중"
-          : result.source === "demo"
-            ? "로컬 데모"
-            : "Supabase ChayaMenus"}
-      </p>
+      <p className="text-center text-xs text-chaya-muted dark:text-zinc-500">{dataLabel}</p>
     </div>
   );
 }

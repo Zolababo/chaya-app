@@ -1,5 +1,7 @@
 "use client";
 
+import { useConsumerLocale } from "@/lib/i18n/consumer-locale-context";
+import { formatConsumerMoney } from "@/lib/i18n/format-consumer-money";
 import type { MenuOptionGroup, SelectedMenuOption } from "@/lib/menus/menu-options";
 
 type Props = {
@@ -9,6 +11,7 @@ type Props = {
 };
 
 export function MenuItemOptionGroups({ groups, selected, onChange }: Props) {
+  const { locale, m } = useConsumerLocale();
   if (groups.length === 0) return null;
 
   const pick = (group: MenuOptionGroup, choiceId: string) => {
@@ -37,7 +40,9 @@ export function MenuItemOptionGroups({ groups, selected, onChange }: Props) {
             <legend className="px-1 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
               {group.name}
               {group.required ? (
-                <span className="ml-1 text-xs font-normal text-amber-700 dark:text-amber-300">(필수)</span>
+                <span className="ml-1 text-xs font-normal text-amber-700 dark:text-amber-300">
+                  {m.menu.optionRequired}
+                </span>
               ) : null}
             </legend>
             <div className="mt-2 space-y-2">
@@ -62,8 +67,8 @@ export function MenuItemOptionGroups({ groups, selected, onChange }: Props) {
                       {choice.label}
                       {choice.priceDelta !== 0 ? (
                         <span className="ml-2 text-xs text-zinc-500">
-                          {choice.priceDelta > 0 ? "+" : ""}
-                          {choice.priceDelta.toLocaleString("ko-KR")}원
+                          {choice.priceDelta > 0 ? "+" : choice.priceDelta < 0 ? "−" : ""}
+                          {formatConsumerMoney(Math.abs(choice.priceDelta), locale)}
                         </span>
                       ) : null}
                     </span>

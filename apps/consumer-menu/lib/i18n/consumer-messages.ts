@@ -1,3 +1,4 @@
+import { a11yMessages, type A11yMessageTree } from "./consumer-messages-a11y";
 import { flowMessages, type FlowMessageTree } from "./consumer-messages-flow";
 import type { AppLocale } from "./locales";
 import { DEFAULT_LOCALE } from "./locales";
@@ -23,12 +24,14 @@ type MessageTree = {
     categoryNav: string;
     categoryAll: string;
     categoryEmpty: string;
+    optionRequired: string;
   };
   header: { orderMenu: string; tableNone: string };
   flow: { step1: string; step2: string; step3: string };
-} & FlowMessageTree;
+} & FlowMessageTree &
+  A11yMessageTree;
 
-type CoreMessageTree = Omit<MessageTree, keyof FlowMessageTree>;
+type CoreMessageTree = Omit<MessageTree, keyof FlowMessageTree | keyof A11yMessageTree>;
 
 const KO: CoreMessageTree = {
   nav: { menu: "메뉴", cart: "장바구니", orders: "주문" },
@@ -51,6 +54,7 @@ const KO: CoreMessageTree = {
     categoryNav: "카테고리",
     categoryAll: "전체",
     categoryEmpty: "이 카테고리에 표시할 메뉴가 없습니다.",
+    optionRequired: "(필수)",
   },
   header: { orderMenu: "주문 메뉴", tableNone: "테이블 번호 없음" },
   flow: {
@@ -81,6 +85,7 @@ const EN: CoreMessageTree = {
     categoryNav: "Categories",
     categoryAll: "All",
     categoryEmpty: "No items in this category.",
+    optionRequired: "(required)",
   },
   header: { orderMenu: "Order menu", tableNone: "No table number" },
   flow: {
@@ -111,6 +116,7 @@ const JA: CoreMessageTree = {
     categoryNav: "カテゴリー",
     categoryAll: "すべて",
     categoryEmpty: "このカテゴリーにメニューはありません。",
+    optionRequired: "（必須）",
   },
   header: { orderMenu: "注文メニュー", tableNone: "テーブル番号なし" },
   flow: {
@@ -141,6 +147,7 @@ const ZH_HANS: CoreMessageTree = {
     categoryNav: "分类",
     categoryAll: "全部",
     categoryEmpty: "该分类下暂无菜品。",
+    optionRequired: "（必选）",
   },
   header: { orderMenu: "点餐", tableNone: "无桌号" },
   flow: { step1: "① 选择菜品", step2: "② 确认购物车", step3: "③ 提交厨房" },
@@ -167,6 +174,7 @@ const ZH_HANT: CoreMessageTree = {
     categoryNav: "分類",
     categoryAll: "全部",
     categoryEmpty: "此分類暫無餐點。",
+    optionRequired: "（必選）",
   },
   header: { orderMenu: "點餐", tableNone: "無桌號" },
   flow: { step1: "① 選擇餐點", step2: "② 確認購物車", step3: "③ 送至廚房" },
@@ -193,6 +201,7 @@ const VI: CoreMessageTree = {
     categoryNav: "Danh mục",
     categoryAll: "Tất cả",
     categoryEmpty: "Không có món trong danh mục này.",
+    optionRequired: "(bắt buộc)",
   },
   header: { orderMenu: "Đặt món", tableNone: "Không có số bàn" },
   flow: {
@@ -223,6 +232,7 @@ const TH: CoreMessageTree = {
     categoryNav: "หมวดหมู่",
     categoryAll: "ทั้งหมด",
     categoryEmpty: "ไม่มีเมนูในหมวดนี้",
+    optionRequired: "(จำเป็น)",
   },
   header: { orderMenu: "สั่งอาหาร", tableNone: "ไม่มีเลขโต๊ะ" },
   flow: {
@@ -253,6 +263,7 @@ const RU: CoreMessageTree = {
     categoryNav: "Категории",
     categoryAll: "Все",
     categoryEmpty: "В этой категории нет блюд.",
+    optionRequired: "(обяз.)",
   },
   header: { orderMenu: "Меню заказа", tableNone: "Нет номера стола" },
   flow: {
@@ -275,5 +286,5 @@ const MESSAGES: Record<AppLocale, CoreMessageTree> = {
 
 export function consumerMessages(locale: AppLocale): MessageTree {
   const base = MESSAGES[locale] ?? MESSAGES[DEFAULT_LOCALE];
-  return { ...base, ...flowMessages(locale) };
+  return { ...base, ...flowMessages(locale), ...a11yMessages(locale) };
 }

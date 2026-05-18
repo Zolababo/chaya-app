@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { MenuTranslationFields } from "@/components/menu-translation-fields";
+import { MerchantConsumerPreviewLinks } from "@/components/merchant-consumer-preview-links";
 import { MerchantMenuCatalog } from "@/components/merchant-menu-catalog";
 import { MerchantPreviewBanner } from "@/components/merchant-preview-banner";
 import { MerchantSubnav } from "@/components/merchant-subnav";
@@ -158,14 +159,17 @@ export default async function MerchantMenusPage({ params, searchParams }: Props)
               <p className="text-sm text-zinc-700 dark:text-zinc-300">
                 아래 목록은 손님 메뉴판과 같은 카테고리·순서·썸네일 형태입니다. 수정 후 손님 화면에서 확인하세요.
               </p>
-              <Link
-                href={`/t/${encodeURIComponent(tenant)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex min-h-[44px] shrink-0 items-center justify-center rounded-xl bg-chaya-primary px-4 py-2 text-sm font-semibold text-chaya-on-primary"
-              >
-                손님 메뉴판 열기
-              </Link>
+              <div className="flex shrink-0 flex-col items-stretch gap-2 sm:items-end">
+                <Link
+                  href={`/t/${encodeURIComponent(tenant)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-chaya-primary px-4 py-2 text-sm font-semibold text-chaya-on-primary"
+                >
+                  손님 메뉴판 열기
+                </Link>
+                <MerchantConsumerPreviewLinks tenant={tenant} />
+              </div>
             </div>
             <h2 className="mb-3 text-lg font-semibold">
               등록된 메뉴 (

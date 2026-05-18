@@ -1,8 +1,9 @@
 import Link from "next/link";
 
 import { MenuBoard } from "@/components/menu-board";
-import { getConsumerLocale } from "@/lib/i18n/get-consumer-locale";
 import { consumerMessages } from "@/lib/i18n/consumer-messages";
+import { getConsumerLocale } from "@/lib/i18n/get-consumer-locale";
+import { withConsumerLang } from "@/lib/i18n/with-consumer-lang";
 import { collectCategories, listMenusForTenant } from "@/lib/menus/queries";
 
 type Props = {
@@ -54,7 +55,7 @@ export default async function MenuHomePage({ params, searchParams }: Props) {
 
       <p className="text-center text-xs text-chaya-muted dark:text-zinc-500">
         <Link
-          href={`/t/${tenant}/barrier-free`}
+          href={withConsumerLang(`/t/${tenant}/barrier-free`, locale)}
           className="font-medium text-chaya-primary underline-offset-2 hover:underline dark:text-orange-400"
         >
           {m.menu.listType}
