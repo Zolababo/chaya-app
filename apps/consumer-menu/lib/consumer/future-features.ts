@@ -27,6 +27,17 @@ export const CONSUMER_STAFF_CALL_IMPLEMENTED = false as const;
 /** `true`일 때 장바구니에 더치페이(1인 참고 금액) 패널을 노출한다. */
 export const CONSUMER_SPLIT_BILL_UI_VISIBLE = true as const;
 
+/**
+ * 손님 메뉴 UI 버전.
+ * - `1`: 기본 메뉴판만
+ * - `2`: 헤더 아래 「오늘의 메뉴」 컴팩트 배너
+ */
+export const CONSUMER_MENU_UI_VERSION = 2 as const;
+
+export function isConsumerMenuUiV2(): boolean {
+  return CONSUMER_MENU_UI_VERSION >= 2;
+}
+
 /** 향후 `POST /t/{tenant}/checkout/payment` 본문 스키마 예시(미사용). */
 export type CheckoutPaymentRequestBody = {
   tenant: string;

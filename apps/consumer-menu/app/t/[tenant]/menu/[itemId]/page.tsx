@@ -27,52 +27,57 @@ export default async function MenuItemPage({ params, searchParams }: Props) {
   const item = resolveMenuRowForLocale(raw, locale);
 
   return (
-    <div className="space-y-6 pb-36" aria-labelledby="menu-item-heading">
-      <div className="flex items-center gap-3">
-        <Link
-          href={withConsumerLang(`/t/${tenant}`, locale)}
-          className="inline-flex min-h-[44px] items-center justify-center rounded-full border border-chaya-border bg-white px-4 py-2 text-sm font-semibold shadow-sm dark:border-zinc-700 dark:bg-zinc-950"
-          aria-label={m.menu.detailBack}
-        >
-          ← {m.nav.menu}
-        </Link>
-      </div>
+    <div
+      className="mx-auto max-w-lg pb-[calc(max(4.25rem,env(safe-area-inset-bottom)+3.75rem)+7.5rem)]"
+      aria-labelledby="menu-item-heading"
+    >
+      <Link
+        href={withConsumerLang(`/t/${tenant}`, locale)}
+        className="mb-3 inline-flex min-h-[40px] items-center text-sm font-semibold text-chaya-primary dark:text-orange-400"
+        aria-label={m.menu.detailBack}
+      >
+        ← {m.nav.menu}
+      </Link>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <div className="overflow-hidden rounded-2xl border border-chaya-border bg-chaya-surface shadow-md dark:border-zinc-700 dark:bg-zinc-950">
-          {item.imageUrl?.trim() ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={item.imageUrl}
-              alt={`${item.name}`}
-              className="aspect-square w-full object-cover"
-            />
-          ) : (
-            <div
-              className="aspect-square bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-zinc-800 dark:to-zinc-900"
-              aria-hidden
-            />
-          )}
-        </div>
-        <div>
-          <p className="text-sm font-medium text-chaya-muted dark:text-zinc-400">
+      <div className="overflow-hidden rounded-xl border border-zinc-200/90 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+        {item.imageUrl?.trim() ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={item.imageUrl}
+            alt=""
+            className="h-44 w-full object-cover sm:h-52"
+          />
+        ) : (
+          <div
+            className="flex h-32 items-center justify-center bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-zinc-800 dark:to-zinc-900"
+            aria-hidden
+          >
+            <span className="text-4xl font-bold text-zinc-400">{item.name.charAt(0)}</span>
+          </div>
+        )}
+        <div className="px-4 py-3">
+          <p className="text-[11px] font-bold uppercase tracking-wide text-zinc-500">
             {item.category ?? m.menu.categoryFallback}
           </p>
           {item.isSoldOut ? (
             <p
               role="status"
-              className="mt-2 rounded-lg border border-zinc-300 bg-zinc-100 px-3 py-2 text-sm font-semibold text-zinc-800 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-200"
+              className="mt-2 rounded-lg bg-zinc-100 px-3 py-1.5 text-xs font-semibold text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
             >
               {m.menu.soldOutBanner}
             </p>
           ) : null}
-          <h1 id="menu-item-heading" className="mt-1 text-2xl font-bold tracking-tight">
+          <h1 id="menu-item-heading" className="mt-1 text-xl font-bold leading-snug tracking-tight">
             {item.name}
           </h1>
-          <p className="mt-2 text-2xl font-bold tabular-nums text-chaya-primary dark:text-orange-400">
+          <p className="mt-1 text-lg font-bold tabular-nums text-chaya-primary dark:text-orange-400">
             {formatKrw(item.price)}
           </p>
-          <p className="mt-3 text-zinc-600 dark:text-zinc-400">{item.description ?? ""}</p>
+          {(item.description ?? "").trim() ? (
+            <p className="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+              {item.description}
+            </p>
+          ) : null}
         </div>
       </div>
 

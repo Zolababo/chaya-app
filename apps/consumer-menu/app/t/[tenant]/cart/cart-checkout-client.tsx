@@ -273,7 +273,7 @@ export function CartCheckoutClient({
         <li className={`list-none py-2 ${menuFlatListItemClass}`}>
           <Link
             href={menuHref}
-            className="flex min-h-[40px] items-center justify-center rounded-lg border border-dashed border-zinc-300 text-xs font-semibold text-chaya-primary dark:border-zinc-600 dark:text-orange-400"
+            className="flex min-h-[40px] items-center justify-center rounded-lg border border-dashed border-zinc-300 bg-white text-xs font-semibold text-chaya-primary shadow-[0_2px_10px_rgba(0,0,0,0.07)] dark:border-zinc-600 dark:bg-zinc-900 dark:text-orange-400 dark:shadow-[0_2px_12px_rgba(0,0,0,0.35)]"
             aria-label={m.cart.addMoreMenuAria}
           >
             {m.cart.addMoreMenu}

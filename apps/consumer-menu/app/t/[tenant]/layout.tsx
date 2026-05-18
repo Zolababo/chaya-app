@@ -7,6 +7,7 @@ import { GuestSessionCookieSync } from "@/components/guest-session-cookie-sync";
 import { SessionHeaderFallback } from "@/components/header-fallback";
 import { TenantSessionHeader } from "@/components/tenant-session-header";
 import { SkipToMainLink } from "@/components/skip-to-main-link";
+import { TenantTabSwipe } from "@/components/tenant-tab-swipe";
 import { TenantTableQuerySync } from "@/components/tenant-table-query-sync";
 import { ConsumerLocaleProvider } from "@/lib/i18n/consumer-locale-context";
 import { getConsumerLocale } from "@/lib/i18n/get-consumer-locale";
@@ -57,7 +58,7 @@ export default async function TenantLayout({
             tabIndex={-1}
             className="mx-auto w-full max-w-7xl flex-1 px-4 py-3 outline-none sm:px-6"
           >
-            {children}
+            <TenantTabSwipe tenant={tenant}>{children}</TenantTabSwipe>
           </main>
           <MenuCartStickyBar tenant={tenant} />
           <BottomNav tenant={tenant} />

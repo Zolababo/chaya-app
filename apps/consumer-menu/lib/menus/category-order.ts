@@ -9,6 +9,12 @@ const CATEGORY_RANK_RULES: { rank: number; patterns: RegExp[] }[] = [
     patterns: [
       /^메인$/i,
       /메인/,
+      /^음식$/i,
+      /음식/,
+      /^food$/i,
+      /\bfood\b/i,
+      /korean\s*food/i,
+      /요리/,
       /^main$/i,
       /\bmain\b/,
       /mains/,

@@ -27,6 +27,9 @@ type MessageTree = {
     categoryAll: string;
     categoryEmpty: string;
     optionRequired: string;
+    todaysMenuLabel: string;
+    guestNoteToggle: string;
+    guestNoteHide: string;
   };
   header: {
     orderMenu: string;
@@ -72,6 +75,9 @@ const KO: CoreMessageTree = {
     categoryAll: "전체",
     categoryEmpty: "이 카테고리에 표시할 메뉴가 없습니다.",
     optionRequired: "(필수)",
+    todaysMenuLabel: "오늘의 메뉴",
+    guestNoteToggle: "요청사항 추가",
+    guestNoteHide: "접기",
   },
   header: {
     orderMenu: "주문 메뉴",
@@ -114,6 +120,9 @@ const EN: CoreMessageTree = {
     categoryAll: "All",
     categoryEmpty: "No items in this category.",
     optionRequired: "(required)",
+    todaysMenuLabel: "Today's pick",
+    guestNoteToggle: "Add a note",
+    guestNoteHide: "Hide note",
   },
   header: {
     orderMenu: "Order menu",
@@ -156,6 +165,9 @@ const JA: CoreMessageTree = {
     categoryAll: "すべて",
     categoryEmpty: "このカテゴリーにメニューはありません。",
     optionRequired: "（必須）",
+    todaysMenuLabel: "本日のおすすめ",
+    guestNoteToggle: "リクエストを追加",
+    guestNoteHide: "閉じる",
   },
   header: {
     orderMenu: "注文メニュー",
@@ -198,6 +210,9 @@ const ZH_HANS: CoreMessageTree = {
     categoryAll: "全部",
     categoryEmpty: "该分类下暂无菜品。",
     optionRequired: "（必选）",
+    todaysMenuLabel: EN.menu.todaysMenuLabel,
+    guestNoteToggle: EN.menu.guestNoteToggle,
+    guestNoteHide: EN.menu.guestNoteHide,
   },
   header: {
     orderMenu: "点餐",
@@ -236,6 +251,9 @@ const ZH_HANT: CoreMessageTree = {
     categoryAll: "全部",
     categoryEmpty: "此分類暫無餐點。",
     optionRequired: "（必選）",
+    todaysMenuLabel: EN.menu.todaysMenuLabel,
+    guestNoteToggle: EN.menu.guestNoteToggle,
+    guestNoteHide: EN.menu.guestNoteHide,
   },
   header: {
     orderMenu: "點餐",
@@ -274,6 +292,9 @@ const VI: CoreMessageTree = {
     categoryAll: "Tất cả",
     categoryEmpty: "Không có món trong danh mục này.",
     optionRequired: "(bắt buộc)",
+    todaysMenuLabel: EN.menu.todaysMenuLabel,
+    guestNoteToggle: EN.menu.guestNoteToggle,
+    guestNoteHide: EN.menu.guestNoteHide,
   },
   header: {
     ...EN.header,
@@ -313,6 +334,9 @@ const TH: CoreMessageTree = {
     categoryAll: "ทั้งหมด",
     categoryEmpty: "ไม่มีเมนูในหมวดนี้",
     optionRequired: "(จำเป็น)",
+    todaysMenuLabel: EN.menu.todaysMenuLabel,
+    guestNoteToggle: EN.menu.guestNoteToggle,
+    guestNoteHide: EN.menu.guestNoteHide,
   },
   header: {
     ...EN.header,
@@ -352,6 +376,9 @@ const RU: CoreMessageTree = {
     categoryAll: "Все",
     categoryEmpty: "В этой категории нет блюд.",
     optionRequired: "(обяз.)",
+    todaysMenuLabel: EN.menu.todaysMenuLabel,
+    guestNoteToggle: EN.menu.guestNoteToggle,
+    guestNoteHide: EN.menu.guestNoteHide,
   },
   header: {
     ...EN.header,
@@ -381,5 +408,11 @@ const MESSAGES: Record<AppLocale, CoreMessageTree> = {
 
 export function consumerMessages(locale: AppLocale): MessageTree {
   const base = MESSAGES[locale] ?? MESSAGES[DEFAULT_LOCALE];
-  return { ...base, ...flowMessages(locale), ...a11yMessages(locale), ...errorsMessages(locale) };
+  const menu = {
+    ...base.menu,
+    todaysMenuLabel: base.menu.todaysMenuLabel ?? EN.menu.todaysMenuLabel,
+    guestNoteToggle: base.menu.guestNoteToggle ?? EN.menu.guestNoteToggle,
+    guestNoteHide: base.menu.guestNoteHide ?? EN.menu.guestNoteHide,
+  };
+  return { ...base, menu, ...flowMessages(locale), ...a11yMessages(locale), ...errorsMessages(locale) };
 }

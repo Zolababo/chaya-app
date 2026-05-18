@@ -1,5 +1,6 @@
 "use client";
 
+import { Minus, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useId, useMemo, useState } from "react";
 
@@ -18,6 +19,9 @@ import type { ChayaMenuRow } from "@/lib/menus/types";
 
 const NOTE_MAX = 200;
 
+const DOCK_BOTTOM =
+  "fixed inset-x-0 bottom-[max(4.25rem,calc(env(safe-area-inset-bottom)+3.75rem))] z-30 border-t border-zinc-200/90 bg-chaya-surface/98 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950/98";
+
 type Props = {
   tenant: string;
   item: ChayaMenuRow;
@@ -28,6 +32,7 @@ export function MenuItemAddToCart({ tenant, item }: Props) {
   const router = useRouter();
   const [qty, setQty] = useState(1);
   const [notes, setNotes] = useState("");
+  const [noteOpen, setNoteOpen] = useState(false);
   const [selected, setSelected] = useState<SelectedMenuOption[]>([]);
   const [optError, setOptError] = useState<string | null>(null);
   const noteId = useId();
@@ -37,6 +42,8 @@ export function MenuItemAddToCart({ tenant, item }: Props) {
     const delta = selected.reduce((s, o) => s + o.priceDelta, 0);
     return item.price + delta;
   }, [item.price, selected]);
+
+  const lineTotal = unitPrice * qty;
 
   const addAndGo = () => {
     if (item.isSoldOut) return;
@@ -50,18 +57,17 @@ export function MenuItemAddToCart({ tenant, item }: Props) {
     setOptError(null);
     const optNote = formatSelectedOptionsForNotes(selected);
     const trimmed = notes.trim().slice(0, NOTE_MAX);
-    const combined =
-      [optNote, trimmed].filter(Boolean).join(" · ") || null;
+    const combined = [optNote, trimmed].filter(Boolean).join(" · ") || null;
     addLine(tenant, item, qty, combined, selected);
     router.push(withConsumerLang(`/t/${tenant}/cart`, locale));
   };
 
   if (item.isSoldOut) {
     return (
-      <div className="fixed bottom-28 left-0 right-0 z-30 flex flex-col items-center gap-3 px-4">
+      <div className={`${DOCK_BOTTOM} px-4 py-3`}>
         <p
           role="status"
-          className="w-full max-w-md rounded-2xl border border-zinc-300 bg-zinc-100 px-4 py-4 text-center text-sm font-semibold text-zinc-800 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-200"
+          className="rounded-xl border border-zinc-300 bg-zinc-100 px-4 py-3 text-center text-sm font-semibold text-zinc-800 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-200"
         >
           {m.menu.soldOutCart}
         </p>
@@ -70,65 +76,82 @@ export function MenuItemAddToCart({ tenant, item }: Props) {
   }
 
   return (
-    <div className="fixed bottom-28 left-0 right-0 z-30 flex flex-col items-center gap-3 px-4 pb-2">
-      <div className="w-full max-w-md space-y-3 rounded-2xl border border-chaya-border bg-chaya-surface px-4 py-3 shadow-lg dark:border-zinc-700 dark:bg-zinc-950">
-        {hasOptions ? (
+    <div className={`${DOCK_BOTTOM} px-4 py-2.5`}>
+      {hasOptions ? (
+        <div className="mb-2 max-h-[min(28vh,12rem)] overflow-y-auto rounded-lg border border-zinc-200/90 bg-white/80 p-2 dark:border-zinc-700 dark:bg-zinc-900/80">
           <MenuItemOptionGroups groups={item.optionGroups} selected={selected} onChange={setSelected} />
-        ) : null}
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-zinc-600 dark:text-zinc-400">{m.menu.quantity}</span>
-          <div className="flex items-center gap-4" role="group" aria-label={`${item.name} ${m.menu.quantity}`}>
-            <button
-              type="button"
-              className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-zinc-200 text-lg font-bold text-zinc-800 dark:bg-zinc-800 dark:text-zinc-100"
-              aria-label={m.menu.decreaseQty}
-              onClick={() => setQty((q) => Math.max(1, q - 1))}
-            >
-              −
-            </button>
-            <span className="min-w-8 text-center text-lg font-semibold tabular-nums" aria-live="polite">
-              {qty}
-            </span>
-            <button
-              type="button"
-              className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-zinc-200 text-lg font-bold text-zinc-800 dark:bg-zinc-800 dark:text-zinc-100"
-              aria-label={m.menu.increaseQty}
-              onClick={() => setQty((q) => Math.min(99, q + 1))}
-            >
-              +
-            </button>
-          </div>
         </div>
-        <p className="text-right text-lg font-bold tabular-nums text-chaya-primary dark:text-orange-400">
-          {formatConsumerMoney(unitPrice * qty, locale)}
-        </p>
-        <div>
-          <label htmlFor={noteId} className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
+      ) : null}
+
+      {noteOpen ? (
+        <div className="mb-2">
+          <label htmlFor={noteId} className="sr-only">
             {m.menu.guestNote}
           </label>
-          <textarea
+          <input
             id={noteId}
-            rows={2}
+            type="text"
             maxLength={NOTE_MAX}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder={m.menu.guestNotePlaceholder}
-            className="mt-1 w-full resize-y rounded-lg border border-chaya-border bg-white px-3 py-2 text-sm dark:border-zinc-600 dark:bg-zinc-900"
+            className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-600 dark:bg-zinc-900"
           />
+          <button
+            type="button"
+            className="mt-1 text-xs font-medium text-zinc-500 underline-offset-2 hover:underline"
+            onClick={() => setNoteOpen(false)}
+          >
+            {m.menu.guestNoteHide}
+          </button>
         </div>
-        {optError ? (
-          <p role="alert" className="text-sm font-medium text-red-600 dark:text-red-400">
-            {optError}
-          </p>
-        ) : null}
+      ) : (
+        <button
+          type="button"
+          className="mb-2 text-xs font-semibold text-chaya-primary underline-offset-2 hover:underline dark:text-orange-400"
+          onClick={() => setNoteOpen(true)}
+        >
+          {m.menu.guestNoteToggle}
+        </button>
+      )}
+
+      {optError ? (
+        <p role="alert" className="mb-2 text-xs font-medium text-red-600 dark:text-red-400">
+          {optError}
+        </p>
+      ) : null}
+
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-0.5" role="group" aria-label={`${item.name} ${m.menu.quantity}`}>
+          <button
+            type="button"
+            className="flex min-h-[36px] min-w-[36px] items-center justify-center rounded-full border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900"
+            aria-label={m.menu.decreaseQty}
+            onClick={() => setQty((q) => Math.max(1, q - 1))}
+          >
+            <Minus className="size-4" aria-hidden />
+          </button>
+          <span className="min-w-7 text-center text-sm font-bold tabular-nums">{qty}</span>
+          <button
+            type="button"
+            className="flex min-h-[36px] min-w-[36px] items-center justify-center rounded-full border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900"
+            aria-label={m.menu.increaseQty}
+            onClick={() => setQty((q) => Math.min(99, q + 1))}
+          >
+            <Plus className="size-4" aria-hidden />
+          </button>
+        </div>
+        <p className="min-w-0 flex-1 text-right text-base font-bold tabular-nums text-chaya-primary dark:text-orange-400">
+          {formatConsumerMoney(lineTotal, locale)}
+        </p>
+        <button
+          type="button"
+          onClick={addAndGo}
+          className="min-h-[44px] shrink-0 rounded-xl bg-chaya-primary px-5 text-sm font-bold text-chaya-on-primary shadow-md active:scale-[0.99]"
+        >
+          {m.menu.addToCart}
+        </button>
       </div>
-      <button
-        type="button"
-        onClick={addAndGo}
-        className="min-h-[52px] w-full max-w-md rounded-2xl bg-chaya-primary px-6 py-4 text-lg font-bold text-chaya-on-primary shadow-[0_8px_24px_rgba(164,55,0,0.28)] transition hover:bg-chaya-primary-hover active:scale-[0.99]"
-      >
-        {m.menu.addToCartBar}
-      </button>
     </div>
   );
 }
