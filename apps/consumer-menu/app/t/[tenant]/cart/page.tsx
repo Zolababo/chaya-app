@@ -1,3 +1,4 @@
+import { ConsumerOrderFlowBanner } from "@/components/consumer-order-flow-banner";
 import { ConsumerOfflinePaymentCallout } from "@/components/consumer-offline-payment-callout";
 import { PREF_TABLE_MAX } from "@/lib/cart/table-pref";
 import { consumerMessages } from "@/lib/i18n/consumer-messages";
@@ -24,8 +25,10 @@ export default async function CartPage({ params, searchParams }: Props) {
 
   return (
     <div className="space-y-6" aria-labelledby="cart-page-heading">
+      <ConsumerOrderFlowBanner steps={[m.flow.step1, m.flow.step2, m.flow.step3]} activeStep={2} />
+
       <div>
-        <h1 id="cart-page-heading" className="text-2xl font-bold">
+        <h1 id="cart-page-heading" className="text-2xl font-bold tracking-tight">
           {m.cart.pageTitle}
         </h1>
         <p className="mt-1 text-zinc-600 dark:text-zinc-400">{m.cart.pageIntro}</p>

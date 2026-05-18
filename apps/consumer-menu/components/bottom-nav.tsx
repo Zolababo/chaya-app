@@ -55,10 +55,10 @@ export function BottomNav({ tenant }: Props) {
 
   const itemClass = (active: boolean) =>
     [
-      "flex min-h-[56px] min-w-[72px] flex-col items-center justify-center gap-0.5 rounded-xl px-3 py-2 text-[11px] font-semibold tracking-tight transition-colors sm:min-w-[80px] sm:text-xs",
+      "relative flex min-h-[56px] min-w-[76px] flex-col items-center justify-center gap-0.5 rounded-2xl px-3 py-2 text-[11px] font-bold tracking-tight transition-all sm:min-w-[84px] sm:text-xs",
       active
-        ? "bg-chaya-primary text-chaya-on-primary shadow-sm"
-        : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800",
+        ? "bg-chaya-primary text-chaya-on-primary shadow-md ring-2 ring-chaya-primary/20 ring-offset-2 ring-offset-chaya-surface dark:ring-offset-zinc-950"
+        : "text-zinc-600 hover:bg-zinc-100/90 dark:text-zinc-400 dark:hover:bg-zinc-800/80",
     ].join(" ");
 
   const iconClass = (active: boolean) => (active ? "text-chaya-on-primary" : "text-zinc-500 dark:text-zinc-400");
@@ -86,7 +86,7 @@ export function BottomNav({ tenant }: Props) {
         <span className="relative inline-flex" aria-hidden>
           <ShoppingCart className={`size-6 ${iconClass(onCart)}`} strokeWidth={2} />
           {cartCount > 0 ? (
-            <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white shadow-sm">
+            <span className="absolute -right-2.5 -top-2.5 flex h-[1.35rem] min-w-[1.35rem] items-center justify-center rounded-full border-2 border-chaya-surface bg-red-500 px-1 text-[10px] font-bold leading-none text-white shadow-md dark:border-zinc-950">
               {cartCount > 99 ? "99+" : cartCount}
             </span>
           ) : null}

@@ -175,11 +175,11 @@ export function CartCheckoutClient({ tenant, initialLines, initialTableHint }: P
 
   if (lines.length === 0) {
     return (
-      <div className="rounded-xl border border-chaya-border bg-chaya-surface p-6 dark:border-zinc-700 dark:bg-zinc-950">
-        <p className="text-zinc-600 dark:text-zinc-400">{m.cart.empty}</p>
+      <div className="rounded-2xl border border-chaya-border bg-chaya-surface p-8 text-center shadow-sm dark:border-zinc-700 dark:bg-zinc-950">
+        <p className="text-base text-zinc-600 dark:text-zinc-400">{m.cart.empty}</p>
         <a
           href={withConsumerLang(`/t/${tenant}`, locale)}
-          className="mt-4 inline-block min-h-[44px] min-w-[44px] py-3 font-semibold text-chaya-primary underline-offset-4 hover:underline"
+          className="mt-5 inline-flex min-h-[48px] items-center justify-center rounded-2xl bg-chaya-primary px-6 py-3 text-base font-bold text-chaya-on-primary shadow-md hover:bg-chaya-primary-hover"
           aria-label={m.cart.emptyCtaAria}
         >
           {m.cart.emptyCta}
@@ -191,7 +191,7 @@ export function CartCheckoutClient({ tenant, initialLines, initialTableHint }: P
   return (
     <div className="space-y-6">
       <ul
-        className="divide-y divide-chaya-border rounded-xl border border-chaya-border dark:divide-zinc-800 dark:border-zinc-700"
+        className="divide-y divide-chaya-border overflow-hidden rounded-2xl border border-chaya-border bg-chaya-surface shadow-sm dark:divide-zinc-800 dark:border-zinc-700 dark:bg-zinc-950"
         aria-label={m.cart.listLabel}
       >
         {lines.map((line, index) => {
@@ -242,9 +242,11 @@ export function CartCheckoutClient({ tenant, initialLines, initialTableHint }: P
         })}
       </ul>
 
-      <div className="flex items-center justify-between rounded-xl border border-chaya-border bg-chaya-surface px-4 py-3 dark:border-zinc-700 dark:bg-zinc-950">
-        <span className="font-medium text-zinc-600 dark:text-zinc-400">{m.cart.total}</span>
-        <span className="text-lg font-bold">{formatConsumerMoney(total, locale)}</span>
+      <div className="flex items-end justify-between rounded-2xl border-2 border-chaya-primary/25 bg-gradient-to-br from-chaya-primary/5 to-transparent px-5 py-4 shadow-sm dark:border-orange-900/40 dark:from-orange-950/20">
+        <span className="text-sm font-semibold text-zinc-600 dark:text-zinc-400">{m.cart.total}</span>
+        <span className="text-2xl font-bold tabular-nums tracking-tight text-chaya-primary dark:text-orange-400">
+          {formatConsumerMoney(total, locale)}
+        </span>
       </div>
 
       {CONSUMER_SPLIT_BILL_UI_VISIBLE ? <SplitBillPanel total={total} /> : null}
@@ -300,7 +302,7 @@ export function CartCheckoutClient({ tenant, initialLines, initialTableHint }: P
 
       <button
         type="button"
-        className="min-h-[48px] w-full rounded-2xl bg-chaya-primary py-4 text-lg font-bold text-chaya-on-primary shadow-sm transition hover:opacity-95 disabled:opacity-60"
+        className="min-h-[52px] w-full rounded-2xl bg-chaya-primary py-4 text-lg font-bold text-chaya-on-primary shadow-[0_8px_24px_rgba(164,55,0,0.28)] transition hover:bg-chaya-primary-hover active:scale-[0.99] disabled:opacity-60"
         disabled={pending || lines.length === 0}
         aria-busy={pending}
         aria-describedby="checkout-guest-order-hint"

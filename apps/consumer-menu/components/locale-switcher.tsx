@@ -22,7 +22,10 @@ export function LocaleSwitcher() {
   const { locale: active } = useConsumerLocale();
 
   return (
-    <nav aria-label="언어 선택" className="flex max-w-[min(100vw,20rem)] gap-1 overflow-x-auto pb-0.5">
+    <nav
+      aria-label="언어 선택"
+      className="flex max-w-[min(100vw,14rem)] gap-1 overflow-x-auto rounded-xl bg-zinc-100/80 p-0.5 dark:bg-zinc-900/80 sm:max-w-[min(100vw,18rem)]"
+    >
       {APP_LOCALES.map((code) => {
         const selected = active === code;
         const meta = LOCALE_META[code];
@@ -32,8 +35,8 @@ export function LocaleSwitcher() {
             href={buildHref(pathname, searchParams, code)}
             className={
               selected
-                ? "inline-flex min-h-[36px] shrink-0 items-center rounded-lg bg-chaya-primary px-2 py-1 text-[11px] font-bold text-chaya-on-primary"
-                : "inline-flex min-h-[36px] shrink-0 items-center rounded-lg border border-chaya-border bg-chaya-surface px-2 py-1 text-[11px] font-semibold text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
+                ? "inline-flex min-h-[40px] shrink-0 items-center rounded-lg bg-chaya-primary px-2.5 py-1 text-[11px] font-bold text-chaya-on-primary shadow-sm"
+                : "inline-flex min-h-[40px] shrink-0 items-center rounded-lg px-2.5 py-1 text-[11px] font-semibold text-zinc-600 hover:bg-white/80 dark:text-zinc-300 dark:hover:bg-zinc-800"
             }
             aria-current={selected ? "true" : undefined}
             lang={code}

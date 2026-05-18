@@ -3,7 +3,7 @@ import Link from "next/link";
 import { MenuTranslationFields } from "@/components/menu-translation-fields";
 import { MerchantConfirmSubmitButton } from "@/components/merchant-confirm-submit";
 import { MerchantFormSubmit } from "@/components/merchant-form-submit";
-import { MenuListThumb } from "@/components/menu-list-thumb";
+import { MenuListRow } from "@/components/menu-list-row";
 import { LOCALE_META, TRANSLATION_LOCALES } from "@/lib/i18n/locales";
 import {
   deleteMenuFromForm,
@@ -42,100 +42,88 @@ export function MerchantMenuCatalog({
   return (
     <ul
       aria-label={listLabel}
-      className="divide-y divide-chaya-border overflow-hidden rounded-xl border border-chaya-border bg-chaya-surface dark:divide-zinc-800 dark:border-zinc-700 dark:bg-zinc-950"
+      className="divide-y divide-chaya-border overflow-hidden rounded-2xl border border-chaya-border bg-chaya-surface shadow-sm dark:divide-zinc-800 dark:border-zinc-700 dark:bg-zinc-950"
     >
       {items.map((item) => (
         <li key={item.id} className="bg-chaya-surface dark:bg-zinc-950">
-          <div className="flex items-stretch gap-2 px-2 py-2 sm:gap-3 sm:px-3">
-            <MenuListThumb imageUrl={item.imageUrl} />
-            <div className="min-w-0 flex-1 py-0.5">
-              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                <h3 className="truncate text-sm font-semibold leading-tight text-zinc-900 dark:text-zinc-100">
-                  {item.name}
-                </h3>
-                {item.isSoldOut ? (
-                  <span className="shrink-0 rounded-md bg-zinc-200 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
-                    품절
-                  </span>
-                ) : null}
-              </div>
-              {(item.description ?? "").trim() ? (
-                <p className="mt-0.5 line-clamp-2 text-xs leading-snug text-chaya-muted dark:text-zinc-400">
-                  {item.description}
-                </p>
-              ) : null}
-              <p className="mt-1 text-sm font-semibold tabular-nums text-chaya-primary dark:text-orange-400">
-                {formatKrw(item.price)}
-                {item.category ? (
-                  <span className="ml-2 text-xs font-normal text-zinc-500 dark:text-zinc-400">· {item.category}</span>
-                ) : null}
-              </p>
-              <p className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-500">
-                표시 순서 {item.sortOrder}
-                <span className="mx-1" aria-hidden>
-                  ·
-                </span>
-                <Link
-                  href={`/t/${encodeURIComponent(tenant)}/menu/${encodeURIComponent(item.id)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-medium text-chaya-primary underline-offset-2 hover:underline dark:text-orange-400"
-                >
-                  손님 상세
-                </Link>
-                {TRANSLATION_LOCALES.slice(0, 3).map((loc) => (
-                  <span key={loc}>
-                    <span className="mx-1" aria-hidden>
-                      ·
-                    </span>
-                    <Link
-                      href={`/t/${encodeURIComponent(tenant)}/menu/${encodeURIComponent(item.id)}?lang=${encodeURIComponent(loc)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-medium text-zinc-600 underline-offset-2 hover:underline dark:text-zinc-400"
-                      lang={loc}
+          <div className="px-2 py-2 sm:px-3">
+            <MenuListRow
+              name={item.name}
+              description={item.description}
+              priceLabel={
+                item.category ? `${formatKrw(item.price)} · ${item.category}` : formatKrw(item.price)
+              }
+              imageUrl={item.imageUrl}
+              soldOut={item.isSoldOut}
+              soldOutLabel="품절"
+              trailing={
+                <div className="flex flex-col items-stretch justify-center gap-1">
+                  <form action={setMenuSoldOutFromForm} className="contents">
+                    <input type="hidden" name="tenant_slug" value={tenant} />
+                    <input type="hidden" name="menu_id" value={item.id} />
+                    <input type="hidden" name="is_sold_out" value={item.isSoldOut ? "false" : "true"} />
+                    {categoryFilter != null ? (
+                      <input type="hidden" name="preserve_category" value={categoryFilter} />
+                    ) : null}
+                    <button
+                      type="submit"
+                      className={
+                        item.isSoldOut
+                          ? "min-h-[40px] rounded-xl border border-chaya-border px-2.5 text-xs font-semibold text-zinc-800 dark:border-zinc-600 dark:text-zinc-100"
+                          : "min-h-[40px] rounded-xl border border-amber-600/50 bg-amber-50 px-2.5 text-xs font-semibold text-amber-950 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100"
+                      }
                     >
-                      {LOCALE_META[loc].shortLabel}
-                    </Link>
-                  </span>
-                ))}
-              </p>
-            </div>
-            <div className="flex shrink-0 flex-col items-stretch justify-center gap-1 self-center">
-              <form action={setMenuSoldOutFromForm} className="contents">
-                <input type="hidden" name="tenant_slug" value={tenant} />
-                <input type="hidden" name="menu_id" value={item.id} />
-                <input type="hidden" name="is_sold_out" value={item.isSoldOut ? "false" : "true"} />
-                {categoryFilter != null ? (
-                  <input type="hidden" name="preserve_category" value={categoryFilter} />
-                ) : null}
-                <button
-                  type="submit"
-                  className={
-                    item.isSoldOut
-                      ? "min-h-[40px] rounded-xl border border-chaya-border px-2.5 text-xs font-semibold text-zinc-800 dark:border-zinc-600 dark:text-zinc-100"
-                      : "min-h-[40px] rounded-xl border border-amber-600/50 bg-amber-50 px-2.5 text-xs font-semibold text-amber-950 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100"
-                  }
-                >
-                  {item.isSoldOut ? "품절 해제" : "품절"}
-                </button>
-              </form>
-              {canDeleteMenus ? (
-                <form action={deleteMenuFromForm}>
-                  <input type="hidden" name="tenant_slug" value={tenant} />
-                  <input type="hidden" name="menu_id" value={item.id} />
-                  {categoryFilter != null ? (
-                    <input type="hidden" name="preserve_category" value={categoryFilter} />
+                      {item.isSoldOut ? "품절 해제" : "품절"}
+                    </button>
+                  </form>
+                  {canDeleteMenus ? (
+                    <form action={deleteMenuFromForm}>
+                      <input type="hidden" name="tenant_slug" value={tenant} />
+                      <input type="hidden" name="menu_id" value={item.id} />
+                      {categoryFilter != null ? (
+                        <input type="hidden" name="preserve_category" value={categoryFilter} />
+                      ) : null}
+                      <MerchantConfirmSubmitButton
+                        confirmMessage={`「${item.name}」메뉴를 삭제할까요?`}
+                        className="min-h-[40px] w-full rounded-xl border border-red-300 px-2.5 text-xs font-semibold text-red-700 dark:border-red-800 dark:text-red-300"
+                      >
+                        삭제
+                      </MerchantConfirmSubmitButton>
+                    </form>
                   ) : null}
-                  <MerchantConfirmSubmitButton
-                    confirmMessage={`「${item.name}」메뉴를 삭제할까요?`}
-                    className="min-h-[40px] w-full rounded-xl border border-red-300 px-2.5 text-xs font-semibold text-red-700 dark:border-red-800 dark:text-red-300"
+                </div>
+              }
+            />
+            <p className="mt-2 px-1 text-[11px] text-zinc-500 dark:text-zinc-500 sm:px-2">
+              표시 순서 {item.sortOrder}
+              <span className="mx-1" aria-hidden>
+                ·
+              </span>
+              <Link
+                href={`/t/${encodeURIComponent(tenant)}/menu/${encodeURIComponent(item.id)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-chaya-primary underline-offset-2 hover:underline dark:text-orange-400"
+              >
+                손님 화면 미리보기
+              </Link>
+              {TRANSLATION_LOCALES.slice(0, 3).map((loc) => (
+                <span key={loc}>
+                  <span className="mx-1" aria-hidden>
+                    ·
+                  </span>
+                  <Link
+                    href={`/t/${encodeURIComponent(tenant)}/menu/${encodeURIComponent(item.id)}?lang=${encodeURIComponent(loc)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-zinc-600 underline-offset-2 hover:underline dark:text-zinc-400"
+                    lang={loc}
                   >
-                    삭제
-                  </MerchantConfirmSubmitButton>
-                </form>
-              ) : null}
-            </div>
+                    {LOCALE_META[loc].shortLabel}
+                  </Link>
+                </span>
+              ))}
+            </p>
           </div>
 
           <details className="border-t border-chaya-border px-3 py-2 dark:border-zinc-800">

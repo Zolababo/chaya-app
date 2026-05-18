@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { ConsumerOrderFlowBanner } from "@/components/consumer-order-flow-banner";
 import { MenuBoard } from "@/components/menu-board";
 import { consumerMessages } from "@/lib/i18n/consumer-messages";
 import { getConsumerLocale } from "@/lib/i18n/get-consumer-locale";
@@ -25,13 +26,7 @@ export default async function MenuHomePage({ params, searchParams }: Props) {
         {m.menu.boardTitle}
       </h1>
 
-      <ol className="flex flex-wrap gap-2 text-xs font-medium text-zinc-600 dark:text-zinc-400" aria-label="주문 순서">
-        <li className="rounded-full bg-chaya-primary/10 px-3 py-1.5 text-chaya-primary dark:bg-orange-950/40 dark:text-orange-300">
-          {m.flow.step1}
-        </li>
-        <li className="rounded-full border border-chaya-border px-3 py-1.5 dark:border-zinc-700">{m.flow.step2}</li>
-        <li className="rounded-full border border-chaya-border px-3 py-1.5 dark:border-zinc-700">{m.flow.step3}</li>
-      </ol>
+      <ConsumerOrderFlowBanner steps={[m.flow.step1, m.flow.step2, m.flow.step3]} activeStep={1} />
 
       {result.notice ? (
         <p

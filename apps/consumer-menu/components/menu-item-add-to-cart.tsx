@@ -5,6 +5,7 @@ import { useId, useMemo, useState } from "react";
 
 import { MenuItemOptionGroups } from "@/components/menu-item-option-groups";
 import { useConsumerLocale } from "@/lib/i18n/consumer-locale-context";
+import { formatConsumerMoney } from "@/lib/i18n/format-consumer-money";
 import { addLine } from "@/lib/cart/local-cart";
 import {
   formatSelectedOptionsForNotes,
@@ -22,7 +23,7 @@ type Props = {
 };
 
 export function MenuItemAddToCart({ tenant, item }: Props) {
-  const { m } = useConsumerLocale();
+  const { locale, m } = useConsumerLocale();
   const router = useRouter();
   const [qty, setQty] = useState(1);
   const [notes, setNotes] = useState("");
@@ -69,7 +70,7 @@ export function MenuItemAddToCart({ tenant, item }: Props) {
 
   return (
     <div className="fixed bottom-28 left-0 right-0 z-30 flex flex-col items-center gap-3 px-4 pb-2">
-      <div className="w-full max-w-md space-y-3 rounded-2xl border border-chaya-border bg-chaya-surface px-4 py-3 shadow-sm dark:border-zinc-700 dark:bg-zinc-950">
+      <div className="w-full max-w-md space-y-3 rounded-2xl border border-chaya-border bg-chaya-surface px-4 py-3 shadow-lg dark:border-zinc-700 dark:bg-zinc-950">
         {hasOptions ? (
           <MenuItemOptionGroups groups={item.optionGroups} selected={selected} onChange={setSelected} />
         ) : null}
@@ -97,8 +98,8 @@ export function MenuItemAddToCart({ tenant, item }: Props) {
             </button>
           </div>
         </div>
-        <p className="text-right text-sm font-semibold text-chaya-primary dark:text-orange-400">
-          합계 {(unitPrice * qty).toLocaleString("ko-KR")}원
+        <p className="text-right text-lg font-bold tabular-nums text-chaya-primary dark:text-orange-400">
+          {formatConsumerMoney(unitPrice * qty, locale)}
         </p>
         <div>
           <label htmlFor={noteId} className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
@@ -123,7 +124,7 @@ export function MenuItemAddToCart({ tenant, item }: Props) {
       <button
         type="button"
         onClick={addAndGo}
-        className="min-h-[48px] w-full max-w-md rounded-2xl bg-chaya-primary px-6 py-4 text-lg font-bold text-chaya-on-primary shadow-md"
+        className="min-h-[52px] w-full max-w-md rounded-2xl bg-chaya-primary px-6 py-4 text-lg font-bold text-chaya-on-primary shadow-[0_8px_24px_rgba(164,55,0,0.28)] transition hover:bg-chaya-primary-hover active:scale-[0.99]"
       >
         {m.menu.addToCartBar}
       </button>
