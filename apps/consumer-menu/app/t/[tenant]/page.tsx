@@ -1,4 +1,3 @@
-import { ConsumerOrderFlowBanner } from "@/components/consumer-order-flow-banner";
 import { MenuBoard } from "@/components/menu-board";
 import { consumerMessages } from "@/lib/i18n/consumer-messages";
 import { getConsumerLocale } from "@/lib/i18n/get-consumer-locale";
@@ -22,8 +21,6 @@ export default async function MenuHomePage({ params, searchParams }: Props) {
       <h1 id="menu-home-heading" className="sr-only">
         {m.menu.boardTitle}
       </h1>
-
-      <ConsumerOrderFlowBanner steps={[m.flow.step1, m.flow.step2, m.flow.step3]} activeStep={1} />
 
       {result.notice ? (
         <p
