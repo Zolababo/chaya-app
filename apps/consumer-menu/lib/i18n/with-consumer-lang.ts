@@ -1,8 +1,7 @@
-import { DEFAULT_LOCALE, type AppLocale } from "./locales";
+import type { AppLocale } from "./locales";
 
-/** 비한국어일 때만 `?lang=` 를 붙입니다. */
+/** 내부 링크에 `lang` 쿼리를 붙여 서버·미들웨어·쿠키가 같은 locale 을 씁니다. */
 export function withConsumerLang(path: string, locale: AppLocale): string {
-  if (locale === DEFAULT_LOCALE) return path;
   const sep = path.includes("?") ? "&" : "?";
   return `${path}${sep}lang=${encodeURIComponent(locale)}`;
 }

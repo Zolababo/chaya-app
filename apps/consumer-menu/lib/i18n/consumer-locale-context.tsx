@@ -1,11 +1,13 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { createContext, useContext, useMemo, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, type ReactNode } from "react";
 
 import { consumerMessages } from "./consumer-messages";
 import type { AppLocale } from "./locales";
 import { DEFAULT_LOCALE, parseAppLocale } from "./locales";
+import { readConsumerLocaleCookieClient } from "./read-consumer-locale-cookie";
+import { setConsumerLocaleCookieClient } from "./set-consumer-locale-cookie";
 
 type ConsumerLocaleContextValue = {
   locale: AppLocale;
@@ -25,9 +27,17 @@ export function ConsumerLocaleProvider({
   children: ReactNode;
 }) {
   const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const fromUrl = searchParams.get("lang");
+    if (fromUrl) setConsumerLocaleCookieClient(parseAppLocale(fromUrl));
+  }, [searchParams]);
+
   const locale = useMemo(() => {
     const fromUrl = searchParams.get("lang");
     if (fromUrl) return parseAppLocale(fromUrl);
+    const fromCookie = readConsumerLocaleCookieClient();
+    if (fromCookie) return fromCookie;
     return serverLocale;
   }, [searchParams, serverLocale]);
 

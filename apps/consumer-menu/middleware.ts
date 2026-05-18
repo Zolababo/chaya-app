@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-import { getLocaleCookieName } from "@/lib/i18n/get-consumer-locale";
+import { getLocaleCookieName } from "@/lib/i18n/consumer-locale-cookie";
 import { isAppLocale } from "@/lib/i18n/locales";
 import { updateSupabaseAuthSession } from "@/lib/supabase/supabase-middleware";
 

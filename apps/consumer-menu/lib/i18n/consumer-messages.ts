@@ -22,6 +22,7 @@ type MessageTree = {
     increaseQty: string;
     addToCartBar: string;
     guestNote: string;
+    guestNotePlaceholder: string;
     categoryNav: string;
     categoryAll: string;
     categoryEmpty: string;
@@ -66,6 +67,7 @@ const KO: CoreMessageTree = {
     increaseQty: "수량 한 개 늘리기",
     addToCartBar: "장바구니에 담기",
     guestNote: "요청사항 (선택)",
+    guestNotePlaceholder: "예: 덜 맵게, 양파 빼기",
     categoryNav: "카테고리",
     categoryAll: "전체",
     categoryEmpty: "이 카테고리에 표시할 메뉴가 없습니다.",
@@ -107,6 +109,7 @@ const EN: CoreMessageTree = {
     increaseQty: "Increase quantity",
     addToCartBar: "Add to cart",
     guestNote: "Special requests (optional)",
+    guestNotePlaceholder: "e.g. less spicy, no onions",
     categoryNav: "Categories",
     categoryAll: "All",
     categoryEmpty: "No items in this category.",
@@ -148,6 +151,7 @@ const JA: CoreMessageTree = {
     increaseQty: "数量を増やす",
     addToCartBar: "カートに入れる",
     guestNote: "リクエスト（任意）",
+    guestNotePlaceholder: "例：辛さ控えめ",
     categoryNav: "カテゴリー",
     categoryAll: "すべて",
     categoryEmpty: "このカテゴリーにメニューはありません。",
@@ -189,6 +193,7 @@ const ZH_HANS: CoreMessageTree = {
     increaseQty: "增加数量",
     addToCartBar: "加入购物车",
     guestNote: "备注（可选）",
+    guestNotePlaceholder: "例如：少辣",
     categoryNav: "分类",
     categoryAll: "全部",
     categoryEmpty: "该分类下暂无菜品。",
@@ -226,6 +231,7 @@ const ZH_HANT: CoreMessageTree = {
     increaseQty: "增加數量",
     addToCartBar: "加入購物車",
     guestNote: "備註（選填）",
+    guestNotePlaceholder: "例如：少辣",
     categoryNav: "分類",
     categoryAll: "全部",
     categoryEmpty: "此分類暫無餐點。",
@@ -263,6 +269,7 @@ const VI: CoreMessageTree = {
     increaseQty: "Tăng số lượng",
     addToCartBar: "Thêm vào giỏ",
     guestNote: "Ghi chú (tùy chọn)",
+    guestNotePlaceholder: "VD: ít cay",
     categoryNav: "Danh mục",
     categoryAll: "Tất cả",
     categoryEmpty: "Không có món trong danh mục này.",
@@ -301,6 +308,7 @@ const TH: CoreMessageTree = {
     increaseQty: "เพิ่มจำนวน",
     addToCartBar: "ใส่ตะกร้า",
     guestNote: "หมายเหตุ (ไม่บังคับ)",
+    guestNotePlaceholder: "เช่น ไม่เผ็ด",
     categoryNav: "หมวดหมู่",
     categoryAll: "ทั้งหมด",
     categoryEmpty: "ไม่มีเมนูในหมวดนี้",
@@ -339,6 +347,7 @@ const RU: CoreMessageTree = {
     increaseQty: "Увеличить",
     addToCartBar: "В корзину",
     guestNote: "Пожелания (необяз.)",
+    guestNotePlaceholder: "напр. не остро",
     categoryNav: "Категории",
     categoryAll: "Все",
     categoryEmpty: "В этой категории нет блюд.",

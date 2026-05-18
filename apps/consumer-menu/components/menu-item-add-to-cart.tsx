@@ -6,6 +6,7 @@ import { useId, useMemo, useState } from "react";
 import { MenuItemOptionGroups } from "@/components/menu-item-option-groups";
 import { useConsumerLocale } from "@/lib/i18n/consumer-locale-context";
 import { formatConsumerMoney } from "@/lib/i18n/format-consumer-money";
+import { withConsumerLang } from "@/lib/i18n/with-consumer-lang";
 import { addLine } from "@/lib/cart/local-cart";
 import {
   formatSelectedOptionsForNotes,
@@ -52,7 +53,7 @@ export function MenuItemAddToCart({ tenant, item }: Props) {
     const combined =
       [optNote, trimmed].filter(Boolean).join(" · ") || null;
     addLine(tenant, item, qty, combined, selected);
-    router.push(`/t/${tenant}/cart`);
+    router.push(withConsumerLang(`/t/${tenant}/cart`, locale));
   };
 
   if (item.isSoldOut) {
@@ -111,7 +112,7 @@ export function MenuItemAddToCart({ tenant, item }: Props) {
             maxLength={NOTE_MAX}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="예: 덜 맵게"
+            placeholder={m.menu.guestNotePlaceholder}
             className="mt-1 w-full resize-y rounded-lg border border-chaya-border bg-white px-3 py-2 text-sm dark:border-zinc-600 dark:bg-zinc-900"
           />
         </div>

@@ -6,6 +6,7 @@ import { useEffect, useId, useRef, useState } from "react";
 
 import { useConsumerLocale } from "@/lib/i18n/consumer-locale-context";
 import { buildConsumerLocaleHref } from "@/lib/i18n/locale-href";
+import { setConsumerLocaleCookieClient } from "@/lib/i18n/set-consumer-locale-cookie";
 import { APP_LOCALES, LOCALE_META, type AppLocale } from "@/lib/i18n/locales";
 
 const btnClass =
@@ -84,7 +85,10 @@ export function LocalePickerButton() {
                     ].join(" ")}
                     aria-current={selected ? "true" : undefined}
                     lang={code}
-                    onClick={() => setOpen(false)}
+                    onClick={() => {
+                      setConsumerLocaleCookieClient(code);
+                      setOpen(false);
+                    }}
                   >
                     <span>{meta.nativeLabel}</span>
                     <span className={selected ? "opacity-90" : "text-zinc-500"}>{meta.shortLabel}</span>

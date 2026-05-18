@@ -14,14 +14,14 @@ export function ConsumerStoreLogo({ displayName, logoUrl }: Props) {
       <img
         src={logoUrl}
         alt=""
-        className="h-9 w-9 shrink-0 rounded-lg object-cover ring-1 ring-chaya-border/80 dark:ring-zinc-700"
+        className="h-12 w-12 shrink-0 rounded-xl object-cover ring-1 ring-chaya-border/80 dark:ring-zinc-700"
       />
     );
   }
 
   return (
     <div
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-chaya-primary/12 text-base font-bold text-chaya-primary ring-1 ring-chaya-primary/20 dark:bg-orange-950/40 dark:text-orange-300 dark:ring-orange-900/50"
+      className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-chaya-primary/12 text-xl font-bold text-chaya-primary ring-1 ring-chaya-primary/20 dark:bg-orange-950/40 dark:text-orange-300 dark:ring-orange-900/50"
       aria-hidden
     >
       {initial}

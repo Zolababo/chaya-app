@@ -77,8 +77,8 @@ export function MenuBoard({ tenant, items, categories }: Props) {
                   aria-pressed={selected}
                   className={
                     selected
-                      ? "min-h-[36px] shrink-0 rounded-full bg-chaya-primary px-3.5 py-1.5 text-xs font-semibold text-chaya-on-primary"
-                      : "min-h-[36px] shrink-0 rounded-full border border-zinc-300/90 bg-transparent px-3.5 py-1.5 text-xs font-medium text-zinc-700 dark:border-zinc-600 dark:text-zinc-300"
+                      ? "min-h-[36px] shrink-0 rounded-full bg-chaya-primary px-3.5 py-1.5 text-[0.9375rem] font-semibold leading-none text-chaya-on-primary"
+                      : "min-h-[36px] shrink-0 rounded-full border border-zinc-300/90 bg-transparent px-3.5 py-1.5 text-[0.9375rem] font-medium leading-none text-zinc-700 dark:border-zinc-600 dark:text-zinc-300"
                   }
                 >
                   {cat.label}

@@ -1,12 +1,9 @@
 import { cookies } from "next/headers";
 
+import { getLocaleCookieName } from "./consumer-locale-cookie";
 import { DEFAULT_LOCALE, type AppLocale, parseAppLocale } from "./locales";
 
-const COOKIE_NAME = "chaya_locale";
-
-export function getLocaleCookieName(): string {
-  return COOKIE_NAME;
-}
+export { getLocaleCookieName } from "./consumer-locale-cookie";
 
 /** 서버 컴포넌트: 쿼리 `lang` 우선, 없으면 쿠키, 기본 ko. (`?lang=` 는 middleware 가 쿠키에 반영) */
 export async function getConsumerLocale(langParam?: string | null): Promise<AppLocale> {
@@ -14,7 +11,7 @@ export async function getConsumerLocale(langParam?: string | null): Promise<AppL
     return parseAppLocale(langParam);
   }
   const store = await cookies();
-  return parseAppLocale(store.get(COOKIE_NAME)?.value ?? null);
+  return parseAppLocale(store.get(getLocaleCookieName())?.value ?? null);
 }
 
 export async function getConsumerLocaleOrDefault(): Promise<AppLocale> {
