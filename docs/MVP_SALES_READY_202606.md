@@ -53,5 +53,6 @@
 | 2026-05-18 | 다국어 3단계: 목록형 메뉴·주문 상태 UI·옵션 필수 라벨·점주 KO/EN/JA/简 미리보기 |
 | 2026-05-18 | 프로덕션 배포 `8743088` + `smoke:consumer` PASS |
 | 2026-05-18 | 4단계: 주문 에러·진행 UI·링크 복사 i18n + 주문 상세 진행 단계 표시 |
+| 2026-05-18 | 프로덕션 `8370453` + `a11y:baseline`·`smoke:consumer` PASS |
 
 완료 시 `docs/MERCHANT_OPERATIONS_ROADMAP.md` 소비자 축 비고에 「MVP 영업 준비」일자 기록.
