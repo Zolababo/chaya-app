@@ -1,10 +1,11 @@
 "use client";
 
-import { Minus, Plus } from "lucide-react";
+import { Minus, Plus, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 
+import { menuFlatListBleedClass, menuFlatListItemClass } from "@/components/menu-list-styles";
 import {
   cartLineKey,
   clearCart,
@@ -29,7 +30,7 @@ import { submitGuestOrderAction } from "./actions";
 const LAST_ORDER_KEY = "chaya_last_order_id";
 
 const BOTTOM_DOCK =
-  "fixed inset-x-0 bottom-[max(4.25rem,calc(env(safe-area-inset-bottom)+3.75rem))] z-30 border-t border-zinc-200/90 bg-chaya-surface/98 px-4 pb-3 pt-3 shadow-[0_-4px_24px_rgba(0,0,0,0.06)] backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950/98";
+  "fixed inset-x-0 bottom-[max(4.25rem,calc(env(safe-area-inset-bottom)+3.75rem))] z-30 border-t border-zinc-200/90 bg-chaya-surface/98 px-4 py-2 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950/98";
 
 type Props = {
   tenant: string;
@@ -99,25 +100,32 @@ export function CartCheckoutClient({
 
   const orderPayload = useMemo(
     () =>
-      lines.map((line) => {
-        const optNote = formatSelectedOptionsForNotes(line.selectedOptions);
-        const combined = [optNote, line.notes].filter(Boolean).join(" · ") || null;
-        return {
-          id: line.id,
-          name: line.name,
-          price: line.unitPrice,
-          quantity: line.quantity,
-          notes: combined,
-        };
-      }),
-    [lines],
+      groups.flatMap((group) =>
+        group.lines.map((line) => {
+          const optNote = formatSelectedOptionsForNotes(line.selectedOptions);
+          const combined = [optNote, line.notes].filter(Boolean).join(" · ") || null;
+          return {
+            id: line.id,
+            name: line.name,
+            price: line.unitPrice,
+            quantity: line.quantity,
+            notes: combined,
+          };
+        }),
+      ),
+    [groups],
   );
 
-  const updateQty = (key: string, quantity: number) => {
-    const q = Math.max(1, Math.min(99, Math.floor(quantity)));
-    setLines((prev) =>
-      prev.map((l) => (cartLineKey(l.id, l.selectedOptions) === key ? { ...l, quantity: q } : l)),
-    );
+  const changeQty = (key: string, delta: number) => {
+    setLines((prev) => {
+      const idx = prev.findIndex((l) => cartLineKey(l.id, l.selectedOptions) === key);
+      if (idx === -1) return prev;
+      const line = prev[idx];
+      const nextQty = line.quantity + delta;
+      if (nextQty < 1) return prev.filter((_, i) => i !== idx);
+      const q = Math.min(99, nextQty);
+      return prev.map((l, i) => (i === idx ? { ...l, quantity: q } : l));
+    });
   };
 
   const removeLine = (key: string) => {
@@ -163,7 +171,7 @@ export function CartCheckoutClient({
 
   if (!mounted) {
     return (
-      <p role="status" aria-live="polite" className="py-12 text-center text-sm text-zinc-500">
+      <p role="status" aria-live="polite" className="py-8 text-center text-sm text-zinc-500">
         {m.cart.loading}
       </p>
     );
@@ -171,11 +179,11 @@ export function CartCheckoutClient({
 
   if (lines.length === 0) {
     return (
-      <div className="flex flex-col items-center px-4 py-16 text-center">
-        <p className="text-lg font-semibold text-zinc-800 dark:text-zinc-100">{m.cart.empty}</p>
+      <div className="flex flex-col items-center py-14 text-center">
+        <p className="text-base font-semibold text-zinc-800 dark:text-zinc-100">{m.cart.empty}</p>
         <a
           href={menuHref}
-          className="mt-6 inline-flex min-h-[48px] items-center justify-center rounded-2xl bg-chaya-primary px-8 text-base font-bold text-chaya-on-primary shadow-md hover:bg-chaya-primary-hover"
+          className="mt-5 inline-flex min-h-[44px] items-center justify-center rounded-2xl bg-chaya-primary px-7 text-sm font-bold text-chaya-on-primary"
           aria-label={m.cart.emptyCtaAria}
         >
           {m.cart.emptyCta}
@@ -184,127 +192,133 @@ export function CartCheckoutClient({
     );
   }
 
-  const payNote = [m.payment.offlineLead, m.payment.offlineRest].filter(Boolean).join(" ");
-
   return (
     <>
-      <div className="space-y-6 pb-[12.5rem]">
-        {groups.map((group) => (
-          <section key={group.category} aria-label={group.category}>
-            <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+      <ul className={`${menuFlatListBleedClass} pb-[9.5rem]`} aria-label={m.cart.listLabel}>
+        {groups.map((group, gi) => (
+          <li key={group.category} className="list-none">
+            <p
+              className={`sticky top-0 z-10 bg-chaya-bg/95 py-1.5 text-[11px] font-bold tracking-wide text-zinc-500 backdrop-blur-sm dark:bg-zinc-950/95 dark:text-zinc-400 ${menuFlatListItemClass}`}
+            >
               {group.category}
-            </h2>
-            <ul className="divide-y divide-zinc-200/90 rounded-xl border border-zinc-200/90 bg-white dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-950">
+            </p>
+            <ul className="list-none">
               {group.lines.map((line) => {
                 const key = cartLineKey(line.id, line.selectedOptions);
                 const optNote = formatSelectedOptionsForNotes(line.selectedOptions);
                 const lineTotal = line.unitPrice * line.quantity;
 
                 return (
-                  <li key={key} className="flex gap-3 px-3.5 py-3.5 first:rounded-t-xl last:rounded-b-xl">
+                  <li
+                    key={key}
+                    className={`flex items-center gap-2 py-2 sm:gap-2.5 ${menuFlatListItemClass}`}
+                  >
                     <div className="min-w-0 flex-1">
-                      <p className="text-[0.9375rem] font-semibold leading-snug text-zinc-900 dark:text-zinc-50">
+                      <p className="truncate text-[0.9375rem] font-semibold leading-tight text-zinc-900 dark:text-zinc-50">
                         {line.name}
+                        {line.quantity > 1 ? (
+                          <span className="ml-1 text-xs font-medium text-zinc-500">×{line.quantity}</span>
+                        ) : null}
                       </p>
                       {optNote ? (
-                        <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">{optNote}</p>
+                        <p className="truncate text-[11px] leading-snug text-zinc-500 dark:text-zinc-400">
+                          {optNote}
+                        </p>
                       ) : null}
-                      {line.notes && line.notes !== optNote ? (
-                        <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">{line.notes}</p>
-                      ) : null}
-                      <div
-                        className="mt-2.5 flex items-center gap-2"
-                        role="group"
-                        aria-label={`${line.name} ${m.cart.qtySr}`}
-                      >
-                        <button
-                          type="button"
-                          className="flex min-h-[36px] min-w-[36px] items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-800 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-                          aria-label={m.menu.decreaseQty}
-                          disabled={line.quantity <= 1}
-                          onClick={() => updateQty(key, line.quantity - 1)}
-                        >
-                          <Minus className="size-4" aria-hidden />
-                        </button>
-                        <span
-                          className="min-w-8 text-center text-base font-semibold tabular-nums"
-                          aria-live="polite"
-                        >
-                          {line.quantity}
-                        </span>
-                        <button
-                          type="button"
-                          className="flex min-h-[36px] min-w-[36px] items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-800 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-                          aria-label={m.menu.increaseQty}
-                          disabled={line.quantity >= 99}
-                          onClick={() => updateQty(key, line.quantity + 1)}
-                        >
-                          <Plus className="size-4" aria-hidden />
-                        </button>
-                        <button
-                          type="button"
-                          className="ml-1 text-xs font-medium text-zinc-400 underline-offset-2 hover:text-red-600 hover:underline dark:hover:text-red-400"
-                          aria-label={`${line.name} ${m.cart.removeAria}`}
-                          onClick={() => removeLine(key)}
-                        >
-                          {m.cart.remove}
-                        </button>
-                      </div>
                     </div>
-                    <p className="shrink-0 text-base font-bold tabular-nums text-zinc-900 dark:text-zinc-50">
+                    <div className="flex shrink-0 items-center gap-0.5" role="group" aria-label={`${line.name} ${m.cart.qtySr}`}>
+                      <button
+                        type="button"
+                        className="flex min-h-[32px] min-w-[32px] items-center justify-center rounded-full text-zinc-600 active:bg-zinc-100 dark:text-zinc-300 dark:active:bg-zinc-800"
+                        aria-label={line.quantity <= 1 ? `${line.name} ${m.cart.removeAria}` : m.menu.decreaseQty}
+                        onClick={() => changeQty(key, -1)}
+                      >
+                        <Minus className="size-3.5" aria-hidden />
+                      </button>
+                      <span className="min-w-[1.25rem] text-center text-sm font-semibold tabular-nums">
+                        {line.quantity}
+                      </span>
+                      <button
+                        type="button"
+                        className="flex min-h-[32px] min-w-[32px] items-center justify-center rounded-full text-zinc-600 active:bg-zinc-100 dark:text-zinc-300 dark:active:bg-zinc-800"
+                        aria-label={m.menu.increaseQty}
+                        disabled={line.quantity >= 99}
+                        onClick={() => changeQty(key, 1)}
+                      >
+                        <Plus className="size-3.5" aria-hidden />
+                      </button>
+                    </div>
+                    <p className="w-[4.25rem] shrink-0 text-right text-sm font-bold tabular-nums text-zinc-900 dark:text-zinc-50">
                       {formatConsumerMoney(lineTotal, locale)}
                     </p>
+                    <button
+                      type="button"
+                      className="flex min-h-[32px] min-w-[28px] items-center justify-center text-zinc-400 hover:text-red-600 dark:hover:text-red-400"
+                      aria-label={`${line.name} ${m.cart.removeAria}`}
+                      onClick={() => removeLine(key)}
+                    >
+                      <X className="size-4" aria-hidden />
+                    </button>
                   </li>
                 );
               })}
             </ul>
-          </section>
+            {gi < groups.length - 1 ? (
+              <div className={`${menuFlatListItemClass} pb-0.5`} aria-hidden>
+                <div className="h-px bg-zinc-200/80 dark:bg-zinc-800" />
+              </div>
+            ) : null}
+          </li>
         ))}
+        <li className={`list-none py-2 ${menuFlatListItemClass}`}>
+          <Link
+            href={menuHref}
+            className="flex min-h-[40px] items-center justify-center rounded-lg border border-dashed border-zinc-300 text-xs font-semibold text-chaya-primary dark:border-zinc-600 dark:text-orange-400"
+            aria-label={m.cart.addMoreMenuAria}
+          >
+            {m.cart.addMoreMenu}
+          </Link>
+        </li>
+      </ul>
 
-        <Link
-          href={menuHref}
-          className="flex min-h-[44px] w-full items-center justify-center rounded-xl border border-dashed border-zinc-300 text-sm font-semibold text-chaya-primary dark:border-zinc-600 dark:text-orange-400"
-          aria-label={m.cart.addMoreMenuAria}
+      {error ? (
+        <p
+          className="-mt-6 mb-2 px-4 text-sm font-medium text-red-600 dark:text-red-400 sm:px-6"
+          role="alert"
+          aria-live="assertive"
         >
-          {m.cart.addMoreMenu}
-        </Link>
-
-        {error ? (
-          <p className="text-sm font-medium text-red-600 dark:text-red-400" role="alert" aria-live="assertive">
-            {error}
-          </p>
-        ) : null}
-
-        <p id="checkout-guest-order-hint" className="sr-only">
-          {m.cart.submitHint}
+          {error}
         </p>
-      </div>
+      ) : null}
+
+      <p id="checkout-guest-order-hint" className="sr-only">
+        {m.cart.submitHint}
+      </p>
 
       <div className={BOTTOM_DOCK}>
-        {payNote ? (
-          <p className="mb-2 text-center text-xs font-medium text-zinc-500 dark:text-zinc-400">{payNote}</p>
-        ) : null}
-        <div className="mb-3 flex items-baseline justify-between gap-3">
-          <span className="text-sm font-semibold text-zinc-600 dark:text-zinc-400">{m.cart.total}</span>
-          <span className="text-2xl font-bold tabular-nums tracking-tight text-chaya-primary dark:text-orange-400">
-            {formatConsumerMoney(total, locale)}
-          </span>
+        <div className="flex items-center gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">{m.cart.total}</p>
+            <p className="text-xl font-bold tabular-nums leading-tight text-chaya-primary dark:text-orange-400">
+              {formatConsumerMoney(total, locale)}
+            </p>
+          </div>
+          <button
+            type="button"
+            className="min-h-[48px] shrink-0 rounded-2xl bg-chaya-primary px-6 text-base font-bold text-chaya-on-primary shadow-[0_4px_16px_rgba(164,55,0,0.22)] active:scale-[0.99] disabled:opacity-60"
+            disabled={pending}
+            aria-busy={pending}
+            aria-describedby="checkout-guest-order-hint"
+            aria-label={
+              pending
+                ? m.cart.submitAriaPending
+                : `${m.cart.total} ${formatConsumerMoney(total, locale)}, ${m.cart.submit}`
+            }
+            onClick={submit}
+          >
+            {pending ? m.cart.submitPending : m.cart.submit}
+          </button>
         </div>
-        <button
-          type="button"
-          className="min-h-[52px] w-full rounded-2xl bg-chaya-primary py-3.5 text-lg font-bold text-chaya-on-primary shadow-[0_6px_20px_rgba(164,55,0,0.25)] transition hover:bg-chaya-primary-hover active:scale-[0.99] disabled:opacity-60"
-          disabled={pending}
-          aria-busy={pending}
-          aria-describedby="checkout-guest-order-hint"
-          aria-label={
-            pending
-              ? m.cart.submitAriaPending
-              : `${m.cart.total} ${formatConsumerMoney(total, locale)}, ${m.cart.submit}`
-          }
-          onClick={submit}
-        >
-          {pending ? m.cart.submitPending : m.cart.submit}
-        </button>
       </div>
     </>
   );

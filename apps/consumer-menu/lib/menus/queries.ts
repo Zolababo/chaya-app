@@ -11,7 +11,10 @@ import {
   isMissingTranslationsJsonColumn,
 } from "./chaya-menus-select";
 import { parseMenuOptionGroups } from "./menu-options";
+import { sortCategoryNames, sortMenuItemsForDisplay } from "./category-order";
 import type { ChayaMenuRow, MenuListResult } from "./types";
+
+export { sortCategoryNames, sortMenuItemsForDisplay } from "./category-order";
 
 const MENU_SELECT_BASE = CHAYA_MENU_SELECT_BASE;
 const MENU_SELECT_WITH_OPTIONS = CHAYA_MENU_SELECT_WITH_OPTIONS;
@@ -219,7 +222,7 @@ export function collectCategories(items: ChayaMenuRow[]): string[] {
   for (const item of items) {
     set.add(item.category?.trim() || "기타");
   }
-  return [...set].sort((a, b) => a.localeCompare(b, "ko"));
+  return sortCategoryNames([...set]);
 }
 
 export function formatKrw(amount: number): string {

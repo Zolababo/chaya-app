@@ -7,7 +7,7 @@ import { menuAddButtonClass, menuFlatListBleedClass, menuFlatListItemClass } fro
 import { useConsumerLocale } from "@/lib/i18n/consumer-locale-context";
 import { withConsumerLang } from "@/lib/i18n/with-consumer-lang";
 import { addLine } from "@/lib/cart/local-cart";
-import { formatKrw } from "@/lib/menus/queries";
+import { formatKrw, sortMenuItemsForDisplay } from "@/lib/menus/queries";
 import { resolveMenuRowForLocale } from "@/lib/menus/resolve-menu-text";
 import type { ChayaMenuRow } from "@/lib/menus/types";
 
@@ -42,10 +42,12 @@ export function MenuBoard({ tenant, items, categories }: Props) {
     toastHide.current = setTimeout(() => setAddedToast(false), 2200);
   };
 
+  const sortedItems = useMemo(() => sortMenuItemsForDisplay(items), [items]);
+
   const filtered = useMemo(() => {
-    if (active === ALL_CATEGORY_KEY || categories.length <= 1) return items;
-    return items.filter((i) => (i.category?.trim() || "기타") === active);
-  }, [items, active, categories.length]);
+    if (active === ALL_CATEGORY_KEY || categories.length <= 1) return sortedItems;
+    return sortedItems.filter((i) => (i.category?.trim() || "기타") === active);
+  }, [sortedItems, active, categories.length]);
 
   return (
     <>

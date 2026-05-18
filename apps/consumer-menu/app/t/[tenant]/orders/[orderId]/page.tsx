@@ -10,6 +10,8 @@ import { consumerMessages } from "@/lib/i18n/consumer-messages";
 import { formatConsumerMoney } from "@/lib/i18n/format-consumer-money";
 import { getConsumerLocale } from "@/lib/i18n/get-consumer-locale";
 import { withConsumerLang } from "@/lib/i18n/with-consumer-lang";
+import { groupOrderLinesByMenuCategory } from "@/lib/menus/category-order";
+import { listMenusForTenant } from "@/lib/menus/queries";
 import { fetchGuestOrder } from "@/lib/orders/fetch-guest-order";
 
 export const dynamic = "force-dynamic";
@@ -25,6 +27,8 @@ export default async function OrderStatusPage({ params, searchParams }: Props) {
   const locale = await getConsumerLocale(typeof sp.lang === "string" ? sp.lang : null);
   const m = consumerMessages(locale);
   const order = await fetchGuestOrder(tenant, orderId);
+  const menu = await listMenusForTenant(tenant);
+  const lineGroups = order ? groupOrderLinesByMenuCategory(order.lines, menu.items) : [];
 
   if (order == null) {
     return (
@@ -92,23 +96,39 @@ export default async function OrderStatusPage({ params, searchParams }: Props) {
         </div>
       )}
 
-      <div className="rounded-xl border border-chaya-border bg-chaya-surface p-4 dark:border-zinc-700 dark:bg-zinc-950">
-        <h2 id="order-lines-heading" className="mb-3 font-semibold text-zinc-800 dark:text-zinc-200">
+      <div className="rounded-xl border border-chaya-border bg-chaya-surface p-3 dark:border-zinc-700 dark:bg-zinc-950 sm:p-4">
+        <h2 id="order-lines-heading" className="mb-2 text-sm font-bold text-zinc-800 dark:text-zinc-200">
           {m.orderDetail.linesHeading}
         </h2>
-        <ul className="divide-y divide-chaya-border dark:divide-zinc-800" aria-labelledby="order-lines-heading">
-          {order.lines.map((line, i) => (
-            <li key={`${line.name}-${i}`} className="flex justify-between py-2 text-sm">
-              <span>
-                {line.name} <span className="text-zinc-500">× {line.quantity}</span>
-              </span>
-              <span className="tabular-nums">{formatConsumerMoney(line.price * line.quantity, locale)}</span>
-            </li>
+        <div className="space-y-3" aria-labelledby="order-lines-heading">
+          {lineGroups.map((group) => (
+            <section key={group.category}>
+              <p className="mb-1 text-[11px] font-bold tracking-wide text-zinc-500 dark:text-zinc-400">
+                {group.category}
+              </p>
+              <ul className="divide-y divide-chaya-border dark:divide-zinc-800">
+                {group.lines.map((line, i) => (
+                  <li key={`${group.category}-${line.name}-${i}`} className="flex justify-between gap-2 py-2 text-sm">
+                    <span className="min-w-0 truncate font-medium">
+                      {line.name}
+                      {line.quantity > 1 ? (
+                        <span className="ml-1 font-normal text-zinc-500">×{line.quantity}</span>
+                      ) : null}
+                    </span>
+                    <span className="shrink-0 tabular-nums font-semibold">
+                      {formatConsumerMoney(line.price * line.quantity, locale)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
           ))}
-        </ul>
-        <div className="mt-3 flex justify-between border-t border-chaya-border pt-3 font-semibold dark:border-zinc-800">
+        </div>
+        <div className="mt-3 flex justify-between border-t border-chaya-border pt-3 text-base font-bold dark:border-zinc-800">
           <span>{m.orderDetail.total}</span>
-          <span className="tabular-nums">{formatConsumerMoney(order.total_price, locale)}</span>
+          <span className="tabular-nums text-chaya-primary dark:text-orange-400">
+            {formatConsumerMoney(order.total_price, locale)}
+          </span>
         </div>
       </div>
 

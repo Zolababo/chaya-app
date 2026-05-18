@@ -38,7 +38,7 @@ export default async function CartPage({ params, searchParams }: Props) {
         </p>
       ) : null}
 
-      <div className="mt-4">
+      <div className="mt-2">
         <CartCheckoutClient
           key={tenant}
           tenant={tenant}

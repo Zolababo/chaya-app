@@ -1,3 +1,5 @@
+import { sortCategoryNames } from "@/lib/menus/category-order";
+
 import type { CartLine } from "./local-cart";
 import { cartLineKey } from "./local-cart";
 
@@ -32,10 +34,10 @@ export function groupCartLines(lines: CartLine[], categoryOrder: string[]): Cart
   }
 
   const orderedKeys: string[] = [];
-  for (const cat of categoryOrder) {
-    if (byCat.has(cat) && !orderedKeys.includes(cat)) orderedKeys.push(cat);
+  for (const cat of sortCategoryNames(categoryOrder)) {
+    if (byCat.has(cat)) orderedKeys.push(cat);
   }
-  for (const cat of [...byCat.keys()].sort((a, b) => a.localeCompare(b, "ko"))) {
+  for (const cat of sortCategoryNames([...byCat.keys()])) {
     if (!orderedKeys.includes(cat)) orderedKeys.push(cat);
   }
 

@@ -9,6 +9,7 @@ import { useConsumerLocale } from "@/lib/i18n/consumer-locale-context";
 import { formatConsumerMoney } from "@/lib/i18n/format-consumer-money";
 import { withConsumerLang } from "@/lib/i18n/with-consumer-lang";
 import { CHAYA_CART_CHANGED_EVENT, addLine, cartTotalQty } from "@/lib/cart/local-cart";
+import { sortMenuItemsForDisplay } from "@/lib/menus/queries";
 import { resolveMenuRowForLocale } from "@/lib/menus/resolve-menu-text";
 import type { ChayaMenuRow } from "@/lib/menus/types";
 
@@ -62,10 +63,12 @@ export function BarrierFreeMenuClient({ tenant, items, categories }: Props) {
     [categories, m.menu.categoryAll],
   );
 
+  const sortedItems = useMemo(() => sortMenuItemsForDisplay(items), [items]);
+
   const filtered = useMemo(() => {
-    if (active === ALL_CATEGORY_KEY) return items;
-    return items.filter((item) => (item.category?.trim() || "기타") === active);
-  }, [items, active]);
+    if (active === ALL_CATEGORY_KEY) return sortedItems;
+    return sortedItems.filter((item) => (item.category?.trim() || "기타") === active);
+  }, [sortedItems, active]);
 
   const basePath = `/t/${encodeURIComponent(slug)}`;
 
