@@ -61,7 +61,7 @@ async function main() {
     {
       label: "/t/{tenant}",
       url: `${root}/t/${t}`,
-      markers: ["본문으로 바로가기", "id=\"main-content\"", "주문 현황"],
+      markers: ["본문으로 바로가기", "id=\"main-content\"", ">주문<"],
     },
     {
       label: "/t/{tenant}/barrier-free",

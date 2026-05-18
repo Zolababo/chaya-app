@@ -20,6 +20,7 @@ import { syncGuestSessionCookieFromBrowser } from "@/lib/guest-session/sync-gues
 
 import { ConsumerOfflinePaymentCallout } from "@/components/consumer-offline-payment-callout";
 import { useConsumerLocale } from "@/lib/i18n/consumer-locale-context";
+import { resolveGuestOrderError } from "@/lib/i18n/consumer-messages-errors";
 import { formatConsumerMoney } from "@/lib/i18n/format-consumer-money";
 import { withConsumerLang } from "@/lib/i18n/with-consumer-lang";
 
@@ -143,7 +144,7 @@ export function CartCheckoutClient({ tenant, initialLines, initialTableHint }: P
           guestNote.trim() || null,
         );
         if (!res.ok) {
-          setError(res.message);
+          setError(resolveGuestOrderError(res.code, locale, res.params));
           return;
         }
         orderSucceeded = true;

@@ -1,4 +1,6 @@
 /** 장바구니에서 넘어오는 한 줄(서버에서 다시 검증). */
+import type { GuestOrderErrorCode, GuestOrderErrorParams } from "@/lib/i18n/guest-order-error-codes";
+
 export type GuestOrderLine = {
   id: string;
   name: string;
@@ -27,6 +29,12 @@ export type SanitizedGuestLine = {
   notes: string | null;
 };
 
+export type GuestOrderValidationFail = {
+  ok: false;
+  code: GuestOrderErrorCode;
+  params?: GuestOrderErrorParams;
+};
+
 /** 제어 문자(탭·개행 제외) — id·이름에만 적용 */
 function hasDisallowedControls(s: string): boolean {
   return /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/.test(s);
@@ -34,18 +42,18 @@ function hasDisallowedControls(s: string): boolean {
 
 /**
  * 장바구니 JSON을 DB·RLS에 맞게 정리합니다.
- * 실패 시 사용자에게 보일 짧은 한국어 메시지를 돌려줍니다.
+ * 실패 시 코드를 돌려주고, 클라이언트에서 locale 메시지로 변환합니다.
  */
 export function sanitizeGuestOrderLines(
   lines: GuestOrderLine[],
-): { ok: true; items: SanitizedGuestLine[] } | { ok: false; message: string } {
+): { ok: true; items: SanitizedGuestLine[] } | GuestOrderValidationFail {
   const L = GUEST_ORDER_LIMITS;
 
   if (lines.length === 0) {
-    return { ok: false, message: "담은 메뉴가 없습니다." };
+    return { ok: false, code: "empty_cart" };
   }
   if (lines.length > L.maxLineItems) {
-    return { ok: false, message: `한 주문에는 메뉴를 최대 ${L.maxLineItems}개까지 담을 수 있습니다.` };
+    return { ok: false, code: "too_many_items", params: { max: String(L.maxLineItems) } };
   }
 
   const items: SanitizedGuestLine[] = [];
@@ -54,10 +62,10 @@ export function sanitizeGuestOrderLines(
     const id = String(item.id).trim().slice(0, L.maxMenuIdLen);
     const name = String(item.name).trim().slice(0, L.maxMenuNameLen);
     if (!id || !name) {
-      return { ok: false, message: "메뉴 정보가 올바르지 않습니다." };
+      return { ok: false, code: "invalid_line" };
     }
     if (hasDisallowedControls(id) || hasDisallowedControls(name)) {
-      return { ok: false, message: "메뉴 정보가 올바르지 않습니다." };
+      return { ok: false, code: "invalid_line" };
     }
 
     const price = typeof item.price === "number" ? item.price : Number(item.price);
@@ -65,10 +73,10 @@ export function sanitizeGuestOrderLines(
     const quantity = Math.floor(qtyRaw);
 
     if (!Number.isFinite(price) || price < 0 || price > L.maxUnitPrice) {
-      return { ok: false, message: "가격 정보가 올바르지 않습니다." };
+      return { ok: false, code: "invalid_price" };
     }
     if (!Number.isFinite(quantity) || quantity < 1 || quantity > 99) {
-      return { ok: false, message: "수량이 올바르지 않습니다." };
+      return { ok: false, code: "invalid_qty" };
     }
 
     let notes: string | null = null;
@@ -76,7 +84,7 @@ export function sanitizeGuestOrderLines(
       const n = String(item.notes).trim().slice(0, L.maxLineNoteLen);
       if (n) {
         if (hasDisallowedControls(n)) {
-          return { ok: false, message: "요청 메모 형식이 올바르지 않습니다." };
+          return { ok: false, code: "invalid_note" };
         }
         notes = n;
       }
@@ -87,23 +95,25 @@ export function sanitizeGuestOrderLines(
 
   const total = items.reduce((sum, row) => sum + row.price * row.quantity, 0);
   if (!Number.isFinite(total) || total < 0 || total > L.maxTotalPrice) {
-    return { ok: false, message: "주문 합계가 허용 범위를 넘습니다." };
+    return { ok: false, code: "invalid_total" };
   }
 
   return { ok: true, items };
 }
 
-export function sanitizeTenantSlug(raw: string): { ok: true; slug: string } | { ok: false; message: string } {
+export function sanitizeTenantSlug(
+  raw: string,
+): { ok: true; slug: string } | GuestOrderValidationFail {
   const slug = raw.trim();
   const max = GUEST_ORDER_LIMITS.maxTenantSlugLen;
   if (!slug) {
-    return { ok: false, message: "유효한 가게 정보가 없습니다." };
+    return { ok: false, code: "invalid_tenant" };
   }
   if (slug.length > max) {
-    return { ok: false, message: "유효한 가게 정보가 없습니다." };
+    return { ok: false, code: "invalid_tenant" };
   }
   if (hasDisallowedControls(slug)) {
-    return { ok: false, message: "유효한 가게 정보가 없습니다." };
+    return { ok: false, code: "invalid_tenant" };
   }
   return { ok: true, slug };
 }

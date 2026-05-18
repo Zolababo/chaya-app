@@ -1,4 +1,5 @@
 import { a11yMessages, type A11yMessageTree } from "./consumer-messages-a11y";
+import { errorsMessages, type ErrorsMessageTree } from "./consumer-messages-errors";
 import { flowMessages, type FlowMessageTree } from "./consumer-messages-flow";
 import type { AppLocale } from "./locales";
 import { DEFAULT_LOCALE } from "./locales";
@@ -29,9 +30,13 @@ type MessageTree = {
   header: { orderMenu: string; tableNone: string };
   flow: { step1: string; step2: string; step3: string };
 } & FlowMessageTree &
-  A11yMessageTree;
+  A11yMessageTree &
+  ErrorsMessageTree;
 
-type CoreMessageTree = Omit<MessageTree, keyof FlowMessageTree | keyof A11yMessageTree>;
+type CoreMessageTree = Omit<
+  MessageTree,
+  keyof FlowMessageTree | keyof A11yMessageTree | keyof ErrorsMessageTree
+>;
 
 const KO: CoreMessageTree = {
   nav: { menu: "메뉴", cart: "장바구니", orders: "주문" },
@@ -286,5 +291,5 @@ const MESSAGES: Record<AppLocale, CoreMessageTree> = {
 
 export function consumerMessages(locale: AppLocale): MessageTree {
   const base = MESSAGES[locale] ?? MESSAGES[DEFAULT_LOCALE];
-  return { ...base, ...flowMessages(locale), ...a11yMessages(locale) };
+  return { ...base, ...flowMessages(locale), ...a11yMessages(locale), ...errorsMessages(locale) };
 }

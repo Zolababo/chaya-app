@@ -1,5 +1,6 @@
 "use server";
 
+import type { GuestOrderErrorCode, GuestOrderErrorParams } from "@/lib/i18n/guest-order-error-codes";
 import type { GuestOrderLine } from "@/lib/orders/guest-order-validation";
 import { GUEST_ORDER_LIMITS } from "@/lib/orders/guest-order-validation";
 import { submitGuestOrder } from "@/lib/orders/submit-guest-order";
@@ -33,30 +34,31 @@ function parseLines(raw: unknown): GuestOrderLine[] | null {
 
 const MAX_LINES_JSON_CHARS = 2_000_000;
 
+export type SubmitGuestOrderActionResult =
+  | { ok: true; orderId: string }
+  | { ok: false; code: GuestOrderErrorCode; params?: GuestOrderErrorParams };
+
 export async function submitGuestOrderAction(
   tenant: string,
   linesJson: string,
   guestSessionId: string | null,
   tableNo: string | null,
   guestNote: string | null,
-): Promise<
-  | { ok: true; orderId: string }
-  | { ok: false; message: string }
-> {
+): Promise<SubmitGuestOrderActionResult> {
   if (linesJson.length > MAX_LINES_JSON_CHARS) {
-    return { ok: false, message: "주문 데이터가 너무 큽니다." };
+    return { ok: false, code: "payload_too_large" };
   }
 
   let parsed: unknown;
   try {
     parsed = JSON.parse(linesJson) as unknown;
   } catch {
-    return { ok: false, message: "주문 데이터 형식이 올바르지 않습니다." };
+    return { ok: false, code: "payload_invalid" };
   }
 
   const lines = parseLines(parsed);
   if (!lines) {
-    return { ok: false, message: "주문 품목이 올바르지 않습니다." };
+    return { ok: false, code: "lines_invalid" };
   }
 
   return submitGuestOrder({

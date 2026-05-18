@@ -3,6 +3,7 @@ import Link from "next/link";
 import { CopyCurrentOrderUrlButton } from "@/components/copy-current-order-url-button";
 import { GuestOrderDetailSessionRetry } from "@/components/guest-order-detail-session-retry";
 import { GuestOrderStatusLive } from "@/components/guest-order-status-live";
+import { OrderProgressSteps } from "@/components/order-progress-steps";
 import { consumerMessages } from "@/lib/i18n/consumer-messages";
 import { formatConsumerMoney } from "@/lib/i18n/format-consumer-money";
 import { getConsumerLocale } from "@/lib/i18n/get-consumer-locale";
@@ -64,6 +65,7 @@ export default async function OrderStatusPage({ params, searchParams }: Props) {
           <p className="mt-1 text-sm text-zinc-500">{new Date(order.created_at).toLocaleString()}</p>
         ) : null}
         <p className="mx-auto mt-3 max-w-md text-sm text-zinc-600 dark:text-zinc-400">{m.orderDetail.revisitHint}</p>
+        <OrderProgressSteps status={order.status} />
         <CopyCurrentOrderUrlButton />
         <GuestOrderStatusLive tenant={tenant} orderId={order.id} initialStatus={order.status} />
       </div>
