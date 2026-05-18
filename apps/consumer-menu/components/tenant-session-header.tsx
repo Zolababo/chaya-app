@@ -1,28 +1,26 @@
 import { Suspense } from "react";
 
-import { ConsumerSessionAccountLink } from "@/components/consumer-session-account-link";
-import { LocaleSwitcher } from "@/components/locale-switcher";
+import { ConsumerHeaderToolbar } from "@/components/consumer-header-toolbar";
 import { SessionHeader } from "@/components/session-header";
-import { createSupabaseServerClient } from "@/lib/supabase/create-server-session-client";
-import { resolveServerUser } from "@/lib/supabase/resolve-server-user";
+import { getTenantBranding } from "@/lib/tenant/tenant-branding";
 
 type Props = {
   tenant: string;
 };
 
 export async function TenantSessionHeader({ tenant }: Props) {
-  const supabase = await createSupabaseServerClient();
-  const loggedIn = supabase ? !!(await resolveServerUser(supabase)) : false;
+  const branding = getTenantBranding(tenant);
 
   return (
     <SessionHeader
       tenant={tenant}
-      localeSlot={
+      displayName={branding.displayName}
+      logoUrl={branding.logoUrl}
+      toolbarSlot={
         <Suspense fallback={null}>
-          <LocaleSwitcher />
+          <ConsumerHeaderToolbar tenant={tenant} />
         </Suspense>
       }
-      accountSlot={<ConsumerSessionAccountLink tenant={tenant} loggedIn={loggedIn} />}
     />
   );
 }

@@ -27,7 +27,17 @@ type MessageTree = {
     categoryEmpty: string;
     optionRequired: string;
   };
-  header: { orderMenu: string; tableNone: string };
+  header: {
+    orderMenu: string;
+    tableNone: string;
+    tableBadge: string;
+    languageOpen: string;
+    languageDialogTitle: string;
+    languageClose: string;
+    easyMenu: string;
+    easyMenuAria: string;
+    toolbarLabel: string;
+  };
   flow: { step1: string; step2: string; step3: string };
 } & FlowMessageTree &
   A11yMessageTree &
@@ -61,7 +71,17 @@ const KO: CoreMessageTree = {
     categoryEmpty: "이 카테고리에 표시할 메뉴가 없습니다.",
     optionRequired: "(필수)",
   },
-  header: { orderMenu: "주문 메뉴", tableNone: "테이블 번호 없음" },
+  header: {
+    orderMenu: "주문 메뉴",
+    tableNone: "테이블 번호 없음",
+    tableBadge: "테이블 {table}",
+    languageOpen: "언어 선택",
+    languageDialogTitle: "표시 언어",
+    languageClose: "닫기",
+    easyMenu: "큰글씨·목록",
+    easyMenuAria: "큰글씨·목록형 메뉴 화면으로 이동",
+    toolbarLabel: "언어 및 쉬운 메뉴",
+  },
   flow: {
     step1: "① 메뉴 고르기",
     step2: "② 장바구니 확인",
@@ -92,7 +112,17 @@ const EN: CoreMessageTree = {
     categoryEmpty: "No items in this category.",
     optionRequired: "(required)",
   },
-  header: { orderMenu: "Order menu", tableNone: "No table number" },
+  header: {
+    orderMenu: "Order menu",
+    tableNone: "No table number",
+    tableBadge: "Table {table}",
+    languageOpen: "Choose language",
+    languageDialogTitle: "Display language",
+    languageClose: "Close",
+    easyMenu: "Large text · List",
+    easyMenuAria: "Open large-text list menu screen",
+    toolbarLabel: "Language and easy menu",
+  },
   flow: {
     step1: "① Choose items",
     step2: "② Review cart",
@@ -123,7 +153,17 @@ const JA: CoreMessageTree = {
     categoryEmpty: "このカテゴリーにメニューはありません。",
     optionRequired: "（必須）",
   },
-  header: { orderMenu: "注文メニュー", tableNone: "テーブル番号なし" },
+  header: {
+    orderMenu: "注文メニュー",
+    tableNone: "テーブル番号なし",
+    tableBadge: "テーブル {table}",
+    languageOpen: "言語を選ぶ",
+    languageDialogTitle: "表示言語",
+    languageClose: "閉じる",
+    easyMenu: "大きい文字・一覧",
+    easyMenuAria: "大きい文字の一覧メニュー画面へ",
+    toolbarLabel: "言語と見やすいメニュー",
+  },
   flow: {
     step1: "① メニューを選ぶ",
     step2: "② カートを確認",
@@ -154,7 +194,17 @@ const ZH_HANS: CoreMessageTree = {
     categoryEmpty: "该分类下暂无菜品。",
     optionRequired: "（必选）",
   },
-  header: { orderMenu: "点餐", tableNone: "无桌号" },
+  header: {
+    orderMenu: "点餐",
+    tableNone: "无桌号",
+    tableBadge: "桌号 {table}",
+    languageOpen: "选择语言",
+    languageDialogTitle: "显示语言",
+    languageClose: "关闭",
+    easyMenu: "大字·列表",
+    easyMenuAria: "前往大字列表菜单",
+    toolbarLabel: "语言与简易菜单",
+  },
   flow: { step1: "① 选择菜品", step2: "② 确认购物车", step3: "③ 提交厨房" },
 };
 
@@ -181,7 +231,17 @@ const ZH_HANT: CoreMessageTree = {
     categoryEmpty: "此分類暫無餐點。",
     optionRequired: "（必選）",
   },
-  header: { orderMenu: "點餐", tableNone: "無桌號" },
+  header: {
+    orderMenu: "點餐",
+    tableNone: "無桌號",
+    tableBadge: "桌號 {table}",
+    languageOpen: "選擇語言",
+    languageDialogTitle: "顯示語言",
+    languageClose: "關閉",
+    easyMenu: "大字·列表",
+    easyMenuAria: "前往大字列表菜單",
+    toolbarLabel: "語言與簡易菜單",
+  },
   flow: { step1: "① 選擇餐點", step2: "② 確認購物車", step3: "③ 送至廚房" },
 };
 
@@ -208,7 +268,14 @@ const VI: CoreMessageTree = {
     categoryEmpty: "Không có món trong danh mục này.",
     optionRequired: "(bắt buộc)",
   },
-  header: { orderMenu: "Đặt món", tableNone: "Không có số bàn" },
+  header: {
+    ...EN.header,
+    orderMenu: "Đặt món",
+    tableNone: "Không có số bàn",
+    tableBadge: "Bàn {table}",
+    easyMenu: "Chữ lớn · Danh sách",
+    easyMenuAria: "Mở màn hình menu dạng danh sách chữ lớn",
+  },
   flow: {
     step1: "① Chọn món",
     step2: "② Xem giỏ",
@@ -239,7 +306,14 @@ const TH: CoreMessageTree = {
     categoryEmpty: "ไม่มีเมนูในหมวดนี้",
     optionRequired: "(จำเป็น)",
   },
-  header: { orderMenu: "สั่งอาหาร", tableNone: "ไม่มีเลขโต๊ะ" },
+  header: {
+    ...EN.header,
+    orderMenu: "สั่งอาหาร",
+    tableNone: "ไม่มีเลขโต๊ะ",
+    tableBadge: "โต๊ะ {table}",
+    easyMenu: "ตัวใหญ่ · รายการ",
+    easyMenuAria: "ไปหน้าเมนูแบบรายการตัวใหญ่",
+  },
   flow: {
     step1: "① เลือกเมนู",
     step2: "② ตรวจตะกร้า",
@@ -270,7 +344,14 @@ const RU: CoreMessageTree = {
     categoryEmpty: "В этой категории нет блюд.",
     optionRequired: "(обяз.)",
   },
-  header: { orderMenu: "Меню заказа", tableNone: "Нет номера стола" },
+  header: {
+    ...EN.header,
+    orderMenu: "Меню заказа",
+    tableNone: "Нет номера стола",
+    tableBadge: "Стол {table}",
+    easyMenu: "Крупный текст · Список",
+    easyMenuAria: "Открыть меню крупным списком",
+  },
   flow: {
     step1: "① Выберите блюда",
     step2: "② Проверьте корзину",

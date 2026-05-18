@@ -1,10 +1,7 @@
-import Link from "next/link";
-
 import { ConsumerOrderFlowBanner } from "@/components/consumer-order-flow-banner";
 import { MenuBoard } from "@/components/menu-board";
 import { consumerMessages } from "@/lib/i18n/consumer-messages";
 import { getConsumerLocale } from "@/lib/i18n/get-consumer-locale";
-import { withConsumerLang } from "@/lib/i18n/with-consumer-lang";
 import { collectCategories, listMenusForTenant } from "@/lib/menus/queries";
 
 type Props = {
@@ -48,14 +45,6 @@ export default async function MenuHomePage({ params, searchParams }: Props) {
         <MenuBoard tenant={tenant} items={result.items} categories={categories} />
       )}
 
-      <p className="text-center text-xs text-chaya-muted dark:text-zinc-500">
-        <Link
-          href={withConsumerLang(`/t/${tenant}/barrier-free`, locale)}
-          className="font-medium text-chaya-primary underline-offset-2 hover:underline dark:text-orange-400"
-        >
-          {m.menu.listType}
-        </Link>
-      </p>
     </div>
   );
 }

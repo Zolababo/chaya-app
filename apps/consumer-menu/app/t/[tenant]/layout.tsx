@@ -10,6 +10,7 @@ import { SkipToMainLink } from "@/components/skip-to-main-link";
 import { TenantTableQuerySync } from "@/components/tenant-table-query-sync";
 import { ConsumerLocaleProvider } from "@/lib/i18n/consumer-locale-context";
 import { getConsumerLocale } from "@/lib/i18n/get-consumer-locale";
+import { getTenantBranding } from "@/lib/tenant/tenant-branding";
 
 export async function generateMetadata({
   params,
@@ -17,16 +18,15 @@ export async function generateMetadata({
   params: Promise<{ tenant: string }>;
 }): Promise<Metadata> {
   const { tenant } = await params;
-  const raw = (tenant ?? "").trim();
-  const slug = raw ? decodeURIComponent(raw) : "";
-  const label = slug || "??";
+  const branding = getTenantBranding(tenant);
+  const titleLabel = branding.displayName;
 
   return {
-    title: label,
-    description: `${label} ?? ???`,
+    title: titleLabel,
+    description: `${titleLabel} 메뉴 주문`,
     openGraph: {
-      title: label,
-      description: `${label}?? ??? ???? ?????.`,
+      title: titleLabel,
+      description: `${titleLabel} 메뉴 주문`,
       type: "website",
     },
   };

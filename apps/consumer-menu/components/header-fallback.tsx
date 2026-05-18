@@ -2,7 +2,7 @@
 export function SessionHeaderFallback() {
   return (
     <div
-      className="sticky top-0 z-40 h-16 w-full border-b border-chaya-border bg-chaya-surface dark:border-zinc-800 dark:bg-zinc-950"
+      className="sticky top-0 z-40 h-[4.25rem] w-full border-b border-chaya-border bg-chaya-surface dark:border-zinc-800 dark:bg-zinc-950"
       aria-hidden
     />
   );
