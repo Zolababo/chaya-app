@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { MenuListRow } from "@/components/menu-list-row";
-import { menuFlatListBleedClass, menuFlatListItemClass } from "@/components/menu-list-styles";
+import { menuAddButtonClass, menuFlatListBleedClass, menuFlatListItemClass } from "@/components/menu-list-styles";
 import { useConsumerLocale } from "@/lib/i18n/consumer-locale-context";
 import { withConsumerLang } from "@/lib/i18n/with-consumer-lang";
 import { addLine } from "@/lib/cart/local-cart";
@@ -18,9 +18,6 @@ type Props = {
 };
 
 const ALL_CATEGORY_KEY = "__all__";
-
-const addBtnClass =
-  "touch-manipulation min-h-[44px] shrink-0 rounded-full bg-chaya-primary px-5 text-sm font-semibold text-chaya-on-primary transition hover:bg-chaya-primary-hover active:scale-[0.98]";
 
 export function MenuBoard({ tenant, items, categories }: Props) {
   const { locale, m } = useConsumerLocale();
@@ -80,8 +77,8 @@ export function MenuBoard({ tenant, items, categories }: Props) {
                   aria-pressed={selected}
                   className={
                     selected
-                      ? "min-h-[40px] shrink-0 rounded-full bg-chaya-primary px-4 py-2 text-sm font-semibold text-chaya-on-primary"
-                      : "min-h-[40px] shrink-0 rounded-full border border-zinc-300/90 bg-transparent px-4 py-2 text-sm font-medium text-zinc-700 dark:border-zinc-600 dark:text-zinc-300"
+                      ? "min-h-[36px] shrink-0 rounded-full bg-chaya-primary px-3.5 py-1.5 text-xs font-semibold text-chaya-on-primary"
+                      : "min-h-[36px] shrink-0 rounded-full border border-zinc-300/90 bg-transparent px-3.5 py-1.5 text-xs font-medium text-zinc-700 dark:border-zinc-600 dark:text-zinc-300"
                   }
                 >
                   {cat.label}
@@ -118,7 +115,7 @@ export function MenuBoard({ tenant, items, categories }: Props) {
                   trailing={
                     item.isSoldOut ? (
                       <span
-                        className="flex min-h-[44px] items-center px-2 text-sm font-semibold text-zinc-400"
+                        className="flex min-h-[40px] items-center px-1.5 text-xs font-semibold text-zinc-400"
                         aria-label={`${item.name} ${m.menu.soldOut}`}
                       >
                         {m.menu.soldOut}
@@ -127,7 +124,7 @@ export function MenuBoard({ tenant, items, categories }: Props) {
                       <button
                         type="button"
                         aria-label={`${item.name} ${m.menu.addToCart}`}
-                        className={addBtnClass}
+                        className={menuAddButtonClass}
                         onClick={() => {
                           addLine(tenant, item, 1, null);
                           flashAdded();

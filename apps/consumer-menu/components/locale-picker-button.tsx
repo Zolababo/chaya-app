@@ -9,7 +9,7 @@ import { buildConsumerLocaleHref } from "@/lib/i18n/locale-href";
 import { APP_LOCALES, LOCALE_META, type AppLocale } from "@/lib/i18n/locales";
 
 const btnClass =
-  "inline-flex min-h-[44px] max-w-[7.5rem] items-center justify-center gap-1 rounded-xl border border-chaya-border bg-white px-2.5 text-xs font-bold text-zinc-800 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100";
+  "inline-flex min-h-[40px] max-w-[6.5rem] items-center justify-center gap-1 rounded-lg border border-chaya-border bg-white px-2 py-1 text-[11px] font-semibold text-zinc-800 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100";
 
 export function LocalePickerButton() {
   const { locale: active, m } = useConsumerLocale();
@@ -41,7 +41,7 @@ export function LocalePickerButton() {
         aria-controls={titleId}
         onClick={() => setOpen(true)}
       >
-        <Languages className="size-4 shrink-0 text-chaya-primary dark:text-orange-400" aria-hidden />
+        <Languages className="size-3.5 shrink-0 text-chaya-primary dark:text-orange-400" aria-hidden />
         <span className="truncate">{activeMeta.shortLabel}</span>
         <span className="sr-only"> — {m.header.languageOpen}</span>
       </button>

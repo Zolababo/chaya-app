@@ -41,14 +41,14 @@ export function SessionHeader({ tenant, displayName, logoUrl, toolbarSlot }: Pro
 
   return (
     <header className="sticky top-0 z-40 w-full max-w-full border-b border-chaya-border/80 bg-chaya-surface/95 shadow-sm backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950/95">
-      <div className="flex min-h-[4.25rem] items-center justify-between gap-2 px-4 py-2 sm:gap-3 sm:px-6">
+      <div className="flex min-h-[3.75rem] items-center justify-between gap-2 px-4 py-1.5 sm:gap-2.5 sm:px-6">
         <Link
           href={homeHref}
           className="flex min-w-0 flex-1 items-center gap-3 rounded-xl outline-none ring-chaya-primary ring-offset-2 ring-offset-background focus-visible:ring-2 dark:ring-offset-zinc-950"
         >
           <ConsumerStoreLogo displayName={displayName} logoUrl={logoUrl} />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-base font-bold leading-tight tracking-tight text-zinc-900 dark:text-zinc-50">
+            <p className="truncate text-[0.9375rem] font-bold leading-tight tracking-tight text-zinc-900 dark:text-zinc-50">
               {displayName}
             </p>
             {tableLine ? (

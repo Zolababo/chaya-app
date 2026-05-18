@@ -4,8 +4,8 @@ type Props = {
   large?: boolean;
 };
 
-const SIZE_DEFAULT = "h-[4.75rem] w-[4.75rem] sm:h-20 sm:w-20";
-const SIZE_LARGE = "h-24 w-24 sm:h-[6.5rem] sm:w-[6.5rem]";
+const SIZE_DEFAULT = "h-16 w-16 sm:h-[4.25rem] sm:w-[4.25rem]";
+const SIZE_LARGE = "h-[5.25rem] w-[5.25rem] sm:h-24 sm:w-24";
 
 /** 메뉴 목록 행용 썸네일 — 장식용이므로 alt 비움 */
 export function MenuListThumb({ imageUrl, large = false }: Props) {

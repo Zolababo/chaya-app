@@ -45,7 +45,7 @@ export default async function TenantLayout({
   return (
     <Suspense>
       <ConsumerLocaleProvider locale={locale}>
-        <div className="flex min-h-dvh flex-col bg-chaya-bg pb-[max(7rem,calc(env(safe-area-inset-bottom)+5.5rem))] text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
+        <div className="flex min-h-dvh flex-col bg-chaya-bg pb-[max(5.25rem,calc(env(safe-area-inset-bottom)+4.25rem))] text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
           <SkipToMainLink />
           <GuestSessionCookieSync />
           <Suspense fallback={<SessionHeaderFallback />}>
@@ -55,7 +55,7 @@ export default async function TenantLayout({
           <main
             id="main-content"
             tabIndex={-1}
-            className="mx-auto w-full max-w-7xl flex-1 px-4 py-4 outline-none sm:px-6"
+            className="mx-auto w-full max-w-7xl flex-1 px-4 py-3 outline-none sm:px-6"
           >
             {children}
           </main>

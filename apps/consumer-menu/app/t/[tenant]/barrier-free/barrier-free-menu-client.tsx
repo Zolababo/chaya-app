@@ -132,7 +132,7 @@ export function BarrierFreeMenuClient({ tenant, items, categories }: Props) {
                             refreshCartCount();
                           }}
                           aria-label={`${name} 1 ${m.barrierFree.add}`}
-                          className="min-h-[48px] shrink-0 rounded-full bg-chaya-primary px-6 text-base font-semibold text-chaya-on-primary hover:bg-chaya-primary-hover"
+                          className="min-h-[44px] shrink-0 rounded-full bg-chaya-primary px-4 text-sm font-semibold text-chaya-on-primary hover:bg-chaya-primary-hover"
                         >
                           {m.barrierFree.add}
                         </button>

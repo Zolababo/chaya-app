@@ -55,17 +55,17 @@ export function BottomNav({ tenant }: Props) {
 
   const itemClass = (active: boolean) =>
     [
-      "relative flex min-h-[56px] min-w-[76px] flex-col items-center justify-center gap-0.5 rounded-2xl px-3 py-2 text-[11px] font-bold tracking-tight transition-all sm:min-w-[84px] sm:text-xs",
+      "relative flex min-h-[44px] min-w-[4.25rem] max-w-[5.5rem] flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-2 py-1 text-[10px] font-semibold leading-none tracking-tight transition-colors sm:min-w-[4.5rem] sm:text-[11px]",
       active
-        ? "bg-chaya-primary text-chaya-on-primary shadow-md ring-2 ring-chaya-primary/20 ring-offset-2 ring-offset-chaya-surface dark:ring-offset-zinc-950"
-        : "text-zinc-600 hover:bg-zinc-100/90 dark:text-zinc-400 dark:hover:bg-zinc-800/80",
+        ? "bg-chaya-primary text-chaya-on-primary"
+        : "text-zinc-600 hover:bg-zinc-100/80 dark:text-zinc-400 dark:hover:bg-zinc-800/60",
     ].join(" ");
 
   const iconClass = (active: boolean) => (active ? "text-chaya-on-primary" : "text-zinc-500 dark:text-zinc-400");
 
   return (
     <nav
-      className="fixed bottom-0 left-0 z-50 flex w-full justify-around border-t border-chaya-border bg-chaya-surface pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-4px_24px_rgba(0,0,0,0.06)] dark:border-zinc-800 dark:bg-zinc-950"
+      className="fixed bottom-0 left-0 z-50 flex w-full justify-around border-t border-zinc-200/90 bg-chaya-surface px-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5 shadow-[0_-2px_12px_rgba(0,0,0,0.05)] dark:border-zinc-800 dark:bg-zinc-950"
       aria-label={m.nav.menu}
     >
       <Link
@@ -74,7 +74,7 @@ export function BottomNav({ tenant }: Props) {
         aria-current={onMenu ? "page" : undefined}
         aria-label={m.menu.boardTitle}
       >
-        <Menu className={`size-6 ${iconClass(onMenu)}`} aria-hidden strokeWidth={2} />
+        <Menu className={`size-[1.125rem] ${iconClass(onMenu)}`} aria-hidden strokeWidth={2} />
         <span>{m.nav.menu}</span>
       </Link>
       <Link
@@ -84,9 +84,9 @@ export function BottomNav({ tenant }: Props) {
         aria-label={cartCount > 0 ? `${m.nav.cart}, ${cartCount}` : m.nav.cart}
       >
         <span className="relative inline-flex" aria-hidden>
-          <ShoppingCart className={`size-6 ${iconClass(onCart)}`} strokeWidth={2} />
+          <ShoppingCart className={`size-[1.125rem] ${iconClass(onCart)}`} strokeWidth={2} />
           {cartCount > 0 ? (
-            <span className="absolute -right-2.5 -top-2.5 flex h-[1.35rem] min-w-[1.35rem] items-center justify-center rounded-full border-2 border-chaya-surface bg-red-500 px-1 text-[10px] font-bold leading-none text-white shadow-md dark:border-zinc-950">
+            <span className="absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full border border-chaya-surface bg-red-500 px-0.5 text-[9px] font-bold leading-none text-white dark:border-zinc-950">
               {cartCount > 99 ? "99+" : cartCount}
             </span>
           ) : null}
@@ -99,7 +99,7 @@ export function BottomNav({ tenant }: Props) {
         aria-current={onOrders ? "page" : undefined}
         aria-label={m.nav.orders}
       >
-        <ClipboardList className={`size-6 ${iconClass(onOrders)}`} strokeWidth={2} aria-hidden />
+        <ClipboardList className={`size-[1.125rem] ${iconClass(onOrders)}`} strokeWidth={2} aria-hidden />
         <span>{m.nav.orders}</span>
       </Link>
     </nav>
