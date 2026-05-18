@@ -4,6 +4,7 @@ import { MenuTranslationFields } from "@/components/menu-translation-fields";
 import { MerchantConfirmSubmitButton } from "@/components/merchant-confirm-submit";
 import { MerchantFormSubmit } from "@/components/merchant-form-submit";
 import { MenuListRow } from "@/components/menu-list-row";
+import { menuFlatListClass, menuFlatListItemClass } from "@/components/menu-list-styles";
 import { LOCALE_META, TRANSLATION_LOCALES } from "@/lib/i18n/locales";
 import {
   deleteMenuFromForm,
@@ -33,20 +34,18 @@ export function MerchantMenuCatalog({
 }: Props) {
   if (items.length === 0) {
     return (
-      <p className="rounded-xl border border-chaya-border bg-chaya-surface px-4 py-6 text-center text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-400">
-        표시할 메뉴가 없습니다.
-      </p>
+      <p className="py-10 text-center text-sm text-zinc-500 dark:text-zinc-400">표시할 메뉴가 없습니다.</p>
     );
   }
 
   return (
     <ul
       aria-label={listLabel}
-      className="divide-y divide-chaya-border overflow-hidden rounded-2xl border border-chaya-border bg-chaya-surface shadow-sm dark:divide-zinc-800 dark:border-zinc-700 dark:bg-zinc-950"
+      className={menuFlatListClass}
     >
       {items.map((item) => (
-        <li key={item.id} className="bg-chaya-surface dark:bg-zinc-950">
-          <div className="px-2 py-2 sm:px-3">
+        <li key={item.id}>
+          <div className={menuFlatListItemClass}>
             <MenuListRow
               name={item.name}
               description={item.description}

@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { MenuListRow } from "@/components/menu-list-row";
+import { menuFlatListBleedClass, menuFlatListItemClass } from "@/components/menu-list-styles";
 import { useConsumerLocale } from "@/lib/i18n/consumer-locale-context";
 import { formatConsumerMoney } from "@/lib/i18n/format-consumer-money";
 import { withConsumerLang } from "@/lib/i18n/with-consumer-lang";
@@ -97,65 +99,58 @@ export function BarrierFreeMenuClient({ tenant, items, categories }: Props) {
         </div>
       </section>
 
-      <section aria-label={m.barrierFree.menuList} className="space-y-3">
+      <section aria-label={m.barrierFree.menuList}>
         {filtered.length === 0 ? (
-          <p className="rounded-xl border border-chaya-border bg-chaya-surface px-4 py-5 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300">
-            {m.barrierFree.categoryEmpty}
-          </p>
+          <p className="py-10 text-center text-base text-zinc-600 dark:text-zinc-300">{m.barrierFree.categoryEmpty}</p>
         ) : (
-          filtered.map((item) => {
-            const row = resolveMenuRowForLocale(item, locale);
-            const name = row.name;
-            return (
-              <article
-                key={item.id}
-                className="flex flex-col gap-3 rounded-xl border border-chaya-border bg-chaya-surface p-4 dark:border-zinc-700 dark:bg-zinc-950 sm:flex-row sm:items-start sm:justify-between"
-              >
-                <div className="min-w-0 flex-1 space-y-1">
-                  <h2 className="text-base font-semibold">{name}</h2>
-                  <p className="text-sm font-semibold tabular-nums text-chaya-primary dark:text-orange-400">
-                    {formatConsumerMoney(item.price, locale)}
-                    {item.isSoldOut ? (
-                      <span className="ml-2 text-xs font-semibold text-zinc-500 dark:text-zinc-400">
-                        {m.barrierFree.soldOut}
-                      </span>
-                    ) : null}
+          <ul className={menuFlatListBleedClass}>
+            {filtered.map((item) => {
+              const row = resolveMenuRowForLocale(item, locale);
+              const name = row.name;
+              const detailHref = withConsumerLang(`${basePath}/menu/${encodeURIComponent(item.id)}`, locale);
+              return (
+                <li key={item.id} className={menuFlatListItemClass}>
+                  <MenuListRow
+                    large
+                    name={name}
+                    description={row.description}
+                    priceLabel={formatConsumerMoney(item.price, locale)}
+                    imageUrl={item.imageUrl}
+                    soldOut={item.isSoldOut}
+                    soldOutLabel={m.barrierFree.soldOut}
+                    detailHref={detailHref}
+                    detailAriaLabel={m.barrierFree.detailAria.replace("{name}", name)}
+                    trailing={
+                      item.isSoldOut ? (
+                        <span className="px-2 text-base font-semibold text-zinc-400">{m.barrierFree.soldOut}</span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            addLine(slug, row, 1, null);
+                            setLastMessage(m.barrierFree.addedOne.replace("{name}", name));
+                            refreshCartCount();
+                          }}
+                          aria-label={`${name} 1 ${m.barrierFree.add}`}
+                          className="min-h-[48px] shrink-0 rounded-full bg-chaya-primary px-6 text-base font-semibold text-chaya-on-primary hover:bg-chaya-primary-hover"
+                        >
+                          {m.barrierFree.add}
+                        </button>
+                      )
+                    }
+                  />
+                  <p className="-mt-2 pb-3 pl-[calc(6.5rem+1rem)] sm:pl-[calc(7.5rem+1.25rem)]">
+                    <Link
+                      href={detailHref}
+                      className="inline-flex min-h-[44px] items-center text-sm font-semibold text-chaya-primary underline-offset-4 hover:underline dark:text-orange-400"
+                    >
+                      {m.barrierFree.detailLink}
+                    </Link>
                   </p>
-                  {row.description?.trim() ? (
-                    <p className="text-sm text-zinc-600 dark:text-zinc-400">{row.description}</p>
-                  ) : null}
-                  <Link
-                    href={withConsumerLang(`${basePath}/menu/${encodeURIComponent(item.id)}`, locale)}
-                    className="inline-flex min-h-[44px] items-center text-sm font-semibold text-chaya-primary underline-offset-4 hover:underline dark:text-orange-400"
-                    aria-label={m.barrierFree.detailAria.replace("{name}", name)}
-                  >
-                    {name} {m.barrierFree.detailLink}
-                  </Link>
-                </div>
-                {item.isSoldOut ? (
-                  <span
-                    className="flex min-h-[44px] shrink-0 items-center justify-center rounded-lg border border-zinc-300 bg-zinc-100 px-4 text-sm font-semibold text-zinc-500 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-400"
-                    aria-label={`${name} ${m.barrierFree.soldOut}`}
-                  >
-                    {m.barrierFree.soldOut}
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      addLine(slug, row, 1, null);
-                      setLastMessage(m.barrierFree.addedOne.replace("{name}", name));
-                      refreshCartCount();
-                    }}
-                    aria-label={`${name} 1 ${m.barrierFree.add}`}
-                    className="min-h-[44px] shrink-0 rounded-lg bg-chaya-primary px-4 py-2 text-sm font-semibold text-chaya-on-primary hover:bg-chaya-primary-hover"
-                  >
-                    {m.barrierFree.add}
-                  </button>
-                )}
-              </article>
-            );
-          })
+                </li>
+              );
+            })}
+          </ul>
         )}
       </section>
 
