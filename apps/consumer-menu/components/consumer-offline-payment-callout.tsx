@@ -13,13 +13,15 @@ export function ConsumerOfflinePaymentCallout({ className = "" }: Props) {
 
   if (CONSUMER_CHECKOUT_PAYMENT_UI_VISIBLE) return null;
 
+  const text = [m.payment.offlineLead, m.payment.offlineRest].filter(Boolean).join(" ");
+  if (!text) return null;
+
   return (
     <p
-      className={`rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-950 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-100 ${className}`.trim()}
+      className={`text-center text-xs font-medium text-zinc-500 dark:text-zinc-400 ${className}`.trim()}
       role="note"
     >
-      <strong className="font-semibold">{m.payment.offlineLead}</strong>
-      {m.payment.offlineRest}
+      {text}
     </p>
   );
 }

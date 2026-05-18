@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ChevronRight, ShoppingCart } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { useConsumerLocale } from "@/lib/i18n/consumer-locale-context";
@@ -16,6 +17,7 @@ type Props = {
 /** 메뉴판 하단: 담긴 품목이 있을 때 장바구니로 가는 고정 바. */
 export function MenuCartStickyBar({ tenant }: Props) {
   const { locale, m } = useConsumerLocale();
+  const pathname = usePathname();
   const slug = tenant.trim();
   const [qty, setQty] = useState(0);
   const [total, setTotal] = useState(0);
@@ -39,7 +41,7 @@ export function MenuCartStickyBar({ tenant }: Props) {
     return () => window.removeEventListener(CHAYA_CART_CHANGED_EVENT, onChanged);
   }, [slug, refresh]);
 
-  if (qty <= 0) return null;
+  if (qty <= 0 || pathname.includes("/cart")) return null;
 
   const cartHref = withConsumerLang(`/t/${slug}/cart`, locale);
   const countLabel =

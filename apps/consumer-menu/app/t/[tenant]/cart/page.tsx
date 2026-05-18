@@ -1,4 +1,3 @@
-import { ConsumerOfflinePaymentCallout } from "@/components/consumer-offline-payment-callout";
 import { PREF_TABLE_MAX } from "@/lib/cart/table-pref";
 import { consumerMessages } from "@/lib/i18n/consumer-messages";
 import { getConsumerLocale } from "@/lib/i18n/get-consumer-locale";
@@ -23,31 +22,29 @@ export default async function CartPage({ params, searchParams }: Props) {
   const menu = await listMenusForTenant(tenant);
 
   return (
-    <div className="space-y-6" aria-labelledby="cart-page-heading">
-      <div>
-        <h1 id="cart-page-heading" className="text-2xl font-bold tracking-tight">
-          {m.cart.pageTitle}
-        </h1>
-        <p className="mt-1 text-zinc-600 dark:text-zinc-400">{m.cart.pageIntro}</p>
-        <ConsumerOfflinePaymentCallout className="mt-3" />
-      </div>
+    <div aria-labelledby="cart-page-heading">
+      <h1 id="cart-page-heading" className="text-xl font-bold tracking-tight">
+        {m.cart.pageTitle}
+      </h1>
 
       {menu.notice ? (
         <p
           role={menu.ok ? "status" : "alert"}
           aria-live={menu.ok ? "polite" : "assertive"}
-          className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100"
+          className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100"
         >
           {menu.notice}
         </p>
       ) : null}
 
-      <CartCheckoutClient
-        key={tenant}
-        tenant={tenant}
-        initialLines={[]}
-        initialTableHint={tableFromUrl || null}
-      />
+      <div className="mt-4">
+        <CartCheckoutClient
+          key={tenant}
+          tenant={tenant}
+          initialLines={[]}
+          initialTableHint={tableFromUrl || null}
+        />
+      </div>
     </div>
   );
 }
