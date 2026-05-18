@@ -1,6 +1,8 @@
 import Link from "next/link";
 
 import { CopyCurrentOrderUrlButton } from "@/components/copy-current-order-url-button";
+import { SplitBillPanel } from "@/components/split-bill-panel";
+import { CONSUMER_SPLIT_BILL_UI_VISIBLE } from "@/lib/consumer/future-features";
 import { GuestOrderDetailSessionRetry } from "@/components/guest-order-detail-session-retry";
 import { GuestOrderStatusLive } from "@/components/guest-order-status-live";
 import { OrderProgressSteps } from "@/components/order-progress-steps";
@@ -109,6 +111,16 @@ export default async function OrderStatusPage({ params, searchParams }: Props) {
           <span className="tabular-nums">{formatConsumerMoney(order.total_price, locale)}</span>
         </div>
       </div>
+
+      {CONSUMER_SPLIT_BILL_UI_VISIBLE ? <SplitBillPanel total={order.total_price} /> : null}
+
+      <Link
+        href={withConsumerLang(`/t/${tenant}`, locale)}
+        className="flex min-h-[48px] w-full items-center justify-center rounded-2xl border border-dashed border-zinc-300 text-sm font-semibold text-chaya-primary dark:border-zinc-600 dark:text-orange-400"
+        aria-label={m.cart.addMoreMenuAria}
+      >
+        {m.cart.addMoreMenu}
+      </Link>
 
       <nav className="flex flex-wrap justify-center gap-3" aria-label={m.orderDetail.toOrdersAria}>
         <Link

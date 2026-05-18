@@ -1,12 +1,17 @@
 "use client";
 
+import { Minus, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
+
+import { useConsumerLocale } from "@/lib/i18n/consumer-locale-context";
+import { formatConsumerMoney } from "@/lib/i18n/format-consumer-money";
 
 type Props = {
   total: number;
 };
 
 export function SplitBillPanel({ total }: Props) {
+  const { locale, m } = useConsumerLocale();
   const [people, setPeople] = useState(2);
 
   const perPerson = useMemo(() => {
@@ -16,56 +21,46 @@ export function SplitBillPanel({ total }: Props) {
 
   if (total <= 0) return null;
 
+  const perPersonLabel = m.splitBill.perPerson.replace(
+    "{amount}",
+    formatConsumerMoney(perPerson, locale),
+  );
+
   return (
     <section
-      className="rounded-xl border border-chaya-border bg-chaya-surface px-4 py-3 dark:border-zinc-700 dark:bg-zinc-950"
+      className="rounded-2xl border border-zinc-200/90 bg-zinc-50/80 px-4 py-3.5 dark:border-zinc-800 dark:bg-zinc-900/50"
       aria-labelledby="split-bill-heading"
     >
-      <h2 id="split-bill-heading" className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
-        더치페이 (참고)
+      <h2 id="split-bill-heading" className="text-sm font-bold text-zinc-900 dark:text-zinc-50">
+        {m.splitBill.title}
       </h2>
-      <p className="mt-1 text-xs text-zinc-500">
-        결제는 매장 카운터에서 합니다. 아래 금액은 나눠 낼 때 참고용입니다.
-      </p>
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-        <label htmlFor="split-people" className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
-          인원
-        </label>
-        <div className="flex items-center gap-3">
+      <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">{m.splitBill.hint}</p>
+      <div className="mt-3 flex items-center justify-between gap-3">
+        <span className="text-sm font-medium text-zinc-600 dark:text-zinc-400">{m.splitBill.peopleLabel}</span>
+        <div className="flex items-center gap-2">
           <button
             type="button"
-            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-zinc-200 text-lg font-bold dark:bg-zinc-800"
-            aria-label="인원 한 명 줄이기"
+            className="flex min-h-[36px] min-w-[36px] items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-800 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+            aria-label={m.splitBill.decreasePeople}
             onClick={() => setPeople((n) => Math.max(1, n - 1))}
           >
-            −
+            <Minus className="size-4" aria-hidden />
           </button>
-          <input
-            id="split-people"
-            type="number"
-            inputMode="numeric"
-            min={1}
-            max={20}
-            value={people}
-            onChange={(e) => {
-              const v = Math.floor(Number(e.target.value));
-              setPeople(Number.isFinite(v) ? Math.max(1, Math.min(20, v)) : 1);
-            }}
-            className="min-h-[44px] w-16 rounded-lg border border-chaya-border bg-white text-center text-base dark:border-zinc-700 dark:bg-zinc-900"
-            aria-describedby="split-per-person"
-          />
+          <span className="min-w-8 text-center text-base font-semibold tabular-nums" aria-live="polite">
+            {people}
+          </span>
           <button
             type="button"
-            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-zinc-200 text-lg font-bold dark:bg-zinc-800"
-            aria-label="인원 한 명 늘리기"
+            className="flex min-h-[36px] min-w-[36px] items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-800 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+            aria-label={m.splitBill.increasePeople}
             onClick={() => setPeople((n) => Math.min(20, n + 1))}
           >
-            +
+            <Plus className="size-4" aria-hidden />
           </button>
         </div>
       </div>
-      <p id="split-per-person" className="mt-3 text-right text-base font-bold tabular-nums text-chaya-primary dark:text-orange-400">
-        1인당 약 {perPerson.toLocaleString("ko-KR")}원
+      <p className="mt-3 text-right text-lg font-bold tabular-nums text-chaya-primary dark:text-orange-400">
+        {perPersonLabel}
       </p>
     </section>
   );

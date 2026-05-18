@@ -28,6 +28,16 @@ export type FlowMessageTree = {
     storageNote: string;
     qtySr: string;
     removeAria: string;
+    addMoreMenu: string;
+    addMoreMenuAria: string;
+  };
+  splitBill: {
+    title: string;
+    hint: string;
+    peopleLabel: string;
+    perPerson: string;
+    decreasePeople: string;
+    increasePeople: string;
   };
   orders: {
     pageTitle: string;
@@ -119,6 +129,16 @@ const KO: FlowMessageTree = {
     storageNote: "",
     qtySr: "수량",
     removeAria: "삭제",
+    addMoreMenu: "메뉴 더 담기",
+    addMoreMenuAria: "메뉴판으로 이동해 메뉴 추가",
+  },
+  splitBill: {
+    title: "더치페이",
+    hint: "인원수를 나눠 1인당 금액을 참고하세요",
+    peopleLabel: "인원",
+    perPerson: "1인당 약 {amount}",
+    decreasePeople: "인원 한 명 줄이기",
+    increasePeople: "인원 한 명 늘리기",
   },
   orders: {
     pageTitle: "주문 현황",
@@ -219,6 +239,16 @@ const EN: FlowMessageTree = {
     storageNote: "",
     qtySr: "Quantity",
     removeAria: "Remove",
+    addMoreMenu: "Add more items",
+    addMoreMenuAria: "Go to menu to add items",
+  },
+  splitBill: {
+    title: "Split bill",
+    hint: "Divide by number of people for a per-person estimate",
+    peopleLabel: "People",
+    perPerson: "About {amount} each",
+    decreasePeople: "Decrease people",
+    increasePeople: "Increase people",
   },
   orders: {
     pageTitle: "Orders",
@@ -314,7 +344,10 @@ const JA: FlowMessageTree = {
     storageNote: "カートは店舗ごとにこのブラウザに保存されます。",
     qtySr: "数量",
     removeAria: "カートから削除",
+    addMoreMenu: EN.cart.addMoreMenu,
+    addMoreMenuAria: EN.cart.addMoreMenuAria,
   },
+  splitBill: EN.splitBill,
   orders: {
     pageTitle: "注文状況",
     pageIntro: "ゲスト注文はこのブラウザのみ表示されます。ログインするとアカウント注文も表示されます。",
@@ -405,7 +438,10 @@ const ZH_HANS: FlowMessageTree = {
     storageNote: "购物车按店铺仅保存在本浏览器。",
     qtySr: "数量",
     removeAria: "从购物车删除",
+    addMoreMenu: EN.cart.addMoreMenu,
+    addMoreMenuAria: EN.cart.addMoreMenuAria,
   },
+  splitBill: EN.splitBill,
   orders: {
     pageTitle: "订单状态",
     pageIntro: "游客订单仅显示在本浏览器。登录后可查看账户订单。",
@@ -547,5 +583,15 @@ const FLOW_BY_LOCALE: Record<AppLocale, FlowMessageTree> = {
 };
 
 export function flowMessages(locale: AppLocale): FlowMessageTree {
-  return FLOW_BY_LOCALE[locale] ?? EN;
+  const base = FLOW_BY_LOCALE[locale] ?? EN;
+  const splitBill = locale === "ko" ? KO.splitBill : EN.splitBill;
+  return {
+    ...base,
+    splitBill,
+    cart: {
+      ...base.cart,
+      addMoreMenu: locale === "ko" ? KO.cart.addMoreMenu : EN.cart.addMoreMenu,
+      addMoreMenuAria: locale === "ko" ? KO.cart.addMoreMenuAria : EN.cart.addMoreMenuAria,
+    },
+  };
 }

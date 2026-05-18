@@ -1,7 +1,7 @@
 import { PREF_TABLE_MAX } from "@/lib/cart/table-pref";
 import { consumerMessages } from "@/lib/i18n/consumer-messages";
 import { getConsumerLocale } from "@/lib/i18n/get-consumer-locale";
-import { listMenusForTenant } from "@/lib/menus/queries";
+import { collectCategories, listMenusForTenant } from "@/lib/menus/queries";
 
 import { CartCheckoutClient } from "./cart-checkout-client";
 
@@ -20,6 +20,7 @@ export default async function CartPage({ params, searchParams }: Props) {
   const locale = await getConsumerLocale(typeof langRaw === "string" ? langRaw : null);
   const m = consumerMessages(locale);
   const menu = await listMenusForTenant(tenant);
+  const categoryOrder = collectCategories(menu.items);
 
   return (
     <div aria-labelledby="cart-page-heading">
@@ -42,6 +43,7 @@ export default async function CartPage({ params, searchParams }: Props) {
           key={tenant}
           tenant={tenant}
           initialLines={[]}
+          categoryOrder={categoryOrder}
           initialTableHint={tableFromUrl || null}
         />
       </div>
