@@ -40,6 +40,8 @@ type MessageTree = {
     languageClose: string;
     easyMenu: string;
     easyMenuAria: string;
+    easyMenuOff: string;
+    easyMenuOffAria: string;
     toolbarLabel: string;
   };
   flow: { step1: string; step2: string; step3: string };
@@ -87,7 +89,9 @@ const KO: CoreMessageTree = {
     languageDialogTitle: "표시 언어",
     languageClose: "닫기",
     easyMenu: "큰글씨·목록",
-    easyMenuAria: "큰글씨·목록형 메뉴 화면으로 이동",
+    easyMenuAria: "큰글씨·목록 보기 켜기. 메뉴 화면에서는 목록형으로 열립니다",
+    easyMenuOff: "일반 글씨",
+    easyMenuOffAria: "큰글씨·목록 보기 끄기. 현재 화면을 유지합니다",
     toolbarLabel: "언어 및 쉬운 메뉴",
   },
   flow: {
@@ -132,7 +136,9 @@ const EN: CoreMessageTree = {
     languageDialogTitle: "Display language",
     languageClose: "Close",
     easyMenu: "Large text · List",
-    easyMenuAria: "Open large-text list menu screen",
+    easyMenuAria: "Turn on large-text list view. Opens list menu from the menu screen",
+    easyMenuOff: "Normal text",
+    easyMenuOffAria: "Turn off large-text list view and stay on this screen",
     toolbarLabel: "Language and easy menu",
   },
   flow: {
@@ -177,7 +183,9 @@ const JA: CoreMessageTree = {
     languageDialogTitle: "表示言語",
     languageClose: "閉じる",
     easyMenu: "大きい文字・一覧",
-    easyMenuAria: "大きい文字の一覧メニュー画面へ",
+    easyMenuAria: "大きい文字の一覧表示をオン。メニュー画面では一覧型で開きます",
+    easyMenuOff: "通常の文字",
+    easyMenuOffAria: "大きい文字の一覧表示をオフ。今の画面のまま",
     toolbarLabel: "言語と見やすいメニュー",
   },
   flow: {
@@ -222,7 +230,9 @@ const ZH_HANS: CoreMessageTree = {
     languageDialogTitle: "显示语言",
     languageClose: "关闭",
     easyMenu: "大字·列表",
-    easyMenuAria: "前往大字列表菜单",
+    easyMenuAria: "开启大字列表视图。在菜单页打开列表型菜单",
+    easyMenuOff: "普通字号",
+    easyMenuOffAria: "关闭大字列表视图，留在当前页面",
     toolbarLabel: "语言与简易菜单",
   },
   flow: { step1: "① 选择菜品", step2: "② 确认购物车", step3: "③ 提交厨房" },
@@ -263,7 +273,9 @@ const ZH_HANT: CoreMessageTree = {
     languageDialogTitle: "顯示語言",
     languageClose: "關閉",
     easyMenu: "大字·列表",
-    easyMenuAria: "前往大字列表菜單",
+    easyMenuAria: "開啟大字列表檢視。在菜單頁開啟列表型菜單",
+    easyMenuOff: "一般字級",
+    easyMenuOffAria: "關閉大字列表檢視，留在目前頁面",
     toolbarLabel: "語言與簡易菜單",
   },
   flow: { step1: "① 選擇餐點", step2: "② 確認購物車", step3: "③ 送至廚房" },
@@ -414,5 +426,10 @@ export function consumerMessages(locale: AppLocale): MessageTree {
     guestNoteToggle: base.menu.guestNoteToggle ?? EN.menu.guestNoteToggle,
     guestNoteHide: base.menu.guestNoteHide ?? EN.menu.guestNoteHide,
   };
-  return { ...base, menu, ...flowMessages(locale), ...a11yMessages(locale), ...errorsMessages(locale) };
+  const header = {
+    ...base.header,
+    easyMenuOff: base.header.easyMenuOff ?? EN.header.easyMenuOff,
+    easyMenuOffAria: base.header.easyMenuOffAria ?? EN.header.easyMenuOffAria,
+  };
+  return { ...base, menu, header, ...flowMessages(locale), ...a11yMessages(locale), ...errorsMessages(locale) };
 }

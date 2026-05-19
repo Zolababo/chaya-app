@@ -1,11 +1,15 @@
 "use client";
 
-import Link from "next/link";
 import { ListOrdered } from "lucide-react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 import { LocalePickerButton } from "@/components/locale-picker-button";
 import { useConsumerEasyMode } from "@/lib/consumer/consumer-easy-mode-context";
+import {
+  isBarrierFreeMenuPath,
+  isMenuHomePath,
+  menuPathForEasyMode,
+} from "@/lib/consumer/easy-mode-routes";
 import { useConsumerLocale } from "@/lib/i18n/consumer-locale-context";
 import { withConsumerLang } from "@/lib/i18n/with-consumer-lang";
 
@@ -18,38 +22,43 @@ type Props = {
 
 export function ConsumerHeaderToolbar({ tenant }: Props) {
   const { locale, m } = useConsumerLocale();
-  const { enterEasyMode, exitEasyMode } = useConsumerEasyMode();
+  const { easyMode, enterEasyMode, exitEasyMode } = useConsumerEasyMode();
   const pathname = usePathname();
-  const slug = encodeURIComponent(tenant);
-  const onBarrierFree = pathname.includes("/barrier-free");
-  const menuHref = withConsumerLang(
-    onBarrierFree ? `/t/${slug}` : `/t/${slug}/barrier-free`,
-    locale,
-  );
-  const menuLabel = onBarrierFree ? m.barrierFree.toGridMenu : m.header.easyMenu;
-  const menuAria = onBarrierFree ? m.barrierFree.toGridAria : m.header.easyMenuAria;
-  const btnClass = onBarrierFree
+  const router = useRouter();
+
+  const label = easyMode ? m.header.easyMenuOff : m.header.easyMenu;
+  const aria = easyMode ? m.header.easyMenuOffAria : m.header.easyMenuAria;
+  const btnClass = easyMode
     ? `${btnBase} border-chaya-primary/50 bg-orange-50 text-chaya-primary dark:border-orange-500/60 dark:bg-orange-950/50 dark:text-orange-300`
     : `${btnBase} border-chaya-border bg-white text-zinc-800 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100`;
 
-  const onToggleClick = () => {
-    if (onBarrierFree) exitEasyMode();
-    else enterEasyMode();
+  const toggleEasyMode = () => {
+    if (easyMode) {
+      exitEasyMode();
+      if (isBarrierFreeMenuPath(pathname)) {
+        router.push(withConsumerLang(menuPathForEasyMode(tenant, false), locale));
+      }
+      return;
+    }
+    enterEasyMode();
+    if (isMenuHomePath(pathname, tenant)) {
+      router.push(withConsumerLang(menuPathForEasyMode(tenant, true), locale));
+    }
   };
 
   return (
     <div className="flex shrink-0 items-center gap-1.5" role="group" aria-label={m.header.toolbarLabel}>
       <LocalePickerButton />
-      <Link
-        href={menuHref}
+      <button
+        type="button"
         className={btnClass}
-        aria-label={menuAria}
-        aria-current={onBarrierFree ? "page" : undefined}
-        onClick={onToggleClick}
+        aria-label={aria}
+        aria-pressed={easyMode}
+        onClick={toggleEasyMode}
       >
         <ListOrdered className="size-4 shrink-0 text-chaya-primary dark:text-orange-400" aria-hidden />
-        <span className="truncate leading-tight">{menuLabel}</span>
-      </Link>
+        <span className="truncate leading-tight">{label}</span>
+      </button>
     </div>
   );
 }
