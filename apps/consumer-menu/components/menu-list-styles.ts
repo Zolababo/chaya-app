@@ -10,3 +10,7 @@ export const menuFlatListItemClass = "px-4 sm:px-6";
 /** 손님 메뉴판 담기 (44px 터치 유지, 시각적 크기는 축소) */
 export const menuAddButtonClass =
   "touch-manipulation min-h-[40px] shrink-0 rounded-full bg-chaya-primary px-3.5 py-1.5 text-xs font-semibold text-chaya-on-primary transition hover:bg-chaya-primary-hover active:scale-[0.98]";
+
+/** 큰글씨·목록 — 담기 버튼만 확대 */
+export const menuAddButtonEasyClass =
+  "touch-manipulation min-h-[44px] shrink-0 rounded-full bg-chaya-primary px-4 py-2 text-sm font-semibold text-chaya-on-primary transition hover:bg-chaya-primary-hover active:scale-[0.98]";

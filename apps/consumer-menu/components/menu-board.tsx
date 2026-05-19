@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { MenuCategoryChips } from "@/components/menu-category-chips";
 import { MenuListRow } from "@/components/menu-list-row";
 import { menuAddButtonClass, menuFlatListBleedClass, menuFlatListItemClass } from "@/components/menu-list-styles";
 import { useConsumerLocale } from "@/lib/i18n/consumer-locale-context";
@@ -63,37 +64,12 @@ export function MenuBoard({ tenant, items, categories }: Props) {
         </div>
       </div>
 
-      {tabCategories.length > 1 ? (
-        <div className="relative -mx-1 mb-1">
-          <nav
-            className="flex gap-2 overflow-x-auto pb-2 pr-10 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-            aria-label={m.menu.categoryNav}
-          >
-            {tabCategories.map((cat) => {
-              const selected = active === cat.key;
-              return (
-                <button
-                  key={cat.key}
-                  type="button"
-                  onClick={() => setActive(cat.key)}
-                  aria-pressed={selected}
-                  className={
-                    selected
-                      ? "min-h-[36px] shrink-0 rounded-full bg-chaya-primary px-3.5 py-1.5 text-[0.9375rem] font-semibold leading-none text-chaya-on-primary"
-                      : "min-h-[36px] shrink-0 rounded-full border border-zinc-300/90 bg-transparent px-3.5 py-1.5 text-[0.9375rem] font-medium leading-none text-zinc-700 dark:border-zinc-600 dark:text-zinc-300"
-                  }
-                >
-                  {cat.label}
-                </button>
-              );
-            })}
-          </nav>
-          <div
-            className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-chaya-bg to-transparent dark:from-zinc-950"
-            aria-hidden
-          />
-        </div>
-      ) : null}
+      <MenuCategoryChips
+        tabs={tabCategories}
+        active={active}
+        onSelect={setActive}
+        ariaLabel={m.menu.categoryNav}
+      />
 
       {filtered.length > 0 ? (
         <ul aria-label={m.menu.boardTitle} className={menuFlatListBleedClass}>

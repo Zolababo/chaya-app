@@ -23,13 +23,11 @@ export default async function BarrierFreeMenuPage({ params, searchParams }: Prop
       : m.barrierFree.dataDb;
 
   return (
-    <div className="space-y-6" aria-labelledby="barrier-free-heading">
-      <header className="space-y-2">
-        <h1 id="barrier-free-heading" className="text-3xl font-extrabold leading-tight tracking-tight">
-          {m.barrierFree.pageTitle}
-        </h1>
-        <p className="text-base leading-relaxed text-zinc-700 dark:text-zinc-300">{m.barrierFree.pageIntro}</p>
-      </header>
+    <div className="space-y-3" aria-labelledby="barrier-free-heading">
+      <h1 id="barrier-free-heading" className="sr-only">
+        {m.barrierFree.pageTitle}
+      </h1>
+      <p className="sr-only">{m.barrierFree.pageIntro}</p>
 
       {result.notice ? (
         <p
