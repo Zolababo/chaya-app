@@ -283,13 +283,6 @@ export function GuestOrdersHub({
         >
           {m.orders.toCart}
         </Link>
-        <Link
-          href={withConsumerLang(`/t/${tenant}/barrier-free`, locale)}
-          className="flex min-h-[48px] items-center justify-center rounded-xl border border-chaya-border px-4 py-3 text-center font-semibold text-chaya-primary dark:border-zinc-700"
-          aria-label={m.orders.toBarrierFreeAria}
-        >
-          {m.orders.toBarrierFree}
-        </Link>
       </nav>
     </section>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { Languages } from "lucide-react";
+import { Globe } from "lucide-react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 
@@ -42,7 +42,7 @@ export function LocalePickerButton() {
         aria-controls={titleId}
         onClick={() => setOpen(true)}
       >
-        <Languages className="size-3.5 shrink-0 text-chaya-primary dark:text-orange-400" aria-hidden />
+        <Globe className="size-4 shrink-0 text-chaya-primary dark:text-orange-400" aria-hidden strokeWidth={2} />
         <span className="truncate">{activeMeta.shortLabel}</span>
         <span className="sr-only"> — {m.header.languageOpen}</span>
       </button>

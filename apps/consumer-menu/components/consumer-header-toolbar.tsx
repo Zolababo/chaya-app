@@ -1,6 +1,6 @@
 "use client";
 
-import { ListOrdered } from "lucide-react";
+import { ALargeSmall, Type } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 
 import { LocalePickerButton } from "@/components/locale-picker-button";
@@ -56,7 +56,11 @@ export function ConsumerHeaderToolbar({ tenant }: Props) {
         aria-pressed={easyMode}
         onClick={toggleEasyMode}
       >
-        <ListOrdered className="size-4 shrink-0 text-chaya-primary dark:text-orange-400" aria-hidden />
+        {easyMode ? (
+          <Type className="size-4 shrink-0 text-chaya-primary dark:text-orange-400" aria-hidden strokeWidth={2} />
+        ) : (
+          <ALargeSmall className="size-4 shrink-0 text-chaya-primary dark:text-orange-400" aria-hidden strokeWidth={2} />
+        )}
         <span className="truncate leading-tight">{label}</span>
       </button>
     </div>

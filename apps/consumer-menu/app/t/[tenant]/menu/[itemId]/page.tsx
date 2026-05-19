@@ -4,7 +4,8 @@ import { MenuItemAddToCart } from "@/components/menu-item-add-to-cart";
 import { MenuItemBackLink } from "@/components/menu-item-back-link";
 import { getConsumerLocale } from "@/lib/i18n/get-consumer-locale";
 import { consumerMessages } from "@/lib/i18n/consumer-messages";
-import { formatKrw, getMenuById } from "@/lib/menus/queries";
+import { formatConsumerMoney } from "@/lib/i18n/format-consumer-money";
+import { getMenuById } from "@/lib/menus/queries";
 import { resolveMenuRowForLocale } from "@/lib/menus/resolve-menu-text";
 
 type Props = {
@@ -67,7 +68,7 @@ export default async function MenuItemPage({ params, searchParams }: Props) {
             id="menu-item-detail-price"
             className="mt-1 text-lg font-bold tabular-nums text-chaya-primary dark:text-orange-400"
           >
-            {formatKrw(item.price)}
+            {formatConsumerMoney(item.price, locale)}
           </p>
           {(item.description ?? "").trim() ? (
             <p className="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">

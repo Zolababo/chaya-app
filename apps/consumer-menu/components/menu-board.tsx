@@ -8,7 +8,8 @@ import { menuAddButtonClass, menuFlatListBleedClass, menuFlatListItemClass } fro
 import { useConsumerLocale } from "@/lib/i18n/consumer-locale-context";
 import { withConsumerLang } from "@/lib/i18n/with-consumer-lang";
 import { addLine } from "@/lib/cart/local-cart";
-import { formatKrw, sortMenuItemsForDisplay } from "@/lib/menus/queries";
+import { formatConsumerMoney } from "@/lib/i18n/format-consumer-money";
+import { sortMenuItemsForDisplay } from "@/lib/menus/queries";
 import { resolveMenuRowForLocale } from "@/lib/menus/resolve-menu-text";
 import type { ChayaMenuRow } from "@/lib/menus/types";
 
@@ -84,12 +85,12 @@ export function MenuBoard({ tenant, items, categories }: Props) {
                 <MenuListRow
                   name={item.name}
                   description={item.description}
-                  priceLabel={formatKrw(item.price)}
+                  priceLabel={formatConsumerMoney(item.price, locale)}
                   imageUrl={item.imageUrl}
                   soldOut={item.isSoldOut}
                   soldOutLabel={m.menu.soldOut}
                   detailHref={detailHref}
-                  detailAriaLabel={`${item.name}, ${formatKrw(item.price)}`}
+                  detailAriaLabel={`${item.name}, ${formatConsumerMoney(item.price, locale)}`}
                   trailing={
                     item.isSoldOut ? (
                       <span

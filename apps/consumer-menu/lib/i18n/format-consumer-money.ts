@@ -11,9 +11,9 @@ const NUMBER_LOCALE: Partial<Record<AppLocale, string>> = {
   ru: "ru-RU",
 };
 
-/** 금액은 KRW. 로케일별 숫자·접미 표기만 다릅니다. */
+/** 손님 화면 금액 — KRW. 한국어는 `1,000원`, 그 외는 `₩1,000` (Intl currency 기호 혼용 방지). */
 export function formatConsumerMoney(amount: number, locale: AppLocale): string {
-  const n = amount.toLocaleString(NUMBER_LOCALE[locale] ?? "en-US");
+  const n = Math.round(amount).toLocaleString(NUMBER_LOCALE[locale] ?? "en-US");
   if (locale === "ko") return `${n}원`;
   return `₩${n}`;
 }
