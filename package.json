@@ -24,6 +24,6 @@
     "cert:pack": "node ./scripts/generate-cert-readiness-pack.mjs"
   },
   "devDependencies": {
-    "turbo": "^2.3.3"
+    "turbo": "^2.9.14"
   }
 }
