@@ -41,7 +41,8 @@ export function MenuCartStickyBar({ tenant }: Props) {
     return () => window.removeEventListener(CHAYA_CART_CHANGED_EVENT, onChanged);
   }, [slug, refresh]);
 
-  if (qty <= 0 || pathname.includes("/cart")) return null;
+  const onMenuItemDetail = /\/menu\/[^/]+/.test(pathname);
+  if (qty <= 0 || pathname.includes("/cart") || onMenuItemDetail) return null;
 
   const cartHref = withConsumerLang(`/t/${slug}/cart`, locale);
   const countLabel =

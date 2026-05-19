@@ -2,7 +2,7 @@
 
 import { Minus, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useId, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { MenuItemOptionGroups } from "@/components/menu-item-option-groups";
 import { useConsumerLocale } from "@/lib/i18n/consumer-locale-context";
@@ -17,8 +17,6 @@ import {
 } from "@/lib/menus/menu-options";
 import type { ChayaMenuRow } from "@/lib/menus/types";
 
-const NOTE_MAX = 200;
-
 const DOCK_BOTTOM =
   "fixed inset-x-0 bottom-[max(4.25rem,calc(env(safe-area-inset-bottom)+3.75rem))] z-30 border-t border-zinc-200/90 bg-chaya-surface/98 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950/98";
 
@@ -31,11 +29,8 @@ export function MenuItemAddToCart({ tenant, item }: Props) {
   const { locale, m } = useConsumerLocale();
   const router = useRouter();
   const [qty, setQty] = useState(1);
-  const [notes, setNotes] = useState("");
-  const [noteOpen, setNoteOpen] = useState(false);
   const [selected, setSelected] = useState<SelectedMenuOption[]>([]);
   const [optError, setOptError] = useState<string | null>(null);
-  const noteId = useId();
   const hasOptions = menuHasSelectableOptions(item.optionGroups);
 
   const unitPrice = useMemo(() => {
@@ -55,9 +50,7 @@ export function MenuItemAddToCart({ tenant, item }: Props) {
       }
     }
     setOptError(null);
-    const optNote = formatSelectedOptionsForNotes(selected);
-    const trimmed = notes.trim().slice(0, NOTE_MAX);
-    const combined = [optNote, trimmed].filter(Boolean).join(" · ") || null;
+    const combined = formatSelectedOptionsForNotes(selected) || null;
     addLine(tenant, item, qty, combined, selected);
     router.push(withConsumerLang(`/t/${tenant}/cart`, locale));
   };
@@ -82,38 +75,6 @@ export function MenuItemAddToCart({ tenant, item }: Props) {
           <MenuItemOptionGroups groups={item.optionGroups} selected={selected} onChange={setSelected} />
         </div>
       ) : null}
-
-      {noteOpen ? (
-        <div className="mb-2">
-          <label htmlFor={noteId} className="sr-only">
-            {m.menu.guestNote}
-          </label>
-          <input
-            id={noteId}
-            type="text"
-            maxLength={NOTE_MAX}
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder={m.menu.guestNotePlaceholder}
-            className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-600 dark:bg-zinc-900"
-          />
-          <button
-            type="button"
-            className="mt-1 text-xs font-medium text-zinc-500 underline-offset-2 hover:underline"
-            onClick={() => setNoteOpen(false)}
-          >
-            {m.menu.guestNoteHide}
-          </button>
-        </div>
-      ) : (
-        <button
-          type="button"
-          className="mb-2 text-xs font-semibold text-chaya-primary underline-offset-2 hover:underline dark:text-orange-400"
-          onClick={() => setNoteOpen(true)}
-        >
-          {m.menu.guestNoteToggle}
-        </button>
-      )}
 
       {optError ? (
         <p role="alert" className="mb-2 text-xs font-medium text-red-600 dark:text-red-400">
