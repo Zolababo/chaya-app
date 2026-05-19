@@ -1,10 +1,9 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { MenuItemAddToCart } from "@/components/menu-item-add-to-cart";
+import { MenuItemBackLink } from "@/components/menu-item-back-link";
 import { getConsumerLocale } from "@/lib/i18n/get-consumer-locale";
 import { consumerMessages } from "@/lib/i18n/consumer-messages";
-import { withConsumerLang } from "@/lib/i18n/with-consumer-lang";
 import { formatKrw, getMenuById } from "@/lib/menus/queries";
 import { resolveMenuRowForLocale } from "@/lib/menus/resolve-menu-text";
 
@@ -31,13 +30,7 @@ export default async function MenuItemPage({ params, searchParams }: Props) {
       className="mx-auto max-w-lg pb-[calc(max(4.25rem,env(safe-area-inset-bottom)+3.75rem)+7.5rem)]"
       aria-labelledby="menu-item-heading"
     >
-      <Link
-        href={withConsumerLang(`/t/${tenant}`, locale)}
-        className="mb-3 inline-flex min-h-[40px] items-center text-sm font-semibold text-chaya-primary dark:text-orange-400"
-        aria-label={m.menu.detailBack}
-      >
-        ← {m.nav.menu}
-      </Link>
+      <MenuItemBackLink tenant={tenant} />
 
       <div className="overflow-hidden rounded-xl border border-zinc-200/90 bg-white dark:border-zinc-800 dark:bg-zinc-950">
         {item.imageUrl?.trim() ? (
@@ -70,7 +63,10 @@ export default async function MenuItemPage({ params, searchParams }: Props) {
           <h1 id="menu-item-heading" className="mt-1 text-xl font-bold leading-snug tracking-tight">
             {item.name}
           </h1>
-          <p className="mt-1 text-lg font-bold tabular-nums text-chaya-primary dark:text-orange-400">
+          <p
+            id="menu-item-detail-price"
+            className="mt-1 text-lg font-bold tabular-nums text-chaya-primary dark:text-orange-400"
+          >
             {formatKrw(item.price)}
           </p>
           {(item.description ?? "").trim() ? (

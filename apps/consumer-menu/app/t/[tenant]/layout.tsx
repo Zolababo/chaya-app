@@ -9,6 +9,7 @@ import { TenantSessionHeader } from "@/components/tenant-session-header";
 import { SkipToMainLink } from "@/components/skip-to-main-link";
 import { TenantTabSwipe } from "@/components/tenant-tab-swipe";
 import { TenantTableQuerySync } from "@/components/tenant-table-query-sync";
+import { ConsumerEasyModeProvider } from "@/lib/consumer/consumer-easy-mode-context";
 import { ConsumerLocaleProvider } from "@/lib/i18n/consumer-locale-context";
 import { getConsumerLocale } from "@/lib/i18n/get-consumer-locale";
 import { getTenantBranding } from "@/lib/tenant/tenant-branding";
@@ -46,6 +47,7 @@ export default async function TenantLayout({
   return (
     <Suspense>
       <ConsumerLocaleProvider locale={locale}>
+        <ConsumerEasyModeProvider tenant={tenant}>
         <div className="flex min-h-dvh flex-col bg-chaya-bg pb-[max(5.25rem,calc(env(safe-area-inset-bottom)+4.25rem))] text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
           <SkipToMainLink />
           <GuestSessionCookieSync />
@@ -63,6 +65,7 @@ export default async function TenantLayout({
           <MenuCartStickyBar tenant={tenant} />
           <BottomNav tenant={tenant} />
         </div>
+        </ConsumerEasyModeProvider>
       </ConsumerLocaleProvider>
     </Suspense>
   );

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { MenuItemOptionGroups } from "@/components/menu-item-option-groups";
+import { useConsumerEasyMode } from "@/lib/consumer/consumer-easy-mode-context";
 import { useConsumerLocale } from "@/lib/i18n/consumer-locale-context";
 import { formatConsumerMoney } from "@/lib/i18n/format-consumer-money";
 import { withConsumerLang } from "@/lib/i18n/with-consumer-lang";
@@ -27,7 +28,11 @@ type Props = {
 
 export function MenuItemAddToCart({ tenant, item }: Props) {
   const { locale, m } = useConsumerLocale();
+  const { easyMode } = useConsumerEasyMode();
   const router = useRouter();
+  const qtyBtnClass = easyMode
+    ? "flex min-h-[48px] min-w-[48px] items-center justify-center rounded-full border-2 border-zinc-300 bg-white dark:border-zinc-600 dark:bg-zinc-900"
+    : "flex min-h-[36px] min-w-[36px] items-center justify-center rounded-full border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900";
   const [qty, setQty] = useState(1);
   const [selected, setSelected] = useState<SelectedMenuOption[]>([]);
   const [optError, setOptError] = useState<string | null>(null);
@@ -86,29 +91,33 @@ export function MenuItemAddToCart({ tenant, item }: Props) {
         <div className="flex items-center gap-0.5" role="group" aria-label={`${item.name} ${m.menu.quantity}`}>
           <button
             type="button"
-            className="flex min-h-[36px] min-w-[36px] items-center justify-center rounded-full border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900"
+            className={qtyBtnClass}
             aria-label={m.menu.decreaseQty}
             onClick={() => setQty((q) => Math.max(1, q - 1))}
           >
             <Minus className="size-4" aria-hidden />
           </button>
-          <span className="min-w-7 text-center text-sm font-bold tabular-nums">{qty}</span>
+          <span className={`min-w-8 text-center font-bold tabular-nums ${easyMode ? "text-lg" : "text-sm"}`}>
+            {qty}
+          </span>
           <button
             type="button"
-            className="flex min-h-[36px] min-w-[36px] items-center justify-center rounded-full border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900"
+            className={qtyBtnClass}
             aria-label={m.menu.increaseQty}
             onClick={() => setQty((q) => Math.min(99, q + 1))}
           >
             <Plus className="size-4" aria-hidden />
           </button>
         </div>
-        <p className="min-w-0 flex-1 text-right text-base font-bold tabular-nums text-chaya-primary dark:text-orange-400">
+        <p
+          className={`min-w-0 flex-1 text-right font-bold tabular-nums text-chaya-primary dark:text-orange-400 ${easyMode ? "text-xl" : "text-base"}`}
+        >
           {formatConsumerMoney(lineTotal, locale)}
         </p>
         <button
           type="button"
           onClick={addAndGo}
-          className="min-h-[44px] shrink-0 rounded-xl bg-chaya-primary px-5 text-sm font-bold text-chaya-on-primary shadow-md active:scale-[0.99]"
+          className={`shrink-0 rounded-xl bg-chaya-primary px-5 font-bold text-chaya-on-primary shadow-md active:scale-[0.99] ${easyMode ? "min-h-[52px] text-base" : "min-h-[44px] text-sm"}`}
         >
           {m.menu.addToCart}
         </button>

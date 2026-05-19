@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
+import { useConsumerEasyMode } from "@/lib/consumer/consumer-easy-mode-context";
 import { useConsumerLocale } from "@/lib/i18n/consumer-locale-context";
 import { withConsumerLang } from "@/lib/i18n/with-consumer-lang";
 import { CHAYA_CART_CHANGED_EVENT, cartTotalQty } from "@/lib/cart/local-cart";
@@ -15,11 +16,13 @@ type Props = {
 
 export function BottomNav({ tenant }: Props) {
   const { locale, m } = useConsumerLocale();
+  const { easyMode } = useConsumerEasyMode();
   const pathname = usePathname();
   const slug = tenant.trim();
   const [cartCount, setCartCount] = useState(0);
   const basePath = `/t/${tenant}`;
-  const base = withConsumerLang(basePath, locale);
+  const menuPath = easyMode ? `${basePath}/barrier-free` : basePath;
+  const base = withConsumerLang(menuPath, locale);
   const cartHref = withConsumerLang(`${basePath}/cart`, locale);
   const ordersHref = withConsumerLang(`${basePath}/orders`, locale);
 
@@ -49,13 +52,19 @@ export function BottomNav({ tenant }: Props) {
     };
   }, [slug, refreshCartCount]);
 
-  const onMenu = pathname === basePath || pathname === `${basePath}/`;
+  const onMenu =
+    pathname === basePath ||
+    pathname === `${basePath}/` ||
+    pathname.startsWith(`${basePath}/barrier-free`);
   const onCart = pathname.startsWith(`${basePath}/cart`);
   const onOrders = pathname.startsWith(`${basePath}/orders`);
 
   const itemClass = (active: boolean) =>
     [
-      "relative flex min-h-[44px] min-w-[4.25rem] max-w-[5.5rem] flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-2 py-1 text-[10px] font-semibold leading-none tracking-tight transition-colors sm:min-w-[4.5rem] sm:text-[11px]",
+      "relative flex flex-1 flex-col items-center justify-center gap-1 rounded-lg px-2 py-1.5 font-bold leading-none tracking-tight transition-colors",
+      easyMode
+        ? "min-h-[52px] min-w-[4.75rem] max-w-[6rem] text-xs sm:min-w-[5rem] sm:text-sm"
+        : "min-h-[44px] min-w-[4.25rem] max-w-[5.5rem] gap-0.5 py-1 text-[10px] font-semibold sm:min-w-[4.5rem] sm:text-[11px]",
       active
         ? "bg-chaya-primary text-chaya-on-primary"
         : "text-zinc-600 hover:bg-zinc-100/80 dark:text-zinc-400 dark:hover:bg-zinc-800/60",
@@ -74,7 +83,7 @@ export function BottomNav({ tenant }: Props) {
         aria-current={onMenu ? "page" : undefined}
         aria-label={m.menu.boardTitle}
       >
-        <Menu className={`size-[1.125rem] ${iconClass(onMenu)}`} aria-hidden strokeWidth={2} />
+        <Menu className={`${easyMode ? "size-5" : "size-[1.125rem]"} ${iconClass(onMenu)}`} aria-hidden strokeWidth={2} />
         <span>{m.nav.menu}</span>
       </Link>
       <Link
@@ -84,7 +93,7 @@ export function BottomNav({ tenant }: Props) {
         aria-label={cartCount > 0 ? `${m.nav.cart}, ${cartCount}` : m.nav.cart}
       >
         <span className="relative inline-flex" aria-hidden>
-          <ShoppingCart className={`size-[1.125rem] ${iconClass(onCart)}`} strokeWidth={2} />
+          <ShoppingCart className={`${easyMode ? "size-5" : "size-[1.125rem]"} ${iconClass(onCart)}`} strokeWidth={2} />
           {cartCount > 0 ? (
             <span className="absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full border border-chaya-surface bg-red-500 px-0.5 text-[9px] font-bold leading-none text-white dark:border-zinc-950">
               {cartCount > 99 ? "99+" : cartCount}
@@ -99,7 +108,7 @@ export function BottomNav({ tenant }: Props) {
         aria-current={onOrders ? "page" : undefined}
         aria-label={m.nav.orders}
       >
-        <ClipboardList className={`size-[1.125rem] ${iconClass(onOrders)}`} strokeWidth={2} aria-hidden />
+        <ClipboardList className={`${easyMode ? "size-5" : "size-[1.125rem]"} ${iconClass(onOrders)}`} strokeWidth={2} aria-hidden />
         <span>{m.nav.orders}</span>
       </Link>
     </nav>

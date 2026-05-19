@@ -20,6 +20,8 @@ import { PREF_TABLE_MAX, readTablePref } from "@/lib/cart/table-pref";
 import { GUEST_SESSION_STORAGE_KEY } from "@/lib/guest-session/constants";
 import { syncGuestSessionCookieFromBrowser } from "@/lib/guest-session/sync-guest-session-cookie";
 
+import { useConsumerEasyMode } from "@/lib/consumer/consumer-easy-mode-context";
+import { useEasyMenuHref } from "@/lib/consumer/use-easy-menu-href";
 import { useConsumerLocale } from "@/lib/i18n/consumer-locale-context";
 import { resolveGuestOrderError } from "@/lib/i18n/consumer-messages-errors";
 import { formatConsumerMoney } from "@/lib/i18n/format-consumer-money";
@@ -68,7 +70,8 @@ export function CartCheckoutClient({
 }: Props) {
   const router = useRouter();
   const { locale, m } = useConsumerLocale();
-  const menuHref = withConsumerLang(`/t/${tenant}`, locale);
+  const { easyMode } = useConsumerEasyMode();
+  const menuHref = useEasyMenuHref(tenant);
   const [mounted, setMounted] = useState(false);
   const [lines, setLines] = useState<CartLine[]>([]);
   const [pending, startTransition] = useTransition();
@@ -180,10 +183,12 @@ export function CartCheckoutClient({
   if (lines.length === 0) {
     return (
       <div className="flex flex-col items-center py-14 text-center">
-        <p className="text-base font-semibold text-zinc-800 dark:text-zinc-100">{m.cart.empty}</p>
+        <p className={`font-semibold text-zinc-800 dark:text-zinc-100 ${easyMode ? "text-lg" : "text-base"}`}>
+          {m.cart.empty}
+        </p>
         <a
           href={menuHref}
-          className="mt-5 inline-flex min-h-[44px] items-center justify-center rounded-2xl bg-chaya-primary px-7 text-sm font-bold text-chaya-on-primary"
+          className={`mt-5 inline-flex items-center justify-center rounded-2xl bg-chaya-primary px-7 font-bold text-chaya-on-primary ${easyMode ? "min-h-[52px] text-base" : "min-h-[44px] text-sm"}`}
           aria-label={m.cart.emptyCtaAria}
         >
           {m.cart.emptyCta}
@@ -198,7 +203,7 @@ export function CartCheckoutClient({
         {groups.map((group, gi) => (
           <li key={group.category} className="list-none">
             <p
-              className={`sticky top-0 z-10 bg-chaya-bg/95 py-1.5 text-[11px] font-bold tracking-wide text-zinc-500 backdrop-blur-sm dark:bg-zinc-950/95 dark:text-zinc-400 ${menuFlatListItemClass}`}
+              className={`sticky top-0 z-10 bg-chaya-bg/95 py-1.5 font-bold tracking-wide text-zinc-500 backdrop-blur-sm dark:bg-zinc-950/95 dark:text-zinc-400 ${easyMode ? "text-sm" : "text-[11px]"} ${menuFlatListItemClass}`}
             >
               {group.category}
             </p>
@@ -211,10 +216,12 @@ export function CartCheckoutClient({
                 return (
                   <li
                     key={key}
-                    className={`flex items-center gap-2 py-2 sm:gap-2.5 ${menuFlatListItemClass}`}
+                    className={`flex items-center gap-2 sm:gap-2.5 ${easyMode ? "py-3" : "py-2"} ${menuFlatListItemClass}`}
                   >
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-[0.9375rem] font-semibold leading-tight text-zinc-900 dark:text-zinc-50">
+                      <p
+                        className={`truncate font-semibold leading-tight text-zinc-900 dark:text-zinc-50 ${easyMode ? "text-lg" : "text-[0.9375rem]"}`}
+                      >
                         {line.name}
                         {line.quantity > 1 ? (
                           <span className="ml-1 text-xs font-medium text-zinc-500">×{line.quantity}</span>
@@ -229,18 +236,20 @@ export function CartCheckoutClient({
                     <div className="flex shrink-0 items-center gap-0.5" role="group" aria-label={`${line.name} ${m.cart.qtySr}`}>
                       <button
                         type="button"
-                        className="flex min-h-[32px] min-w-[32px] items-center justify-center rounded-full text-zinc-600 active:bg-zinc-100 dark:text-zinc-300 dark:active:bg-zinc-800"
+                        className={`flex items-center justify-center rounded-full text-zinc-600 active:bg-zinc-100 dark:text-zinc-300 dark:active:bg-zinc-800 ${easyMode ? "min-h-[44px] min-w-[44px]" : "min-h-[32px] min-w-[32px]"}`}
                         aria-label={line.quantity <= 1 ? `${line.name} ${m.cart.removeAria}` : m.menu.decreaseQty}
                         onClick={() => changeQty(key, -1)}
                       >
                         <Minus className="size-3.5" aria-hidden />
                       </button>
-                      <span className="min-w-[1.25rem] text-center text-sm font-semibold tabular-nums">
+                      <span
+                        className={`min-w-[1.25rem] text-center font-semibold tabular-nums ${easyMode ? "text-base" : "text-sm"}`}
+                      >
                         {line.quantity}
                       </span>
                       <button
                         type="button"
-                        className="flex min-h-[32px] min-w-[32px] items-center justify-center rounded-full text-zinc-600 active:bg-zinc-100 dark:text-zinc-300 dark:active:bg-zinc-800"
+                        className={`flex items-center justify-center rounded-full text-zinc-600 active:bg-zinc-100 dark:text-zinc-300 dark:active:bg-zinc-800 ${easyMode ? "min-h-[44px] min-w-[44px]" : "min-h-[32px] min-w-[32px]"}`}
                         aria-label={m.menu.increaseQty}
                         disabled={line.quantity >= 99}
                         onClick={() => changeQty(key, 1)}
@@ -248,7 +257,9 @@ export function CartCheckoutClient({
                         <Plus className="size-3.5" aria-hidden />
                       </button>
                     </div>
-                    <p className="w-[4.25rem] shrink-0 text-right text-sm font-bold tabular-nums text-zinc-900 dark:text-zinc-50">
+                    <p
+                      className={`w-[4.25rem] shrink-0 text-right font-bold tabular-nums text-zinc-900 dark:text-zinc-50 ${easyMode ? "text-base" : "text-sm"}`}
+                    >
                       {formatConsumerMoney(lineTotal, locale)}
                     </p>
                     <button
@@ -273,7 +284,7 @@ export function CartCheckoutClient({
         <li className={`list-none py-2 ${menuFlatListItemClass}`}>
           <Link
             href={menuHref}
-            className="flex min-h-[40px] items-center justify-center rounded-lg border border-dashed border-zinc-300/80 bg-zinc-100/90 text-xs font-semibold text-chaya-primary dark:border-zinc-600/80 dark:bg-zinc-800/60 dark:text-orange-400"
+            className={`flex items-center justify-center rounded-lg border border-dashed border-zinc-300/80 bg-zinc-100/90 font-semibold text-chaya-primary dark:border-zinc-600/80 dark:bg-zinc-800/60 dark:text-orange-400 ${easyMode ? "min-h-[48px] text-sm" : "min-h-[40px] text-xs"}`}
             aria-label={m.cart.addMoreMenuAria}
           >
             {m.cart.addMoreMenu}
@@ -298,14 +309,18 @@ export function CartCheckoutClient({
       <div className={BOTTOM_DOCK}>
         <div className="flex items-center gap-3">
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">{m.cart.total}</p>
-            <p className="text-xl font-bold tabular-nums leading-tight text-chaya-primary dark:text-orange-400">
+            <p className={`font-medium text-zinc-500 dark:text-zinc-400 ${easyMode ? "text-sm" : "text-[11px]"}`}>
+              {m.cart.total}
+            </p>
+            <p
+              className={`font-bold tabular-nums leading-tight text-chaya-primary dark:text-orange-400 ${easyMode ? "text-2xl" : "text-xl"}`}
+            >
               {formatConsumerMoney(total, locale)}
             </p>
           </div>
           <button
             type="button"
-            className="min-h-[48px] shrink-0 rounded-2xl bg-chaya-primary px-6 text-base font-bold text-chaya-on-primary shadow-[0_4px_16px_rgba(164,55,0,0.22)] active:scale-[0.99] disabled:opacity-60"
+            className={`shrink-0 rounded-2xl bg-chaya-primary px-6 font-bold text-chaya-on-primary shadow-[0_4px_16px_rgba(164,55,0,0.22)] active:scale-[0.99] disabled:opacity-60 ${easyMode ? "min-h-[52px] text-lg" : "min-h-[48px] text-base"}`}
             disabled={pending}
             aria-busy={pending}
             aria-describedby="checkout-guest-order-hint"

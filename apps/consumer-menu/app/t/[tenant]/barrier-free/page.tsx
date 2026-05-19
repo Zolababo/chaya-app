@@ -25,10 +25,10 @@ export default async function BarrierFreeMenuPage({ params, searchParams }: Prop
   return (
     <div className="space-y-6" aria-labelledby="barrier-free-heading">
       <header className="space-y-2">
-        <h1 id="barrier-free-heading" className="text-2xl font-bold">
+        <h1 id="barrier-free-heading" className="text-3xl font-extrabold leading-tight tracking-tight">
           {m.barrierFree.pageTitle}
         </h1>
-        <p className="text-sm text-chaya-muted dark:text-zinc-400">{m.barrierFree.pageIntro}</p>
+        <p className="text-base leading-relaxed text-zinc-700 dark:text-zinc-300">{m.barrierFree.pageIntro}</p>
       </header>
 
       {result.notice ? (

@@ -43,9 +43,9 @@ export type A11yMessageTree = {
 
 const KO: A11yMessageTree = {
   barrierFree: {
-    pageTitle: "목록형 메뉴",
+    pageTitle: "큰글씨·목록 메뉴",
     pageIntro:
-      "TalkBack·VoiceOver 등으로 읽기 쉬운 보조 화면입니다. 담기는 기본 메뉴판·장바구니와 같은 저장소를 씁니다.",
+      "글자와 버튼을 크게 보여 주는 시각 보조 화면입니다. TalkBack·VoiceOver로도 읽을 수 있으며, 담기·장바구니·주문은 기본 메뉴와 같은 저장소를 씁니다.",
     categoryNav: "카테고리 선택",
     categoryEmpty: "선택한 카테고리에 메뉴가 없습니다.",
     categoryChanged: "카테고리가 {category}(으)로 바뀌었습니다.",
@@ -85,8 +85,9 @@ const KO: A11yMessageTree = {
 
 const EN: A11yMessageTree = {
   barrierFree: {
-    pageTitle: "List menu",
-    pageIntro: "Easier screen for TalkBack and VoiceOver. Cart is shared with the main menu.",
+    pageTitle: "Large text · List",
+    pageIntro:
+      "Visual assist mode with larger text and buttons. Works with TalkBack and VoiceOver; cart and orders share the same storage as the main menu.",
     categoryNav: "Categories",
     categoryEmpty: "No items in this category.",
     categoryChanged: "Category changed to {category}.",

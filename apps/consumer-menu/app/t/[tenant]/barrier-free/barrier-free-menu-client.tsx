@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { MenuListRow } from "@/components/menu-list-row";
 import { menuFlatListBleedClass, menuFlatListItemClass } from "@/components/menu-list-styles";
+import { useConsumerEasyMode } from "@/lib/consumer/consumer-easy-mode-context";
 import { useConsumerLocale } from "@/lib/i18n/consumer-locale-context";
 import { formatConsumerMoney } from "@/lib/i18n/format-consumer-money";
 import { withConsumerLang } from "@/lib/i18n/with-consumer-lang";
@@ -21,12 +22,20 @@ type Props = {
 
 const ALL_CATEGORY_KEY = "__all__";
 
+const panelClass =
+  "easy-contrast-panel rounded-2xl border border-chaya-border bg-chaya-surface p-4 dark:border-zinc-700 dark:bg-zinc-950";
+
 export function BarrierFreeMenuClient({ tenant, items, categories }: Props) {
   const { locale, m } = useConsumerLocale();
+  const { enterEasyMode, exitEasyMode } = useConsumerEasyMode();
   const slug = tenant.trim();
   const [active, setActive] = useState<string>(ALL_CATEGORY_KEY);
   const [cartCount, setCartCount] = useState(0);
   const [lastMessage, setLastMessage] = useState("");
+
+  useEffect(() => {
+    enterEasyMode();
+  }, [enterEasyMode]);
 
   useEffect(() => {
     setLastMessage(m.barrierFree.ready);
@@ -72,29 +81,31 @@ export function BarrierFreeMenuClient({ tenant, items, categories }: Props) {
 
   const basePath = `/t/${encodeURIComponent(slug)}`;
 
+  const categoryBtnClass = (selected: boolean) =>
+    [
+      "min-h-[52px] rounded-full border px-5 py-2.5 text-base font-bold",
+      selected
+        ? "border-chaya-primary bg-chaya-primary text-chaya-on-primary"
+        : "border-chaya-border bg-white text-zinc-900 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-50",
+    ].join(" ");
+
+  const navLinkClass =
+    "flex min-h-[52px] items-center justify-center rounded-xl px-5 py-3 text-center text-base font-bold";
+
   return (
     <>
-      <section
-        aria-label={m.barrierFree.categoryNav}
-        className="rounded-2xl border border-chaya-border bg-chaya-surface p-4 dark:border-zinc-700 dark:bg-zinc-950"
-      >
-        <div className="flex flex-wrap gap-2">
+      <section aria-label={m.barrierFree.categoryNav} className={panelClass}>
+        <div className="flex flex-wrap gap-2.5">
           {tabCategories.map((cat) => (
             <button
               key={cat.key}
               type="button"
               onClick={() => {
                 setActive(cat.key);
-                setLastMessage(
-                  m.barrierFree.categoryChanged.replace("{category}", cat.label),
-                );
+                setLastMessage(m.barrierFree.categoryChanged.replace("{category}", cat.label));
               }}
               aria-pressed={active === cat.key}
-              className={`min-h-[44px] rounded-full border px-4 py-2 text-sm font-semibold ${
-                active === cat.key
-                  ? "border-chaya-primary bg-chaya-primary text-chaya-on-primary"
-                  : "border-chaya-border bg-white text-zinc-800 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-              }`}
+              className={categoryBtnClass(active === cat.key)}
             >
               {cat.label}
             </button>
@@ -104,7 +115,9 @@ export function BarrierFreeMenuClient({ tenant, items, categories }: Props) {
 
       <section aria-label={m.barrierFree.menuList}>
         {filtered.length === 0 ? (
-          <p className="py-10 text-center text-base text-zinc-600 dark:text-zinc-300">{m.barrierFree.categoryEmpty}</p>
+          <p className="py-12 text-center text-lg font-medium text-zinc-700 dark:text-zinc-200">
+            {m.barrierFree.categoryEmpty}
+          </p>
         ) : (
           <ul className={menuFlatListBleedClass}>
             {filtered.map((item) => {
@@ -114,7 +127,7 @@ export function BarrierFreeMenuClient({ tenant, items, categories }: Props) {
               return (
                 <li key={item.id} className={menuFlatListItemClass}>
                   <MenuListRow
-                    large
+                    xlarge
                     name={name}
                     description={row.description}
                     priceLabel={formatConsumerMoney(item.price, locale)}
@@ -125,7 +138,7 @@ export function BarrierFreeMenuClient({ tenant, items, categories }: Props) {
                     detailAriaLabel={m.barrierFree.detailAria.replace("{name}", name)}
                     trailing={
                       item.isSoldOut ? (
-                        <span className="px-2 text-base font-semibold text-zinc-400">{m.barrierFree.soldOut}</span>
+                        <span className="px-2 text-lg font-bold text-zinc-500">{m.barrierFree.soldOut}</span>
                       ) : (
                         <button
                           type="button"
@@ -135,17 +148,17 @@ export function BarrierFreeMenuClient({ tenant, items, categories }: Props) {
                             refreshCartCount();
                           }}
                           aria-label={`${name} 1 ${m.barrierFree.add}`}
-                          className="min-h-[44px] shrink-0 rounded-full bg-chaya-primary px-4 text-sm font-semibold text-chaya-on-primary hover:bg-chaya-primary-hover"
+                          className="min-h-[52px] shrink-0 rounded-full bg-chaya-primary px-5 text-base font-bold text-chaya-on-primary hover:bg-chaya-primary-hover"
                         >
                           {m.barrierFree.add}
                         </button>
                       )
                     }
                   />
-                  <p className="-mt-2 pb-3 pl-[calc(6.5rem+1rem)] sm:pl-[calc(7.5rem+1.25rem)]">
+                  <p className="-mt-1 pb-4 pl-[calc(7.5rem+1rem)] sm:pl-[calc(8.5rem+1.25rem)]">
                     <Link
                       href={detailHref}
-                      className="inline-flex min-h-[44px] items-center text-sm font-semibold text-chaya-primary underline-offset-4 hover:underline dark:text-orange-400"
+                      className="inline-flex min-h-[48px] items-center text-base font-bold text-chaya-primary underline underline-offset-4 dark:text-orange-400"
                     >
                       {m.barrierFree.detailLink}
                     </Link>
@@ -159,18 +172,19 @@ export function BarrierFreeMenuClient({ tenant, items, categories }: Props) {
 
       <nav
         aria-label={m.barrierFree.navNext}
-        className="flex flex-col gap-3 rounded-2xl border border-chaya-border bg-chaya-surface p-4 dark:border-zinc-700 dark:bg-zinc-950 sm:flex-row sm:flex-wrap sm:justify-center"
+        className={`${panelClass} flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-center`}
       >
         <Link
           href={withConsumerLang(basePath, locale)}
-          className="flex min-h-[48px] items-center justify-center rounded-xl border border-chaya-border px-4 py-3 text-center text-sm font-semibold text-zinc-800 dark:border-zinc-600 dark:text-zinc-100"
+          className={`${navLinkClass} border-2 border-chaya-border text-zinc-900 dark:border-zinc-600 dark:text-zinc-50`}
           aria-label={m.barrierFree.toGridAria}
+          onClick={exitEasyMode}
         >
           {m.barrierFree.toGridMenu}
         </Link>
         <Link
           href={withConsumerLang(`${basePath}/cart`, locale)}
-          className="flex min-h-[48px] items-center justify-center rounded-xl bg-chaya-primary px-4 py-3 text-center text-sm font-semibold text-chaya-on-primary"
+          className={`${navLinkClass} bg-chaya-primary text-chaya-on-primary`}
           aria-label={
             cartCount > 0
               ? m.barrierFree.toCartWithCount.replace("{count}", String(cartCount))
@@ -183,25 +197,25 @@ export function BarrierFreeMenuClient({ tenant, items, categories }: Props) {
         </Link>
         <Link
           href={withConsumerLang(`${basePath}/orders`, locale)}
-          className="flex min-h-[48px] items-center justify-center rounded-xl border border-chaya-border px-4 py-3 text-center text-sm font-semibold text-zinc-800 dark:border-zinc-600 dark:text-zinc-100"
+          className={`${navLinkClass} border-2 border-chaya-border text-zinc-900 dark:border-zinc-600 dark:text-zinc-50`}
           aria-label={m.barrierFree.toOrdersAria}
         >
           {m.barrierFree.toOrders}
         </Link>
       </nav>
 
-      <section
-        className="rounded-2xl border border-chaya-border bg-chaya-surface p-4 dark:border-zinc-700 dark:bg-zinc-950"
-        aria-label={m.nav.cart}
-      >
-        <p className="text-sm">{m.barrierFree.cartSummary.replace("{count}", String(cartCount))}</p>
+      <section className={panelClass} aria-label={m.nav.cart}>
+        <p className="text-base leading-relaxed">{m.barrierFree.cartSummary.replace("{count}", String(cartCount))}</p>
       </section>
 
       <p
+        role="status"
         aria-live="polite"
-        className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-100"
+        aria-atomic="true"
+        className="rounded-xl border-2 border-blue-300 bg-blue-50 px-4 py-3.5 text-base font-medium text-blue-950 dark:border-blue-700 dark:bg-blue-950/60 dark:text-blue-100"
       >
-        {m.barrierFree.statusLabel}: {lastMessage}
+        <span className="sr-only">{m.barrierFree.statusLabel}: </span>
+        {lastMessage}
       </p>
     </>
   );

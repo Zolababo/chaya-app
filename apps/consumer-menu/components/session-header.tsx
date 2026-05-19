@@ -11,8 +11,9 @@ import {
   CONSUMER_STAFF_CALL_UI_VISIBLE,
 } from "@/lib/consumer/future-features";
 import { readTablePref } from "@/lib/cart/table-pref";
+import { useConsumerEasyMode } from "@/lib/consumer/consumer-easy-mode-context";
+import { useEasyMenuHref } from "@/lib/consumer/use-easy-menu-href";
 import { useConsumerLocale } from "@/lib/i18n/consumer-locale-context";
-import { withConsumerLang } from "@/lib/i18n/with-consumer-lang";
 
 type Props = {
   tenant: string;
@@ -22,7 +23,9 @@ type Props = {
 };
 
 export function SessionHeader({ tenant, displayName, logoUrl, toolbarSlot }: Props) {
-  const { locale, m } = useConsumerLocale();
+  const { m } = useConsumerLocale();
+  const { easyMode } = useConsumerEasyMode();
+  const homeHref = useEasyMenuHref(tenant);
   const searchParams = useSearchParams();
   const queryTable = searchParams.get("table")?.trim() ?? "";
   const [storedTable, setStoredTable] = useState("");
@@ -32,7 +35,6 @@ export function SessionHeader({ tenant, displayName, logoUrl, toolbarSlot }: Pro
   }, [tenant, queryTable]);
 
   const table = queryTable || storedTable;
-  const homeHref = withConsumerLang(`/t/${encodeURIComponent(tenant)}`, locale);
   const tableLine = table
     ? m.header.tableBadge.replace("{table}", table)
     : null;
@@ -41,22 +43,28 @@ export function SessionHeader({ tenant, displayName, logoUrl, toolbarSlot }: Pro
 
   return (
     <header className="sticky top-0 z-40 w-full max-w-full border-b border-chaya-border/80 bg-chaya-surface/95 shadow-sm backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950/95">
-      <div className="flex min-h-[4.25rem] items-center justify-between gap-2.5 px-4 py-2 sm:gap-3 sm:px-6">
+      <div className={`flex items-center justify-between gap-2.5 px-4 py-2 sm:gap-3 sm:px-6 ${easyMode ? "min-h-[4.75rem]" : "min-h-[4.25rem]"}`}>
         <Link
           href={homeHref}
           className="flex min-w-0 flex-1 items-center gap-3.5 rounded-xl outline-none ring-chaya-primary ring-offset-2 ring-offset-background focus-visible:ring-2 dark:ring-offset-zinc-950"
         >
           <ConsumerStoreLogo displayName={displayName} logoUrl={logoUrl} />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-lg font-bold leading-tight tracking-tight text-zinc-900 dark:text-zinc-50">
+            <p
+              className={`truncate font-bold leading-tight tracking-tight text-zinc-900 dark:text-zinc-50 ${easyMode ? "text-xl" : "text-lg"}`}
+            >
               {displayName}
             </p>
             {tableLine ? (
-              <p className="mt-0.5 truncate text-xs font-semibold text-chaya-primary dark:text-orange-400">
+              <p
+                className={`mt-0.5 truncate font-semibold text-chaya-primary dark:text-orange-400 ${easyMode ? "text-sm" : "text-xs"}`}
+              >
                 {tableLine}
               </p>
             ) : (
-              <p className="mt-0.5 truncate text-xs text-zinc-500 dark:text-zinc-400">{m.header.orderMenu}</p>
+              <p className={`mt-0.5 truncate text-zinc-500 dark:text-zinc-400 ${easyMode ? "text-sm" : "text-xs"}`}>
+                {m.header.orderMenu}
+              </p>
             )}
           </div>
         </Link>

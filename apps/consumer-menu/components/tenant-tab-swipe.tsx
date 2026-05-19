@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 
+import { useConsumerEasyMode } from "@/lib/consumer/consumer-easy-mode-context";
 import { useConsumerLocale } from "@/lib/i18n/consumer-locale-context";
 import { withConsumerLang } from "@/lib/i18n/with-consumer-lang";
 
@@ -26,10 +27,11 @@ export function TenantTabSwipe({ tenant, children }: Props) {
   const pathname = usePathname();
   const router = useRouter();
   const { locale } = useConsumerLocale();
+  const { easyMode } = useConsumerEasyMode();
   const tabIndex = tabIndexForPath(pathname, tenant);
 
   useEffect(() => {
-    if (tabIndex < 0) return;
+    if (easyMode || tabIndex < 0) return;
     const el = document.getElementById("main-content");
     if (!el) return;
 
@@ -63,7 +65,7 @@ export function TenantTabSwipe({ tenant, children }: Props) {
       el.removeEventListener("touchstart", onStart);
       el.removeEventListener("touchend", onEnd);
     };
-  }, [tabIndex, tenant, locale, router]);
+  }, [easyMode, tabIndex, tenant, locale, router]);
 
   return children;
 }

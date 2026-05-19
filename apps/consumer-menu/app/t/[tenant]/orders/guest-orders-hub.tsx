@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState, useTransition } from "react";
 import { GuestOrderRowCopyLinkButton } from "@/components/guest-order-row-copy-link-button";
 import { GUEST_SESSION_STORAGE_KEY } from "@/lib/guest-session/constants";
 import type { GuestOrderListItem } from "@/lib/orders/list-guest-orders";
+import { useConsumerEasyMode } from "@/lib/consumer/consumer-easy-mode-context";
 import { useConsumerLocale } from "@/lib/i18n/consumer-locale-context";
 import { formatConsumerMoney } from "@/lib/i18n/format-consumer-money";
 import { orderStatusLabelForLocale } from "@/lib/i18n/order-status-for-locale";
@@ -28,12 +29,14 @@ function OrderList({
   listLabel,
   locale,
   m,
+  easyMode,
 }: {
   tenant: string;
   orders: GuestOrderListItem[];
   listLabel: string;
   locale: ReturnType<typeof useConsumerLocale>["locale"];
   m: ReturnType<typeof useConsumerLocale>["m"];
+  easyMode: boolean;
 }) {
   return (
     <ul
@@ -46,21 +49,29 @@ function OrderList({
             <Link
               href={withConsumerLang(`/t/${tenant}/orders/${o.id}`, locale)}
               aria-label={`${o.id.slice(0, 8)}, ${orderStatusLabelForLocale(o.status, locale)}, ${formatConsumerMoney(o.total_price, locale)}, ${m.orders.orderLinkAria}`}
-              className="flex min-h-[44px] flex-col gap-1 px-4 py-4 transition hover:bg-zinc-50 dark:hover:bg-zinc-900/60 sm:flex-row sm:items-center sm:justify-between"
+              className={`flex flex-col gap-1 px-4 py-4 transition hover:bg-zinc-50 dark:hover:bg-zinc-900/60 sm:flex-row sm:items-center sm:justify-between ${easyMode ? "min-h-[52px]" : "min-h-[44px]"}`}
             >
               <div>
-                <p className="font-mono text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+                <p
+                  className={`font-mono font-semibold text-zinc-800 dark:text-zinc-200 ${easyMode ? "text-base" : "text-sm"}`}
+                >
                   {o.id.slice(0, 8)}…
                 </p>
                 {o.created_at ? (
-                  <p className="text-xs text-zinc-500">{new Date(o.created_at).toLocaleString("ko-KR")}</p>
+                  <p className={`text-zinc-500 ${easyMode ? "text-sm" : "text-xs"}`}>
+                    {new Date(o.created_at).toLocaleString("ko-KR")}
+                  </p>
                 ) : null}
               </div>
               <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                <span className="inline-flex rounded-full bg-zinc-200 px-3 py-1 text-xs font-medium text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200">
+                <span
+                  className={`inline-flex rounded-full bg-zinc-200 px-3 py-1 font-medium text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200 ${easyMode ? "text-sm" : "text-xs"}`}
+                >
                   {orderStatusLabelForLocale(o.status, locale)}
                 </span>
-                <span className="text-sm font-semibold tabular-nums text-chaya-primary dark:text-orange-400">
+                <span
+                  className={`font-semibold tabular-nums text-chaya-primary dark:text-orange-400 ${easyMode ? "text-base" : "text-sm"}`}
+                >
                   {formatConsumerMoney(o.total_price, locale)}
                 </span>
               </div>
@@ -82,6 +93,7 @@ export function GuestOrdersHub({
   accountLoadError = null,
 }: Props) {
   const { locale, m } = useConsumerLocale();
+  const { easyMode } = useConsumerEasyMode();
   const [orders, setOrders] = useState<GuestOrderListItem[] | null>(null);
   const [accountOrders, setAccountOrders] = useState<GuestOrderListItem[]>(initialAccountOrders);
   const [noSession, setNoSession] = useState(false);
@@ -235,6 +247,7 @@ export function GuestOrdersHub({
             listLabel={m.orders.accountListLabel}
             locale={locale}
             m={m}
+            easyMode={easyMode}
           />
         </section>
       ) : null}
@@ -250,6 +263,7 @@ export function GuestOrdersHub({
             listLabel={m.orders.guestListLabel}
             locale={locale}
             m={m}
+            easyMode={easyMode}
           />
         </section>
       ) : null}
