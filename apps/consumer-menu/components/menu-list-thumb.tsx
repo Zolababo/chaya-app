@@ -6,7 +6,7 @@ type Props = {
   xlarge?: boolean;
 };
 
-const SIZE_DEFAULT = "h-16 w-16 sm:h-[4.25rem] sm:w-[4.25rem]";
+const SIZE_DEFAULT = "h-16 w-16 sm:h-16 sm:w-16";
 const SIZE_LARGE = "h-[5.25rem] w-[5.25rem] sm:h-24 sm:w-24";
 const SIZE_XLARGE = "h-28 w-28 sm:h-32 sm:w-32";
 
@@ -17,7 +17,7 @@ export function MenuListThumb({ imageUrl, large = false, xlarge = false }: Props
   if (!imageUrl?.trim()) {
     return (
       <div
-        className={`${sizeClass} shrink-0 rounded-lg bg-zinc-100 dark:bg-zinc-800`}
+        className={`${sizeClass} shrink-0 rounded-xl bg-zinc-100 dark:bg-zinc-800`}
         aria-hidden
       />
     );
@@ -28,7 +28,7 @@ export function MenuListThumb({ imageUrl, large = false, xlarge = false }: Props
     <img
       src={imageUrl}
       alt=""
-      className={`${sizeClass} shrink-0 rounded-lg object-cover`}
+      className={`${sizeClass} shrink-0 rounded-xl object-cover`}
     />
   );
 }

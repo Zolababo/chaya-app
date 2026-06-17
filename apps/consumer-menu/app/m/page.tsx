@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { merchantAccessPendingUrl, parseMerchantRole } from "@/lib/merchant/merchant-access";
 import { merchantRoleBadgeKo } from "@/lib/merchant/merchant-role-capabilities";
+import { chayaAuthShellClass } from "@/lib/responsive/chaya-app-shell";
 import { createSupabaseServerClient } from "@/lib/supabase/create-server-session-client";
 import { resolveServerUser } from "@/lib/supabase/resolve-server-user";
 
@@ -55,9 +56,9 @@ export default async function MerchantPortalHomePage() {
   }
 
   return (
-    <div className="mx-auto min-h-dvh max-w-md px-4 py-10 pb-[max(2.5rem,env(safe-area-inset-bottom))]">
+    <div className={`min-h-dvh py-10 pb-[max(2.5rem,env(safe-area-inset-bottom))] ${chayaAuthShellClass}`}>
       <header className="mb-6">
-        <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Merchant</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">CHAYA 점주</p>
         <h1 className="mt-2 text-2xl font-bold">가게 선택</h1>
         <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
           {approvedRows.length > 0

@@ -20,3 +20,4 @@ CREATE POLICY "Public read menu images"
   FOR SELECT
   TO anon, authenticated
   USING (bucket_id = 'menu-images');
+줌줌

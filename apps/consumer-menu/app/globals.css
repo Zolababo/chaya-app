@@ -1,15 +1,106 @@
 @import "tailwindcss";
 
+/* 점주·플랫폼만 OS 다크. 손님 `/t/*`는 html[data-chaya-consumer] 로 라이트 고정. */
+@custom-variant dark (@media (prefers-color-scheme: dark) {
+  html:not([data-chaya-consumer]) &
+});
+
 /* CHAYA consumer menu — Stitch-aligned tokens (light-first; dark uses zinc surfaces). */
 :root {
-  --background: #fcf9f8;
+  --background: #fafaf9;
   --foreground: #1c1917;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  html:not([data-chaya-consumer]) {
     --background: #18181b;
     --foreground: #fafafa;
+  }
+}
+
+[data-chaya-ops] {
+  --color-ops-primary: #f0f4ff;
+  --color-ops-accent: #5b6bf8;
+  --color-ops-accent-2: #8b5cf6;
+  --color-ops-bg: #07090f;
+  --color-ops-surface: #0d1117;
+  --color-ops-surface-2: #131923;
+  --color-ops-surface-3: #1a2233;
+  --color-ops-border: #ffffff0f;
+  --color-ops-border-2: #ffffff1a;
+  --color-ops-text: #f0f4ff;
+  --color-ops-muted: #8b97b4;
+  --color-ops-subtle: #cbd5e1;
+  background-color: var(--color-ops-bg);
+  color: var(--color-ops-text);
+  min-height: 100dvh;
+  color-scheme: dark;
+}
+
+html[data-chaya-consumer] {
+  color-scheme: only light !important;
+  background-color: #fafaf9 !important;
+  touch-action: manipulation;
+}
+
+html[data-chaya-consumer] body {
+  background-color: #fafaf9 !important;
+  color: #1c1917 !important;
+  touch-action: manipulation;
+}
+
+/* 손님앱 로더 — 포크·컵·국물 Lucide 순환 (prefers-reduced-motion: 첫 아이콘만) */
+@keyframes chaya-food-loader-step {
+  0%,
+  16% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  20%,
+  100% {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}
+
+.chaya-food-loader-cycle {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+}
+
+.chaya-food-loader-cycle .chaya-food-loader-icon {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  animation: chaya-food-loader-step 2.7s ease-in-out infinite;
+}
+
+.chaya-food-loader-cycle .chaya-food-loader-icon:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.chaya-food-loader-cycle .chaya-food-loader-icon:nth-child(2) {
+  animation-delay: 0.9s;
+}
+
+.chaya-food-loader-cycle .chaya-food-loader-icon:nth-child(3) {
+  animation-delay: 1.8s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chaya-food-loader-cycle .chaya-food-loader-icon {
+    animation: none;
+    opacity: 0;
+  }
+
+  .chaya-food-loader-cycle .chaya-food-loader-icon:nth-child(1) {
+    opacity: 1;
   }
 }
 
@@ -17,15 +108,30 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
 
-  --color-chaya-bg: #fcf9f8;
+  --color-chaya-bg: #fafaf9;
   --color-chaya-surface: #ffffff;
-  --color-chaya-primary: #a43700;
-  --color-chaya-primary-hover: #862e00;
+  /* a0 warm terracotta (restaurant-ui primary) */
+  --color-chaya-primary: #c4613a;
+  --color-chaya-primary-hover: #a8512f;
   --color-chaya-on-primary: #ffffff;
   --color-chaya-muted: #71717a;
   --color-chaya-border: #e4e4e7;
   --color-chaya-info: #0072e4;
   --color-chaya-info-hover: #005bbf;
+
+  /* CHAYA platform admin (`/ops/*`) — Claude mockup dark (always) */
+  --color-ops-primary: #f0f4ff;
+  --color-ops-accent: #5b6bf8;
+  --color-ops-accent-2: #8b5cf6;
+  --color-ops-bg: #07090f;
+  --color-ops-surface: #0d1117;
+  --color-ops-surface-2: #131923;
+  --color-ops-surface-3: #1a2233;
+  --color-ops-border: #ffffff0f;
+  --color-ops-border-2: #ffffff1a;
+  --color-ops-text: #f0f4ff;
+  --color-ops-muted: #8b97b4;
+  --color-ops-subtle: #cbd5e1;
 
   --font-sans: var(--font-chaya-sans), ui-sans-serif, system-ui, sans-serif;
 }
@@ -49,17 +155,7 @@ button:focus-visible {
   outline-offset: 2px;
 }
 
-/* 큰글씨·목록(Big UI) — `ConsumerEasyModeProvider`가 html에 data-consumer-easy-mode 설정 */
-html[data-consumer-easy-mode] {
-  font-size: 17px;
-}
-
-@media (min-width: 640px) {
-  html[data-consumer-easy-mode] {
-    font-size: 18px;
-  }
-}
-
+/* 큰글씨 — 루트 rem 확대 대신 컴포넌트(.menu-list-row-scale-*) 로만 키움 (레이아웃 붕괴 방지) */
 html[data-consumer-easy-mode] #menu-item-heading {
   font-size: 1.75rem;
   line-height: 1.25;
@@ -75,7 +171,649 @@ html[data-consumer-easy-mode] .easy-contrast-panel {
 }
 
 @media (prefers-color-scheme: dark) {
-  html[data-consumer-easy-mode] .easy-contrast-panel {
+  html:not([data-chaya-consumer])[data-consumer-easy-mode] .easy-contrast-panel {
     border-color: #d4d4d8;
+  }
+}
+
+html[data-chaya-consumer][data-consumer-a11y-pad] #main-content {
+  padding-top: 0.875rem;
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes merchant-bell-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.3);
+  }
+}
+
+@keyframes merchant-bell-urgent {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.4);
+    opacity: 0.7;
+  }
+}
+
+@keyframes pop-in {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes badge-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.12);
+  }
+}
+
+html[data-consumer-font-scale="xl"] .menu-add-target {
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+}
+
+/* 고대비 — 손님 `/t/*` 선택 옵션 (data-chaya-consumer 유지) */
+html[data-chaya-consumer][data-consumer-high-contrast] {
+  --color-chaya-bg: #0a0a0a;
+  --color-chaya-surface: #171717;
+  --color-chaya-primary: #ff6b47;
+  --color-chaya-border: #404040;
+  background-color: #0a0a0a !important;
+  color: #fafafa !important;
+}
+
+html[data-chaya-consumer][data-consumer-high-contrast] body {
+  background-color: #0a0a0a !important;
+  color: #fafafa !important;
+}
+
+html[data-chaya-consumer][data-consumer-high-contrast] .bg-chaya-bg,
+html[data-chaya-consumer][data-consumer-high-contrast] .bg-chaya-surface {
+  background-color: #171717 !important;
+}
+
+html[data-chaya-consumer][data-consumer-high-contrast] .text-zinc-900,
+html[data-chaya-consumer][data-consumer-high-contrast] .text-zinc-800,
+html[data-chaya-consumer][data-consumer-high-contrast] .font-semibold.text-zinc-900 {
+  color: #fafafa !important;
+}
+
+html[data-chaya-consumer][data-consumer-high-contrast] .text-zinc-500,
+html[data-chaya-consumer][data-consumer-high-contrast] .text-zinc-600 {
+  color: #d4d4d4 !important;
+}
+
+html[data-chaya-consumer][data-consumer-high-contrast] .border-chaya-border,
+html[data-chaya-consumer][data-consumer-high-contrast] .ring-black\/\[0\.03\] {
+  border-color: #525252 !important;
+}
+
+/* ── CHAYA 앱 셸 (손님·점주 세로 우선) ── */
+:root {
+  --chaya-shell-max-consumer: 32rem;
+  --chaya-shell-max-merchant: 56rem;
+  --chaya-shell-max-auth: 28rem;
+  --chaya-shell-px: max(1rem, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px));
+  --chaya-merchant-header-h: 3.25rem;
+  --chaya-merchant-sticky-top: calc(
+    env(safe-area-inset-top, 0px) + var(--chaya-merchant-header-h)
+  );
+  --chaya-merchant-nav-clearance: calc(
+    3.25rem + env(safe-area-inset-bottom, 0px) + 0.5rem
+  );
+  --chaya-consumer-nav-clearance: max(
+    3.5rem,
+    calc(env(safe-area-inset-bottom, 0px) + 3rem)
+  );
+  --chaya-consumer-cart-bar-offset: max(
+    3.5rem,
+    calc(env(safe-area-inset-bottom, 0px) + 3.25rem)
+  );
+  --chaya-shell-max-ops: 32rem;
+  --chaya-ops-nav-clearance: calc(
+    3.25rem + env(safe-area-inset-bottom, 0px) + 0.5rem
+  );
+}
+
+.chaya-app-shell {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: var(--chaya-shell-max, var(--chaya-shell-max-consumer));
+  margin-inline: auto;
+  padding-inline: var(--chaya-shell-px);
+}
+
+.chaya-app-shell--consumer {
+  --chaya-shell-max: var(--chaya-shell-max-consumer);
+}
+
+.chaya-app-shell--merchant {
+  --chaya-shell-max: var(--chaya-shell-max-merchant);
+}
+
+.chaya-app-shell--auth {
+  --chaya-shell-max: var(--chaya-shell-max-auth);
+}
+
+.chaya-app-shell--ops {
+  --chaya-shell-max: var(--chaya-shell-max-ops);
+}
+
+.ops-shell-with-compact-nav {
+  padding-bottom: var(--chaya-ops-nav-clearance);
+}
+
+.chaya-app-shell__nav-inner {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: var(--chaya-shell-max, var(--chaya-shell-max-consumer));
+  margin-inline: auto;
+  padding-inline: var(--chaya-shell-px);
+}
+
+.merchant-viewport-bar {
+  box-sizing: border-box;
+  width: 100vw;
+  max-width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-inline: max(1rem, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px));
+}
+
+/** 점주 전체 화면 로딩 — 상단 헤더·하단 4탭 사이 뷰포트 정중앙 (탭마다 동일) */
+.chaya-merchant-loading-viewport {
+  position: fixed;
+  z-index: 15;
+  inset-inline: 0;
+  top: var(--chaya-merchant-sticky-top);
+  bottom: var(--chaya-merchant-nav-clearance);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-inline: 1rem;
+  text-align: center;
+  pointer-events: none;
+}
+
+@media (min-width: 1024px) {
+  .chaya-merchant-loading-viewport {
+    bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+  }
+}
+
+.chaya-app-shell-bleed {
+  margin-inline: calc(-1 * var(--chaya-shell-px));
+  padding-inline: var(--chaya-shell-px);
+}
+
+.merchant-shell-with-compact-nav {
+  padding-bottom: var(--chaya-merchant-nav-clearance);
+}
+
+.merchant-compact-nav {
+  display: block;
+}
+
+.merchant-analytics-charts-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.merchant-desktop-subnav {
+  display: none;
+}
+
+.ops-shell-with-compact-nav {
+  padding-bottom: var(--chaya-ops-nav-clearance);
+}
+
+.ops-desktop-sidebar {
+  display: none;
+}
+
+.ops-desktop-topbar {
+  display: none;
+}
+
+.ops-compact-header {
+  display: block;
+}
+
+.ops-compact-nav-wrap {
+  display: block;
+}
+
+.ops-console-root {
+  min-height: 100dvh;
+}
+
+.ops-main-column {
+  display: flex;
+  min-height: 100dvh;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.ops-compact-nav {
+  display: block;
+}
+
+.ops-desktop-only {
+  display: none;
+}
+
+.ops-compact-only {
+  display: block;
+}
+
+/* ops 본문 그리드 — 세로 1~2열, 1024+ 가로에서 확장 */
+.ops-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.875rem;
+}
+
+.ops-grid-2 {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.875rem;
+}
+
+.ops-grid-3 {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.875rem;
+}
+
+.ops-grid-split-14 {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.875rem;
+}
+
+.ops-grid-split-15 {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.875rem;
+}
+
+.ops-page-header {
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom-width: 1px;
+}
+
+.ops-page-title {
+  font-size: 1.5rem;
+  line-height: 2rem;
+}
+
+.ops-kpi-tile {
+  padding: 0.75rem;
+}
+
+.ops-kpi-tile-value {
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+}
+
+.ops-section-card {
+  padding: 1rem;
+}
+
+.ops-section-card-title {
+  font-size: 0.8125rem;
+}
+
+.ops-console-content {
+  width: 100%;
+  padding-top: 0.875rem;
+}
+
+.merchant-dashboard-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.merchant-dashboard-summary-pane {
+  order: 1;
+}
+
+.merchant-dashboard-ops-pane {
+  order: 2;
+}
+
+@media (min-width: 1024px) and (orientation: landscape) {
+  .merchant-shell-with-compact-nav {
+    padding-bottom: 1rem;
+  }
+
+  .merchant-compact-nav {
+    display: none;
+  }
+
+  .merchant-desktop-subnav {
+    display: block;
+  }
+
+  .chaya-app-shell--merchant {
+    --chaya-shell-max: min(76rem, calc(100vw - 2 * var(--chaya-shell-px)));
+  }
+
+  .merchant-subpage-header {
+    position: sticky;
+    top: var(--chaya-merchant-sticky-top);
+    z-index: 10;
+    margin-bottom: 1rem;
+    border-bottom-color: rgb(228 228 231 / 0.9);
+    background: rgb(255 255 255 / 0.95);
+    padding-top: 0.25rem;
+    backdrop-filter: blur(8px);
+  }
+
+  :is(.dark) .merchant-subpage-header {
+    border-bottom-color: rgb(39 39 42 / 0.9);
+    background: rgb(9 9 11 / 0.95);
+  }
+
+  .merchant-orders-two-pane {
+    display: grid;
+    grid-template-columns: minmax(17.5rem, 36%) minmax(0, 1fr);
+    gap: 1rem;
+    align-items: start;
+  }
+
+  .merchant-orders-list-pane {
+    min-width: 0;
+    max-height: calc(100dvh - var(--chaya-merchant-sticky-top) - 7.5rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .merchant-orders-detail-pane {
+    position: sticky;
+    top: calc(var(--chaya-merchant-sticky-top) + 6.75rem);
+    min-width: 0;
+    max-height: calc(100dvh - var(--chaya-merchant-sticky-top) - 7.5rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .merchant-analytics-period {
+    position: sticky;
+    top: var(--chaya-merchant-sticky-top);
+    z-index: 15;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    background: rgb(255 255 255 / 0.95);
+    backdrop-filter: blur(8px);
+  }
+
+  :is(.dark) .merchant-analytics-period {
+    background: rgb(9 9 11 / 0.95);
+  }
+
+  .merchant-analytics-body {
+    display: grid;
+    grid-template-columns: minmax(16rem, 34%) minmax(0, 1fr);
+    gap: 1rem;
+    align-items: start;
+  }
+
+  .merchant-analytics-summary-pane {
+    position: sticky;
+    top: calc(var(--chaya-merchant-sticky-top) + 7.5rem);
+    min-width: 0;
+    max-height: calc(100dvh - var(--chaya-merchant-sticky-top) - 8rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .merchant-analytics-charts-pane {
+    min-width: 0;
+  }
+
+  .merchant-analytics-charts-stack {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  .merchant-analytics-charts-stack > :last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
+  .merchant-dashboard-body {
+    display: grid;
+    grid-template-columns: minmax(16rem, 34%) minmax(0, 1fr);
+    gap: 1rem;
+    align-items: start;
+  }
+
+  .merchant-dashboard-summary-pane {
+    order: 1;
+    position: sticky;
+    top: calc(var(--chaya-merchant-sticky-top) + 0.5rem);
+    min-width: 0;
+    max-height: calc(100dvh - var(--chaya-merchant-sticky-top) - 5rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .merchant-dashboard-ops-pane {
+    order: 2;
+    min-width: 0;
+  }
+
+  .merchant-menus-two-pane {
+    display: grid;
+    grid-template-columns: minmax(17.5rem, 36%) minmax(0, 1fr);
+    gap: 1rem;
+    align-items: start;
+  }
+
+  .merchant-menus-list-pane {
+    min-width: 0;
+    max-height: calc(100dvh - var(--chaya-merchant-sticky-top) - 8rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .merchant-menus-detail-pane {
+    position: sticky;
+    top: calc(var(--chaya-merchant-sticky-top) + 6.75rem);
+    min-width: 0;
+    max-height: calc(100dvh - var(--chaya-merchant-sticky-top) - 8rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .merchant-menus-edit-back {
+    display: none;
+  }
+}
+
+/* ops — PC(마우스·정밀 포인터): 사이드바 셸. 터치·폰은 항상 하단 탭·컴팩트 헤더 */
+@media (hover: hover) and (pointer: fine) {
+  .ops-console-root {
+    display: flex;
+    overflow: hidden;
+  }
+
+  .ops-desktop-sidebar {
+    display: flex;
+  }
+
+  .ops-desktop-topbar {
+    display: flex;
+  }
+
+  .ops-compact-header {
+    display: none;
+  }
+
+  .ops-compact-nav-wrap {
+    display: none;
+  }
+
+  .ops-main-column {
+    margin-left: 14rem;
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .ops-main-scroll {
+    overflow-y: auto;
+  }
+
+  .ops-shell-with-compact-nav {
+    padding-bottom: 0;
+  }
+
+  .chaya-app-shell--ops {
+    max-width: none;
+    padding-inline: 0;
+  }
+
+  .ops-console-content {
+    max-width: none;
+    padding-inline: 1.75rem;
+    padding-top: 1.5rem;
+    padding-bottom: 2.5rem;
+  }
+
+  .ops-desktop-only {
+    display: block;
+  }
+
+  .ops-compact-only {
+    display: none;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) and (min-width: 1024px) {
+  .ops-stores-two-pane {
+    display: grid;
+    grid-template-columns: minmax(17.5rem, 38%) minmax(0, 1fr);
+    gap: 1rem;
+    align-items: start;
+  }
+
+  .ops-stores-list-pane {
+    min-width: 0;
+    max-height: calc(100dvh - 8rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .ops-stores-detail-pane {
+    position: sticky;
+    top: 3.5rem;
+    min-width: 0;
+    max-height: calc(100dvh - 8rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .ops-store-detail-kpi-grid {
+    gap: 1rem;
+  }
+
+  .ops-store-detail-layout {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+  }
+
+  .ops-store-detail-layout > * {
+    margin-top: 0;
+  }
+
+  .ops-store-detail-col-left {
+    grid-column: span 5;
+  }
+
+  .ops-store-detail-col-right {
+    grid-column: span 7;
+  }
+
+  .ops-kpi-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.875rem;
+  }
+
+  .ops-grid-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ops-grid-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .ops-grid-split-14 {
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  }
+
+  .ops-grid-split-15 {
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  }
+
+  .ops-page-header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.25rem;
+  }
+
+  .ops-page-title {
+    font-size: 1.875rem;
+    line-height: 2.25rem;
+  }
+
+  .ops-kpi-tile {
+    padding: 1rem;
+  }
+
+  .ops-kpi-tile-value {
+    font-size: 1.5rem;
+    line-height: 2rem;
+  }
+
+  .ops-section-card {
+    padding: 1.25rem;
+  }
+
+  .ops-section-card-title {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
   }
 }

@@ -5,10 +5,14 @@ import { redirect } from "next/navigation";
 import { canDeleteMerchantMenu, canManageMerchantMenus } from "@/lib/merchant/merchant-role-capabilities";
 import { requireMerchantOrderMutation } from "@/lib/merchant/require-merchant-action";
 import { recordMerchantAuditEvent } from "@/lib/merchant/record-merchant-audit";
+import { parseTranslationsFromForm } from "@/lib/i18n/menu-translations";
+import { mergeTranslationsWithFallback } from "@/lib/menus/hansik-lookup";
+import { parseMenuTranslationMeta } from "@/lib/menus/menu-translation-meta";
 import {
-  menuTranslationsMapToJson,
-  parseTranslationsFromForm,
-} from "@/lib/i18n/menu-translations";
+  buildTranslationsJsonWithMeta,
+  okCodeForTranslationSource,
+  parseMenuTranslationSource,
+} from "@/lib/merchant/merchant-menu-translation-source";
 import { tryRemoveMenuImageForTenant } from "@/lib/menus/remove-menu-image-from-url";
 import { parseMerchantOptionsInput } from "@/lib/menus/menu-options";
 import { pickUploadedMenuImageUrl } from "@/lib/menus/upload-menu-image";
@@ -36,6 +40,44 @@ function redirectMenus(
   if (cat) q.set("category", cat.slice(0, MAX_CAT));
   const suffix = q.toString() ? `?${q}` : "";
   redirect(`/m/${encodeURIComponent(tenant)}/menus${suffix}`);
+}
+
+function readReturnTo(formData: FormData): "list" | "edit" {
+  return formData.get("return_to") === "edit" ? "edit" : "list";
+}
+
+function readPreserveTab(formData: FormData): string | null {
+  const t = trimStr(formData.get("preserve_tab"), 20);
+  return t === "photo" || t === "advanced" ? t : null;
+}
+
+function redirectAfterMenuAction(
+  tenant: string,
+  menuId: string | null,
+  preserveCategory: string | null,
+  opts: {
+    err?: string;
+    ok?: string;
+    warn?: string;
+    hint?: string;
+    returnTo?: "list" | "edit";
+    preserveTab?: string | null;
+  },
+): never {
+  if (opts.returnTo === "edit" && menuId) {
+    const q = new URLSearchParams();
+    if (opts.err) q.set("e", opts.err);
+    if (opts.ok) q.set("ok", opts.ok);
+    if (opts.warn) q.set("warn", opts.warn.slice(0, 200));
+    if (opts.hint) q.set("hint", opts.hint.slice(0, 300));
+    const cat = preserveCategory?.trim();
+    if (cat) q.set("category", cat.slice(0, MAX_CAT));
+    const tab = opts.preserveTab?.trim();
+    if (tab === "photo" || tab === "advanced") q.set("tab", tab);
+    const suffix = q.toString() ? `?${q}` : "";
+    redirect(`/m/${encodeURIComponent(tenant)}/menus/${encodeURIComponent(menuId)}${suffix}`);
+  }
+  redirectMenus(tenant, opts.err, preserveCategory, opts.ok, opts.warn, opts.hint);
 }
 
 function formHasNewImageFile(formData: FormData): boolean {
@@ -161,17 +203,26 @@ export async function createMenuFromForm(formData: FormData): Promise<void> {
       : parseSortOrder(rawSort);
 
   const is_sold_out = parseSoldOutCheckbox(formData.get("is_sold_out"));
-  const translations_json = menuTranslationsMapToJson(parseTranslationsFromForm(formData));
+  const is_todays_pick = parseSoldOutCheckbox(formData.get("is_todays_pick"));
+  const is_store_recommended = parseSoldOutCheckbox(formData.get("is_store_recommended"));
+  const formTranslations = parseTranslationsFromForm(formData);
+  const koDescription = trimStr(formData.get("description"), MAX_DESC);
+  const { merged: mergedTranslations, source: translationSource, menuMeta, aiWarning } =
+    await mergeTranslationsWithFallback(name, formTranslations, client, koDescription);
+  const translations_json = buildTranslationsJsonWithMeta(mergedTranslations, translationSource, menuMeta);
+  const saveWarn = [uploadWarn, aiWarning].filter(Boolean).join(" ") || undefined;
 
   const { error } = await client.from("ChayaMenus").insert({
     tenant_slug: tenant,
     name,
     price,
     category: trimStr(formData.get("category"), MAX_CAT),
-    description: trimStr(formData.get("description"), MAX_DESC),
+    description: koDescription || null,
     imageUrl,
     sort_order,
     is_sold_out,
+    is_todays_pick,
+    is_store_recommended,
     options_json: optionsParsed.value,
     translations_json,
   });
@@ -183,7 +234,55 @@ export async function createMenuFromForm(formData: FormData): Promise<void> {
     action: "menu_create",
     detail: { name },
   });
-  redirectMenus(tenant, undefined, preserveCategory, "saved", uploadWarn);
+  const okCode = okCodeForTranslationSource(translationSource);
+  redirectMenus(tenant, undefined, preserveCategory, okCode, saveWarn);
+}
+
+/** 목록에서 가격만 빠르게 변경. */
+export async function updateMenuPriceFromForm(formData: FormData): Promise<void> {
+  const actorUserId = await requireMenusEditor(formData);
+
+  const tenant = String(formData.get("tenant_slug") ?? "").trim();
+  const menuId = String(formData.get("menu_id") ?? "").trim();
+  const price = parsePrice(formData.get("price"));
+  const preserveCategory = readPreserveCategory(formData);
+
+  if (!tenant || !menuId || !UUID_RE.test(menuId) || price == null) {
+    redirectMenus(tenant || "_", "bad_input", preserveCategory);
+  }
+
+  const client = createServiceSupabase();
+  if (!client) redirectMenus(tenant, "no_service", preserveCategory);
+
+  const { data: existing } = await client
+    .from("ChayaMenus")
+    .select("name")
+    .eq("id", menuId)
+    .eq("tenant_slug", tenant)
+    .maybeSingle();
+
+  if (!existing) redirectMenus(tenant, "bad_input", preserveCategory, undefined, undefined, "메뉴를 찾을 수 없습니다.");
+
+  const { error } = await client
+    .from("ChayaMenus")
+    .update({ price })
+    .eq("id", menuId)
+    .eq("tenant_slug", tenant);
+
+  if (error) redirectMenus(tenant, "db", preserveCategory);
+
+  const name =
+    existing && typeof existing === "object" && "name" in existing
+      ? String((existing as { name?: string }).name ?? "")
+      : "";
+
+  void recordMerchantAuditEvent({
+    tenantSlug: tenant,
+    actorUserId,
+    action: "menu_update",
+    detail: { menu_id: menuId, name, field: "price" },
+  });
+  redirectMenus(tenant, undefined, preserveCategory, "price_saved");
 }
 
 export async function updateMenuFromForm(formData: FormData): Promise<void> {
@@ -193,17 +292,29 @@ export async function updateMenuFromForm(formData: FormData): Promise<void> {
   const menuId = String(formData.get("menu_id") ?? "").trim();
   const name = trimStr(formData.get("name"), MAX_NAME);
   const price = parsePrice(formData.get("price"));
-  if (!tenant || !menuId || !UUID_RE.test(menuId) || !name || price == null) {
-    redirectMenus(tenant || "_", "bad_input");
-  }
   const preserveCategory = readPreserveCategory(formData);
+  const preserveTab = readPreserveTab(formData);
+  const returnTo = readReturnTo(formData);
+  if (!tenant || !menuId || !UUID_RE.test(menuId) || !name || price == null) {
+    redirectAfterMenuAction(tenant || "_", menuId || null, preserveCategory, {
+      err: "bad_input",
+      returnTo,
+      preserveTab,
+    });
+  }
 
   const client = createServiceSupabase();
-  if (!client) redirectMenus(tenant, "no_service", preserveCategory);
+  if (!client) {
+    redirectAfterMenuAction(tenant, menuId, preserveCategory, {
+      err: "no_service",
+      returnTo,
+      preserveTab,
+    });
+  }
 
   const { data: existing } = await client
     .from("ChayaMenus")
-    .select("imageUrl, options_json")
+    .select("imageUrl, options_json, translations_json")
     .eq("id", menuId)
     .eq("tenant_slug", tenant)
     .maybeSingle();
@@ -217,6 +328,15 @@ export async function updateMenuFromForm(formData: FormData): Promise<void> {
     existing && typeof existing === "object" && "options_json" in existing
       ? (existing as { options_json?: unknown }).options_json
       : null;
+
+  const existingTranslationsJson =
+    existing && typeof existing === "object" && "translations_json" in existing
+      ? (existing as { translations_json?: unknown }).translations_json
+      : null;
+  const existingMeta = parseMenuTranslationMeta(existingTranslationsJson);
+  const prevTranslationSource =
+    existingMeta?.source ??
+    (existingTranslationsJson ? parseMenuTranslationSource(existingTranslationsJson) : null);
 
   const optionsParsed = parseOptionsFromForm(formData);
   let options_json: unknown = null;
@@ -244,7 +364,25 @@ export async function updateMenuFromForm(formData: FormData): Promise<void> {
 
   const sort_order = parseSortOrder(formData.get("sort_order"));
   const is_sold_out = parseSoldOutCheckbox(formData.get("is_sold_out"));
-  const translations_json = menuTranslationsMapToJson(parseTranslationsFromForm(formData));
+  const is_todays_pick = parseSoldOutCheckbox(formData.get("is_todays_pick"));
+  const is_store_recommended = parseSoldOutCheckbox(formData.get("is_store_recommended"));
+  const formTranslations = parseTranslationsFromForm(formData);
+  const koDescription = trimStr(formData.get("description"), MAX_DESC);
+  const { merged: mergedTranslations, source: translationSource, menuMeta, aiWarning } =
+    await mergeTranslationsWithFallback(
+      name,
+      formTranslations,
+      client,
+      koDescription,
+      existingMeta,
+    );
+  const translations_json = buildTranslationsJsonWithMeta(
+    mergedTranslations,
+    translationSource,
+    menuMeta,
+    prevTranslationSource,
+  );
+  const saveWarn = [uploadWarn, aiWarning].filter(Boolean).join(" ") || undefined;
 
   const { error } = await client
     .from("ChayaMenus")
@@ -252,17 +390,19 @@ export async function updateMenuFromForm(formData: FormData): Promise<void> {
       name,
       price,
       category: trimStr(formData.get("category"), MAX_CAT),
-      description: trimStr(formData.get("description"), MAX_DESC),
+      description: koDescription || null,
       imageUrl,
       sort_order,
       is_sold_out,
+      is_todays_pick,
+      is_store_recommended,
       options_json,
       translations_json,
     })
     .eq("id", menuId)
     .eq("tenant_slug", tenant);
 
-  if (error) redirectMenus(tenant, "db", preserveCategory);
+  if (error) redirectAfterMenuAction(tenant, menuId, preserveCategory, { err: "db", returnTo, preserveTab });
 
   if (prevUrl && prevUrl !== imageUrl) {
     await tryRemoveMenuImageForTenant(client, tenant, prevUrl);
@@ -274,7 +414,13 @@ export async function updateMenuFromForm(formData: FormData): Promise<void> {
     action: "menu_update",
     detail: { menu_id: menuId, name },
   });
-  redirectMenus(tenant, undefined, preserveCategory, "saved", uploadWarn);
+  const okCode = okCodeForTranslationSource(translationSource);
+  redirectAfterMenuAction(tenant, menuId, preserveCategory, {
+    ok: okCode,
+    warn: saveWarn,
+    returnTo,
+    preserveTab,
+  });
 }
 
 /** 메뉴 사진만 업로드·저장 (옵션·가격 검증 없음). */
@@ -284,23 +430,33 @@ export async function uploadMenuImageOnlyFromForm(formData: FormData): Promise<v
   const tenant = String(formData.get("tenant_slug") ?? "").trim();
   const menuId = String(formData.get("menu_id") ?? "").trim();
   const preserveCategory = readPreserveCategory(formData);
+  const preserveTab = readPreserveTab(formData);
+  const returnTo = readReturnTo(formData);
 
   if (!tenant || !menuId || !UUID_RE.test(menuId)) {
-    redirectMenus(tenant || "_", "bad_input", preserveCategory);
+    redirectAfterMenuAction(tenant || "_", menuId || null, preserveCategory, {
+      err: "bad_input",
+      returnTo,
+      preserveTab,
+    });
   }
   if (!formHasNewImageFile(formData)) {
-    redirectMenus(
-      tenant,
-      "bad_input",
-      preserveCategory,
-      undefined,
-      undefined,
-      "사진 파일을 선택한 뒤 「사진만 저장」을 눌러 주세요.",
-    );
+    redirectAfterMenuAction(tenant, menuId, preserveCategory, {
+      err: "bad_input",
+      hint: "사진 파일을 선택한 뒤 저장해 주세요.",
+      returnTo,
+      preserveTab,
+    });
   }
 
   const client = createServiceSupabase();
-  if (!client) redirectMenus(tenant, "no_service", preserveCategory);
+  if (!client) {
+    redirectAfterMenuAction(tenant, menuId, preserveCategory, {
+      err: "no_service",
+      returnTo,
+      preserveTab,
+    });
+  }
 
   const { data: existing } = await client
     .from("ChayaMenus")
@@ -316,17 +472,20 @@ export async function uploadMenuImageOnlyFromForm(formData: FormData): Promise<v
 
   const upload = await pickUploadedMenuImageUrl(client, formData, tenant);
   if (!upload.ok) {
-    redirectMenus(tenant, "upload", preserveCategory, undefined, undefined, upload.message);
+    redirectAfterMenuAction(tenant, menuId, preserveCategory, {
+      err: "upload",
+      hint: upload.message,
+      returnTo,
+      preserveTab,
+    });
   }
   if (!upload.url) {
-    redirectMenus(
-      tenant,
-      "bad_input",
-      preserveCategory,
-      undefined,
-      undefined,
-      "업로드할 파일이 비어 있습니다.",
-    );
+    redirectAfterMenuAction(tenant, menuId, preserveCategory, {
+      err: "bad_input",
+      hint: "업로드할 파일이 비어 있습니다.",
+      returnTo,
+      preserveTab,
+    });
   }
 
   const { error } = await client
@@ -335,7 +494,7 @@ export async function uploadMenuImageOnlyFromForm(formData: FormData): Promise<v
     .eq("id", menuId)
     .eq("tenant_slug", tenant);
 
-  if (error) redirectMenus(tenant, "db", preserveCategory);
+  if (error) redirectAfterMenuAction(tenant, menuId, preserveCategory, { err: "db", returnTo, preserveTab });
 
   if (prevUrl && prevUrl !== upload.url) {
     await tryRemoveMenuImageForTenant(client, tenant, prevUrl);
@@ -347,7 +506,11 @@ export async function uploadMenuImageOnlyFromForm(formData: FormData): Promise<v
     action: "menu_image_upload",
     detail: { menu_id: menuId },
   });
-  redirectMenus(tenant, undefined, preserveCategory, "image_saved");
+  redirectAfterMenuAction(tenant, menuId, preserveCategory, {
+    ok: "image_saved",
+    returnTo,
+    preserveTab,
+  });
 }
 
 export async function setMenuSoldOutFromForm(formData: FormData): Promise<void> {

@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 
 import { GUEST_SESSION_STORAGE_KEY } from "@/lib/guest-session/constants";
+import { parseOrderNoField } from "@/lib/orders/format-order-no";
 import { sanitizeGuestSessionId } from "@/lib/orders/guest-order-validation";
 import { createConsumerSupabase } from "@/lib/supabase/create-consumer-client";
 import { withSupabaseReadRetry } from "@/lib/supabase/transient-retry";
@@ -8,6 +9,7 @@ import { withSupabaseReadRetry } from "@/lib/supabase/transient-retry";
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export type GuestOrderLineView = {
+  menuId?: string;
   name: string;
   quantity: number;
   price: number;
@@ -15,6 +17,7 @@ export type GuestOrderLineView = {
 
 export type GuestOrderView = {
   id: string;
+  order_no: number | null;
   total_price: number;
   created_at: string | null;
   lines: GuestOrderLineView[];
@@ -32,17 +35,40 @@ function num(v: unknown): number | null {
   return null;
 }
 
+function coerceItemsArray(raw: unknown): unknown[] {
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw === "string") {
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
 function normalizeLines(raw: unknown): GuestOrderLineView[] {
-  if (!Array.isArray(raw)) return [];
   const out: GuestOrderLineView[] = [];
-  for (const row of raw) {
+  for (const row of coerceItemsArray(raw)) {
     if (!row || typeof row !== "object") continue;
     const o = row as Record<string, unknown>;
-    const name = typeof o.name === "string" ? o.name : null;
-    const qty = num(o.quantity);
-    const price = num(o.price);
-    if (name == null || qty == null || price == null) continue;
-    out.push({ name, quantity: Math.max(0, Math.floor(qty)), price });
+    const menuId = typeof o.id === "string" ? o.id.trim() : null;
+    const name =
+      typeof o.name === "string"
+        ? o.name.trim()
+        : typeof o.menu_name === "string"
+          ? o.menu_name.trim()
+          : null;
+    const qty = num(o.quantity) ?? num(o.qty);
+    const price = num(o.price) ?? num(o.unit_price) ?? num(o.unitPrice);
+    if (!name || qty == null || price == null) continue;
+    out.push({
+      ...(menuId ? { menuId } : {}),
+      name,
+      quantity: Math.max(1, Math.floor(qty)),
+      price,
+    });
   }
   return out;
 }
@@ -70,6 +96,7 @@ function normalizeOrderRow(raw: Record<string, unknown>): GuestOrderView | null 
     typeof statusRaw === "string" && statusRaw.trim() ? statusRaw.trim() : "pending";
   return {
     id,
+    order_no: parseOrderNoField(raw.order_no),
     total_price: total,
     created_at: created,
     lines,

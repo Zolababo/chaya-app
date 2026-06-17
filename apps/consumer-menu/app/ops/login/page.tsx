@@ -1,6 +1,8 @@
 import Link from "next/link";
 
 import { sanitizeOpsNextPath } from "@/lib/platform/ops-path";
+import { chayaAuthShellClass } from "@/lib/responsive/chaya-app-shell";
+import { opsShellWithCompactNavClass } from "@/lib/responsive/chaya-ops-shell";
 
 export const dynamic = "force-dynamic";
 
@@ -28,11 +30,13 @@ function alertMessage(code: string | undefined): string | null {
 
 export default async function OpsLoginPage({ searchParams }: Props) {
   const sp = await searchParams;
-  const safeNext = sanitizeOpsNextPath(typeof sp.next === "string" ? sp.next : null) ?? "/ops";
+  const safeNext = sanitizeOpsNextPath(typeof sp.next === "string" ? sp.next : null) ?? "/ops/dashboard";
   const err = alertMessage(typeof sp.e === "string" ? sp.e : undefined);
 
   return (
-    <div className="mx-auto min-h-dvh max-w-md px-4 py-10 pb-[max(2.5rem,env(safe-area-inset-bottom))]">
+    <div
+      className={`min-h-dvh py-10 ${chayaAuthShellClass} ${opsShellWithCompactNavClass}`}
+    >
       <header className="mb-8">
         <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Platform</p>
         <h1 className="mt-2 text-2xl font-bold">플랫폼 로그인</h1>
@@ -95,8 +99,8 @@ export default async function OpsLoginPage({ searchParams }: Props) {
           점주 로그인
         </Link>
         {" · "}
-        <Link href="/" className="font-medium text-zinc-500 underline-offset-4 hover:underline dark:text-zinc-400">
-          소비자 앱
+        <Link href="/t/demo" className="font-medium text-zinc-500 underline-offset-4 hover:underline dark:text-zinc-400">
+          소비자 앱 (데모)
         </Link>
       </p>
     </div>

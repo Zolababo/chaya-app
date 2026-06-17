@@ -6,6 +6,7 @@ import {
   merchantAccessPendingUrl,
   merchantLoginUrl,
 } from "@/lib/merchant/merchant-access";
+import { chayaAuthShellClass } from "@/lib/responsive/chaya-app-shell";
 import { createSupabaseServerClient } from "@/lib/supabase/create-server-session-client";
 import { resolveServerUser } from "@/lib/supabase/resolve-server-user";
 import { normalizeTenantSlug } from "@/lib/tenant/tenant-slug";
@@ -53,7 +54,7 @@ export default async function MerchantAccessPendingPage({ searchParams }: Props)
   }
 
   return (
-    <div className="mx-auto min-h-dvh max-w-lg px-4 py-12 pb-[max(2rem,env(safe-area-inset-bottom))]">
+    <div className={`min-h-dvh py-12 pb-[max(2rem,env(safe-area-inset-bottom))] ${chayaAuthShellClass}`}>
       <h1 className="text-2xl font-bold">운영 승인 대기</h1>
       <p className="mt-3 text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
         계정은 만들어졌지만, 이 가게에 대한 <strong>운영자 승인</strong>이 아직 완료되지 않았습니다. 옆에서 계시는 담당자에게

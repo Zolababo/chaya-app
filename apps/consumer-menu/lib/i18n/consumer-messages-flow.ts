@@ -18,6 +18,9 @@ export type FlowMessageTree = {
     tableLabel: string;
     optional: string;
     tablePlaceholder: string;
+    tablePickRequired: string;
+    tableQrRequired: string;
+    tableSelectAria: string;
     noteLabel: string;
     notePlaceholder: string;
     noteCount: string;
@@ -30,6 +33,12 @@ export type FlowMessageTree = {
     removeAria: string;
     addMoreMenu: string;
     addMoreMenuAria: string;
+    selectedMenuLabel: string;
+    unitEach: string;
+    undoRemoved: string;
+    undoAction: string;
+    paymentExpected: string;
+    menuCountLabel: string;
   };
   splitBill: {
     title: string;
@@ -69,6 +78,11 @@ export type FlowMessageTree = {
     loginTail: string;
     claimed: string;
     orderLinkAria: string;
+    sectionActive: string;
+    sectionPast: string;
+    orderAmount: string;
+    counterVisitTotal: string;
+    counterVisitTotalHint: string;
   };
   payment: { offlineLead: string; offlineRest: string };
   status: {
@@ -87,7 +101,10 @@ export type FlowMessageTree = {
     toCartAria: string;
     receivedSr: string;
     receivedTitle: string;
+    placedTitle: string;
+    placedSubtitle: string;
     orderNo: string;
+    orderNoShort: string;
     revisitHint: string;
     tableLabel: string;
     requestLabel: string;
@@ -106,7 +123,7 @@ const KO: FlowMessageTree = {
     pageTitle: "장바구니",
     pageIntro: "",
     loading: "불러오는 중…",
-    empty: "담은 메뉴가 없어요",
+    empty: "장바구니가 비어있어요",
     emptyCta: "메뉴 담으러 가기",
     emptyCtaAria: "메뉴판으로 이동",
     listLabel: "담은 메뉴",
@@ -119,10 +136,13 @@ const KO: FlowMessageTree = {
     tableLabel: "테이블",
     optional: "",
     tablePlaceholder: "테이블 번호 (선택)",
+    tablePickRequired: "테이블을 선택해 주세요",
+    tableQrRequired: "테이블 QR을 스캔해 주세요. 번호는 직접 바꿀 수 없어요.",
+    tableSelectAria: "테이블 번호 선택",
     noteLabel: "요청사항",
     notePlaceholder: "덜 맵게, 양파 빼기 등 (선택)",
     noteCount: "{count}/500",
-    submitHint: "주문 후 하단 주문 탭에서 진행 상황을 확인할 수 있어요",
+    submitHint: "주문 후 하단 주문내역 탭에서 진행 상황을 확인할 수 있어요",
     submitPending: "주문하는 중…",
     submit: "주문하기",
     submitAriaPending: "주문 처리 중",
@@ -131,6 +151,12 @@ const KO: FlowMessageTree = {
     removeAria: "삭제",
     addMoreMenu: "메뉴 더 담기",
     addMoreMenuAria: "메뉴판으로 이동해 메뉴 추가",
+    selectedMenuLabel: "선택한 메뉴 {count}개",
+    unitEach: "개당 {price}",
+    undoRemoved: "{name}을(를) 삭제했어요",
+    undoAction: "되돌리기",
+    paymentExpected: "결제 예정 금액",
+    menuCountLabel: "메뉴 {count}개",
   },
   splitBill: {
     title: "더치페이",
@@ -141,7 +167,7 @@ const KO: FlowMessageTree = {
     increasePeople: "인원 한 명 늘리기",
   },
   orders: {
-    pageTitle: "주문 현황",
+    pageTitle: "주문내역",
     pageIntro:
       "비회원 주문은 이 브라우저·이 폰에서 보낸 것만 보입니다. 로그인하면 계정에 연결된 주문도 함께 볼 수 있습니다.",
     loading: "주문 내역 불러오는 중…",
@@ -152,8 +178,7 @@ const KO: FlowMessageTree = {
       "약 {seconds}초마다 목록 상태를 다시 불러옵니다. 접근성 설정에서 동작 줄이기를 켜 두면 자동 갱신은 꺼집니다.",
     noSession:
       "주문 목록은 주문할 때 쓴 같은 폰·같은 브라우저에서 열어야 이어집니다. 이 브라우저에는 비회원 주문 세션이 없습니다. 장바구니에서 주문을 내면 여기에 쌓입니다.",
-    empty:
-      "아직 이 가게에서 주문한 기록이 없습니다. 주문 확인은 이 폰·이 브라우저에서 열어 주세요.",
+    empty: "진행 중인 주문이 없어요",
     accountHeading: "내 계정 주문",
     guestHeading: "이 브라우저 비회원 주문",
     accountListLabel: "로그인 계정 주문 목록",
@@ -175,10 +200,15 @@ const KO: FlowMessageTree = {
     loginTail: "으로 이 폰의 비회원 주문을 계정에 묶을 수 있습니다.",
     claimed: "비회원 주문 {count}건을 계정에 연결했습니다.",
     orderLinkAria: "상세 페이지로 이동",
+    sectionActive: "진행 중",
+    sectionPast: "이전 주문",
+    orderAmount: "주문 금액",
+    counterVisitTotal: "카운터 결제 예정",
+    counterVisitTotalHint: "진행 중인 주문 합계입니다. 나갈 때 카운터에서 결제해 주세요.",
   },
   payment: {
-    offlineLead: "매장에서 결제",
-    offlineRest: "",
+    offlineLead: "주문 후 카운터에서 결제해주세요",
+    offlineRest: "식사 마친 후 카운터로 와주시면 돼요",
   },
   status: {
     pending: "접수됨",
@@ -197,11 +227,14 @@ const KO: FlowMessageTree = {
     toCartAria: "장바구니로 이동",
     receivedSr: "주문 접수 완료",
     receivedTitle: "주문이 접수되었습니다",
+    placedTitle: "주문이 접수됐어요!",
+    placedSubtitle: "주방에 전달됐어요. 잠시만 기다려주세요.",
     orderNo: "주문 번호",
+    orderNoShort: "주문",
     revisitHint: "나중에 이 화면을 다시 보려면 이 폰·이 브라우저에서 하단 「주문 현황」을 사용해 주세요.",
     tableLabel: "테이블",
     requestLabel: "요청",
-    linesHeading: "주문 내역",
+    linesHeading: "주문 번호",
     total: "합계",
     toOrders: "주문 목록",
     toOrdersAria: "주문 목록으로",
@@ -229,6 +262,9 @@ const EN: FlowMessageTree = {
     tableLabel: "Table",
     optional: "",
     tablePlaceholder: "Table number (optional)",
+    tablePickRequired: "Select your table",
+    tableQrRequired: "Please scan the table QR code. The table number is fixed.",
+    tableSelectAria: "Select table number",
     noteLabel: "Note",
     notePlaceholder: "e.g. less spicy (optional)",
     noteCount: "{count}/500",
@@ -241,6 +277,12 @@ const EN: FlowMessageTree = {
     removeAria: "Remove",
     addMoreMenu: "Add more items",
     addMoreMenuAria: "Go to menu to add items",
+    selectedMenuLabel: "{count} item(s) selected",
+    unitEach: "{price} each",
+    undoRemoved: "Removed {name}",
+    undoAction: "Undo",
+    paymentExpected: "Amount due",
+    menuCountLabel: "{count} item(s)",
   },
   splitBill: {
     title: "Split bill",
@@ -260,7 +302,7 @@ const EN: FlowMessageTree = {
     pollNote: "List refreshes about every {seconds} seconds. Reduced motion turns auto-refresh off.",
     noSession:
       "Open orders on the same phone and browser you used to order. No guest session here yet—place an order from the cart.",
-    empty: "No orders at this store yet. Open order links on this phone and browser.",
+    empty: "No orders yet",
     accountHeading: "Account orders",
     guestHeading: "Guest orders (this browser)",
     accountListLabel: "Account order list",
@@ -281,10 +323,15 @@ const EN: FlowMessageTree = {
     loginTail: " to link guest orders on this phone to your account.",
     claimed: "Linked {count} guest order(s) to your account.",
     orderLinkAria: "Open order details",
+    sectionActive: "In progress",
+    sectionPast: "Past orders",
+    orderAmount: "Order total",
+    counterVisitTotal: "Due at counter",
+    counterVisitTotalHint: "Total of in-progress orders. Pay at the counter when you leave.",
   },
   payment: {
-    offlineLead: "Pay in store",
-    offlineRest: "",
+    offlineLead: "Pay at the counter after ordering",
+    offlineRest: "Come to the counter when you're ready to pay.",
   },
   status: {
     pending: "Received",
@@ -302,7 +349,10 @@ const EN: FlowMessageTree = {
     toCartAria: "Go to cart",
     receivedSr: "Order received",
     receivedTitle: "Order received",
+    placedTitle: "Your order is complete",
+    placedSubtitle: "Sent to the kitchen. Please wait a moment.",
     orderNo: "Order",
+    orderNoShort: "Order",
     revisitHint: "To see this again, use Orders at the bottom on this phone and browser.",
     tableLabel: "Table",
     requestLabel: "Note",
@@ -334,6 +384,9 @@ const JA: FlowMessageTree = {
     tableLabel: "テーブル番号",
     optional: "（任意）",
     tablePlaceholder: "例: 12",
+    tablePickRequired: "テーブルを選んでください",
+    tableQrRequired: "テーブルのQRコードをスキャンしてください。番号は変更できません。",
+    tableSelectAria: "テーブル番号を選択",
     noteLabel: "リクエスト",
     notePlaceholder: "アレルギー、辛さなど",
     noteCount: "{count}/500",
@@ -346,6 +399,12 @@ const JA: FlowMessageTree = {
     removeAria: "カートから削除",
     addMoreMenu: EN.cart.addMoreMenu,
     addMoreMenuAria: EN.cart.addMoreMenuAria,
+    selectedMenuLabel: EN.cart.selectedMenuLabel,
+    unitEach: EN.cart.unitEach,
+    undoRemoved: EN.cart.undoRemoved,
+    undoAction: EN.cart.undoAction,
+    paymentExpected: EN.cart.paymentExpected,
+    menuCountLabel: EN.cart.menuCountLabel,
   },
   splitBill: EN.splitBill,
   orders: {
@@ -378,6 +437,11 @@ const JA: FlowMessageTree = {
     loginTail: "でこの端末のゲスト注文をアカウントに紐づけられます。",
     claimed: "ゲスト注文 {count} 件をアカウントに連携しました。",
     orderLinkAria: "注文詳細へ",
+    sectionActive: EN.orders.sectionActive,
+    sectionPast: EN.orders.sectionPast,
+    orderAmount: EN.orders.orderAmount,
+    counterVisitTotal: EN.orders.counterVisitTotal,
+    counterVisitTotalHint: EN.orders.counterVisitTotalHint,
   },
   payment: { offlineLead: "お支払いはレジで", offlineRest: "お願いします。このアプリは注文内容と金額の確認のみです。" },
   status: {
@@ -396,7 +460,10 @@ const JA: FlowMessageTree = {
     toCartAria: "カートへ移動",
     receivedSr: "注文受付完了",
     receivedTitle: "注文を受け付けました",
+    placedTitle: "ご注文が完了しました",
+    placedSubtitle: "キッチンへ送信しました。少々お待ちください。",
     orderNo: "注文番号",
+    orderNoShort: "注文",
     revisitHint: "再度見るにはこの端末の下部「注文」をご利用ください。",
     tableLabel: "テーブル",
     requestLabel: "リクエスト",
@@ -412,6 +479,7 @@ const JA: FlowMessageTree = {
 
 const ZH_HANS: FlowMessageTree = {
   cart: {
+    ...EN.cart,
     pageTitle: "确认订单",
     pageIntro: "购物车仅保存在本浏览器。下单后可在此查看，请在柜台付款。",
     loading: "正在加载购物车…",
@@ -428,6 +496,9 @@ const ZH_HANS: FlowMessageTree = {
     tableLabel: "桌号",
     optional: "（选填）",
     tablePlaceholder: "例如 12",
+    tablePickRequired: "请选择桌号",
+    tableQrRequired: "请扫描桌位二维码，桌号由二维码固定。",
+    tableSelectAria: "选择桌号",
     noteLabel: "备注",
     notePlaceholder: "过敏、辣度等",
     noteCount: "{count}/500",
@@ -438,11 +509,10 @@ const ZH_HANS: FlowMessageTree = {
     storageNote: "购物车按店铺仅保存在本浏览器。",
     qtySr: "数量",
     removeAria: "从购物车删除",
-    addMoreMenu: EN.cart.addMoreMenu,
-    addMoreMenuAria: EN.cart.addMoreMenuAria,
   },
   splitBill: EN.splitBill,
   orders: {
+    ...EN.orders,
     pageTitle: "订单状态",
     pageIntro: "游客订单仅显示在本浏览器。登录后可查看账户订单。",
     loading: "正在加载订单…",
@@ -490,7 +560,10 @@ const ZH_HANS: FlowMessageTree = {
     toCartAria: "前往购物车",
     receivedSr: "订单已接收",
     receivedTitle: "订单已提交",
+    placedTitle: "订单已完成",
+    placedSubtitle: "已送至厨房，请稍候。",
     orderNo: "订单号",
+    orderNoShort: "订单",
     revisitHint: "再次查看请使用本机底部「订单」。",
     tableLabel: "桌号",
     requestLabel: "备注",
@@ -512,74 +585,12 @@ const ZH_HANT: FlowMessageTree = {
   orderDetail: { ...ZH_HANS.orderDetail, receivedTitle: "訂單已送出", toMenu: "返回菜單" },
 };
 
-const VI: FlowMessageTree = {
-  ...EN,
-  cart: {
-    ...EN.cart,
-    pageTitle: "Xác nhận đơn",
-    pageIntro: "Giỏ chỉ lưu trên trình duyệt này. Thanh toán tại quầy.",
-    loading: "Đang tải giỏ…",
-    empty: "Giỏ trống. Thêm món từ thực đơn.",
-    emptyCta: "Về thực đơn",
-    submit: "Gửi bếp",
-    submitPending: "Đang gửi…",
-    total: "Tổng",
-  },
-  orders: { ...EN.orders, pageTitle: "Đơn hàng", loading: "Đang tải đơn…", toMenu: "Thực đơn", toCart: "Giỏ hàng" },
-  status: { pending: "Đã nhận", accepted: "Đã xác nhận", preparing: "Đang làm", ready: "Sẵn sàng", completed: "Xong", cancelled: "Đã hủy" },
-  orderDetail: { ...EN.orderDetail, receivedTitle: "Đã nhận đơn", toMenu: "Về thực đơn" },
-};
-
-const TH: FlowMessageTree = {
-  ...EN,
-  cart: {
-    ...EN.cart,
-    pageTitle: "ยืนยันคำสั่ง",
-    loading: "กำลังโหลดตะกร้า…",
-    empty: "ตะกร้าว่าง",
-    emptyCta: "กลับเมนู",
-    submit: "ส่งครัว",
-    submitPending: "กำลังส่ง…",
-    total: "รวม",
-  },
-  orders: { ...EN.orders, pageTitle: "คำสั่งซื้อ", toMenu: "เมนู", toCart: "ตะกร้า" },
-  status: { pending: "รับแล้ว", accepted: "ยืนยัน", preparing: "กำลังทำ", ready: "พร้อม", completed: "เสร็จ", cancelled: "ยกเลิก" },
-  orderDetail: { ...EN.orderDetail, receivedTitle: "รับคำสั่งแล้ว" },
-};
-
-const RU: FlowMessageTree = {
-  ...EN,
-  cart: {
-    ...EN.cart,
-    pageTitle: "Проверка заказа",
-    loading: "Загрузка корзины…",
-    empty: "Корзина пуста",
-    emptyCta: "К меню",
-    submit: "Отправить на кухню",
-    submitPending: "Отправка…",
-    total: "Итого",
-  },
-  orders: { ...EN.orders, pageTitle: "Заказы", toMenu: "Меню", toCart: "Корзина" },
-  status: {
-    pending: "Принят",
-    accepted: "Подтверждён",
-    preparing: "Готовится",
-    ready: "Готов",
-    completed: "Завершён",
-    cancelled: "Отменён",
-  },
-  orderDetail: { ...EN.orderDetail, receivedTitle: "Заказ принят" },
-};
-
 const FLOW_BY_LOCALE: Record<AppLocale, FlowMessageTree> = {
   ko: KO,
   en: EN,
   ja: JA,
   "zh-Hans": ZH_HANS,
   "zh-Hant": ZH_HANT,
-  vi: VI,
-  th: TH,
-  ru: RU,
 };
 
 export function flowMessages(locale: AppLocale): FlowMessageTree {
@@ -589,9 +600,52 @@ export function flowMessages(locale: AppLocale): FlowMessageTree {
     ...base,
     splitBill,
     cart: {
+      ...EN.cart,
       ...base.cart,
       addMoreMenu: locale === "ko" ? KO.cart.addMoreMenu : EN.cart.addMoreMenu,
       addMoreMenuAria: locale === "ko" ? KO.cart.addMoreMenuAria : EN.cart.addMoreMenuAria,
+      selectedMenuLabel:
+        base.cart.selectedMenuLabel ?? (locale === "ko" ? KO.cart.selectedMenuLabel : EN.cart.selectedMenuLabel),
+      unitEach: base.cart.unitEach ?? (locale === "ko" ? KO.cart.unitEach : EN.cart.unitEach),
+      tablePickRequired:
+        base.cart.tablePickRequired ?? (locale === "ko" ? KO.cart.tablePickRequired : EN.cart.tablePickRequired),
+      tableQrRequired:
+        base.cart.tableQrRequired ?? (locale === "ko" ? KO.cart.tableQrRequired : EN.cart.tableQrRequired),
+      tableSelectAria:
+        base.cart.tableSelectAria ?? (locale === "ko" ? KO.cart.tableSelectAria : EN.cart.tableSelectAria),
+      undoRemoved: base.cart.undoRemoved ?? (locale === "ko" ? KO.cart.undoRemoved : EN.cart.undoRemoved),
+      undoAction: base.cart.undoAction ?? (locale === "ko" ? KO.cart.undoAction : EN.cart.undoAction),
+      paymentExpected:
+        base.cart.paymentExpected ?? (locale === "ko" ? KO.cart.paymentExpected : EN.cart.paymentExpected),
+      menuCountLabel:
+        base.cart.menuCountLabel ?? (locale === "ko" ? KO.cart.menuCountLabel : EN.cart.menuCountLabel),
+    },
+    orders: {
+      ...EN.orders,
+      ...base.orders,
+      sectionActive:
+        base.orders.sectionActive ?? (locale === "ko" ? KO.orders.sectionActive : EN.orders.sectionActive),
+      sectionPast: base.orders.sectionPast ?? (locale === "ko" ? KO.orders.sectionPast : EN.orders.sectionPast),
+      orderAmount: base.orders.orderAmount ?? (locale === "ko" ? KO.orders.orderAmount : EN.orders.orderAmount),
+      counterVisitTotal:
+        base.orders.counterVisitTotal ??
+        (locale === "ko" ? KO.orders.counterVisitTotal : EN.orders.counterVisitTotal),
+      counterVisitTotalHint:
+        base.orders.counterVisitTotalHint ??
+        (locale === "ko" ? KO.orders.counterVisitTotalHint : EN.orders.counterVisitTotalHint),
+    },
+    orderDetail: {
+      ...EN.orderDetail,
+      ...base.orderDetail,
+      placedTitle:
+        base.orderDetail.placedTitle ??
+        (locale === "ko" ? KO.orderDetail.placedTitle : EN.orderDetail.placedTitle),
+      orderNoShort:
+        base.orderDetail.orderNoShort ??
+        (locale === "ko" ? KO.orderDetail.orderNoShort : EN.orderDetail.orderNoShort),
+      placedSubtitle:
+        base.orderDetail.placedSubtitle ??
+        (locale === "ko" ? KO.orderDetail.placedSubtitle : EN.orderDetail.placedSubtitle),
     },
   };
 }

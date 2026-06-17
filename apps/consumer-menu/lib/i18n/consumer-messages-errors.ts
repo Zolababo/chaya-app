@@ -54,6 +54,11 @@ const KO_ERRORS: OrderErrorMessages = {
   price_check_failed: "메뉴 가격을 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.",
   submit_failed: "주문을 접수하지 못했습니다. 잠시 후 다시 시도해 주세요.",
   no_order_id: "주문 번호를 받지 못했습니다.",
+  table_required: "테이블을 선택해 주세요.",
+  invalid_table: "등록되지 않은 테이블 번호입니다. QR을 다시 스캔하거나 목록에서 선택해 주세요.",
+  invalid_table_format: "테이블 번호 형식이 올바르지 않습니다 (1~3자리 숫자).",
+  orders_closed: "지금은 주문을 받지 않습니다. 매장에 문의해 주세요.",
+  break_time: "브레이크타임입니다. 잠시 후 다시 주문해 주세요.",
 };
 
 const EN_ERRORS: OrderErrorMessages = {
@@ -75,6 +80,11 @@ const EN_ERRORS: OrderErrorMessages = {
   price_check_failed: "Could not verify menu prices. Try again shortly.",
   submit_failed: "Could not place your order. Try again shortly.",
   no_order_id: "Did not receive an order id.",
+  table_required: "Please select your table.",
+  invalid_table: "This table number is not registered. Scan the table QR or pick from the list.",
+  invalid_table_format: "Table number must be 1–3 digits (e.g. 1, 01, 12).",
+  orders_closed: "This store is not accepting orders right now. Please ask staff.",
+  break_time: "Break time — please order again in a few minutes.",
 };
 
 const KO: ErrorsMessageTree = {
@@ -145,9 +155,6 @@ const BY_LOCALE: Record<AppLocale, ErrorsMessageTree> = {
     progress: { ...EN.progress, stepReceived: "接單", stepPreparing: "製作", stepReady: "可取" },
     copyOrder: { ...EN.copyOrder, copy: "複製訂單連結", share: "分享" },
   },
-  vi: EN,
-  th: EN,
-  ru: EN,
 };
 
 export function errorsMessages(locale: AppLocale): ErrorsMessageTree {

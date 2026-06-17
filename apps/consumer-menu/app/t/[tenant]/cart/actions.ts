@@ -35,7 +35,7 @@ function parseLines(raw: unknown): GuestOrderLine[] | null {
 const MAX_LINES_JSON_CHARS = 2_000_000;
 
 export type SubmitGuestOrderActionResult =
-  | { ok: true; orderId: string }
+  | { ok: true; orderId: string; orderNo: number | null }
   | { ok: false; code: GuestOrderErrorCode; params?: GuestOrderErrorParams };
 
 export async function submitGuestOrderAction(

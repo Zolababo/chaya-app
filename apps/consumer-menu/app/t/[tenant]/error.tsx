@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 
+import { chayaConsumerContentClass } from "@/lib/responsive/chaya-app-shell";
+
 type Props = {
   error: Error & { digest?: string };
   reset: () => void;
@@ -23,7 +25,7 @@ export default function TenantSegmentError({ error, reset }: Props) {
   }, [error]);
 
   return (
-    <div className="mx-auto max-w-md space-y-4 text-center" role="alert" aria-live="assertive">
+    <div className={`${chayaConsumerContentClass} space-y-4 text-center`} role="alert" aria-live="assertive">
       <h1 className="text-xl font-bold">화면을 불러오지 못했습니다</h1>
       <p className="text-sm text-zinc-600 dark:text-zinc-400">
         잠시 후 다시 시도하거나 메뉴 처음으로 이동해 주세요.

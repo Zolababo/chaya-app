@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { OpsConsoleFrame } from "@/components/ops/ops-console-frame";
 import { MERCHANT_AUDIT_ACTION_FILTERS, merchantAuditActionLabel } from "@/lib/merchant/list-merchant-audit-events";
 import { listOpsAuditEvents, OPS_AUDIT_CSV_MAX_ROWS } from "@/lib/platform/list-ops-audit-events";
 import { requirePlatformOperator } from "@/lib/platform/require-platform-operator";
@@ -89,16 +90,11 @@ export default async function OpsAuditPage({ searchParams }: Props) {
   const exportHref = buildExportHref(actionFilter, fromYmd, toYmd, tenantSlug);
 
   return (
-    <div className="mx-auto min-h-dvh max-w-4xl px-4 py-10 pb-[max(2.5rem,env(safe-area-inset-bottom))]">
-      <header className="mb-8 border-b border-chaya-border pb-6 dark:border-zinc-700">
-        <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Platform</p>
-        <h1 className="mt-2 text-3xl font-bold">감사 로그 (전 매장)</h1>
-        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-          점주 콘솔에서 기록된 변경 사항을 매장별로 조회합니다. 세션 + <span className="font-mono">platform_operators</span> RLS
-          정책이 필요합니다.
-        </p>
-      </header>
-
+    <OpsConsoleFrame
+      wide
+      title="감사 로그 (전 매장)"
+      subtitle="점주 콘솔에서 기록된 변경 사항을 매장별로 조회합니다. platform_operators RLS 정책이 필요합니다."
+    >
       <section className="mb-6 rounded-xl border border-chaya-border bg-white p-4 dark:border-zinc-700 dark:bg-zinc-950">
         <form method="get" className="flex flex-col gap-4">
           <div className="flex flex-wrap items-end gap-3">
@@ -266,15 +262,6 @@ export default async function OpsAuditPage({ searchParams }: Props) {
           ) : null}
         </>
       )}
-
-      <p className="mt-12 flex flex-wrap justify-center gap-4 text-sm text-zinc-500">
-        <Link href="/ops" className="font-semibold underline-offset-4 hover:underline">
-          운영 홈
-        </Link>
-        <Link href="/ops/merchants" className="font-semibold underline-offset-4 hover:underline">
-          점주 멤버십
-        </Link>
-      </p>
-    </div>
+    </OpsConsoleFrame>
   );
 }

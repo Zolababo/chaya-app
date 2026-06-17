@@ -13,9 +13,28 @@ alwaysApply: true
 - Do not introduce new environment flags if an existing one already controls the behavior.
 - Follow the security baseline in this repo’s auth/supabase rule: **no secret keys in the client**, **RLS on by default**, **privileged and third-party APIs only via server**.
 
+# 소비자 보류 (사용자 명시 — 리마인드만)
+
+- **C2 수동:** `docs/CONSUMER_C2_MANUAL_RUNBOOK.md` — 자동 스모크 후 **나중에** 실기기·접근성. 지금 요청 시 리마인드.
+- **C6:** 토큰 QR·주문 중지·rate limit — `docs/QR_AND_GUEST_ORDERS.md` §4.
+- **매장별 QR 실제 연결:** 인쇄·파일럿 매장 테스트 — `docs/CONSUMER_TENANT_QR_SETUP.md` · `docs/CONSUMER_DEFERRED_BACKLOG.md` **QR-STORE**.
+- **유지:** 주문 URL `guest_session` 조회 차단. 공유 링크 전용 UI는 C6 전까지 추가하지 않음.
+
+# 파일럿 제품 우선순위 (2026-06)
+
+- **구현 순서:** `docs/CHAYA_PRODUCT_PRIORITY_PILOT.md` — **P0** 점주 계정 → **방문 데이터** → **P2 셀프 가입(보류)**. **직원 초대(P1)·mailto 직원 요청·멤버 RBAC UI는 만들지 않음** — `docs/MERCHANT_ACCOUNT_POLICY.md` (**매장 1계정·여러 기기 동시 로그인**).
+- **셀프 가입·자동 승인·직원별 계정**은 명시적 착수 전까지 넣지 않는다. 소장 첫 계정은 `/ops/merchants` 유지.
+- **장기 자산:** 소비자 `guest_session_id`·방문·재방문·주문 이력 — 점주 온보딩 최적화보다 우선(데이터 축은 `docs/CHAYA_EXPERIENCE_DATA.md`).
+
 # Change Discipline
 
 - Keep changes minimal and scoped; avoid broad refactors while shipping feature fixes.
 - When adding a new flow, update docs/runbook/checklist in the same change.
 - When completing a scoped merchant-ops roadmap slice, refresh **`docs/MERCHANT_OPERATIONS_ROADMAP.md`** 진척도(%) if the estimate moved.
 - Validate with build/lint after non-trivial edits.
+
+# 배포 (Vercel)
+
+- **`apps/consumer-menu` 관련 작업을 마치면** 로컬 빌드 확인 후 **프로덕션 배포까지 완료**한다. 저장소 **루트**에서 `npx vercel deploy --prod --yes` (프로젝트 Root Directory가 `apps/consumer-menu`이므로 하위 폴더에서 CLI 실행하지 않는다).
+- 배포 URL: **https://chaya-app.vercel.app** — 완료 시 사용자에게 배포 완료와 확인 포인트를 짧게 알린다.
+- DB 마이그레이션만 있는 변경은 Supabase 적용 안내를 함께 적는다(배포만으로 DB는 바뀌지 않음).

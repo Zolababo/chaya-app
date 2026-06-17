@@ -3,28 +3,69 @@
 import { ClipboardList, Menu, ShoppingCart } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 
 import { useConsumerEasyMode } from "@/lib/consumer/consumer-easy-mode-context";
 import { useConsumerLocale } from "@/lib/i18n/consumer-locale-context";
-import { withConsumerLang } from "@/lib/i18n/with-consumer-lang";
+import { useConsumerNavHref } from "@/lib/i18n/use-consumer-nav-href";
 import { CHAYA_CART_CHANGED_EVENT, cartTotalQty } from "@/lib/cart/local-cart";
+import { chayaAppShellNavInnerClass } from "@/lib/responsive/chaya-app-shell";
 
 type Props = {
   tenant: string;
 };
 
+function NavItem({
+  href,
+  active,
+  label,
+  ariaLabel,
+  icon,
+  easyMode,
+}: {
+  href: string;
+  active: boolean;
+  label: string;
+  ariaLabel: string;
+  icon: ReactNode;
+  easyMode: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      className={[
+        "relative flex flex-1 flex-col items-center gap-0.5 px-4 py-1 font-medium transition-colors",
+        easyMode ? "min-h-[44px] text-xs sm:text-sm" : "min-h-[40px] text-[11px]",
+        active
+          ? "text-chaya-primary"
+          : "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200",
+      ].join(" ")}
+      aria-current={active ? "page" : undefined}
+      aria-label={ariaLabel}
+    >
+      <span className={active ? "scale-110 transition-transform" : "transition-transform"} aria-hidden>
+        {icon}
+      </span>
+      <span>{label}</span>
+      {active ? (
+        <span className="absolute bottom-0.5 h-1 w-1 rounded-full bg-chaya-primary" aria-hidden />
+      ) : null}
+    </Link>
+  );
+}
+
 export function BottomNav({ tenant }: Props) {
-  const { locale, m } = useConsumerLocale();
+  const { m } = useConsumerLocale();
   const { easyMode } = useConsumerEasyMode();
   const pathname = usePathname();
   const slug = tenant.trim();
   const [cartCount, setCartCount] = useState(0);
   const basePath = `/t/${tenant}`;
+  const navHref = useConsumerNavHref(tenant);
   const menuPath = easyMode ? `${basePath}/barrier-free` : basePath;
-  const base = withConsumerLang(menuPath, locale);
-  const cartHref = withConsumerLang(`${basePath}/cart`, locale);
-  const ordersHref = withConsumerLang(`${basePath}/orders`, locale);
+  const base = navHref(menuPath);
+  const cartHref = navHref(`${basePath}/cart`);
+  const ordersHref = navHref(`${basePath}/orders`);
 
   const refreshCartCount = useCallback(() => {
     setCartCount(cartTotalQty(slug));
@@ -35,19 +76,19 @@ export function BottomNav({ tenant }: Props) {
   }, [refreshCartCount]);
 
   useEffect(() => {
-    const onChanged = (ev: Event) => {
+    const onCartChanged = (ev: Event) => {
       const detail = (ev as CustomEvent<{ tenant?: string }>).detail;
       if (detail?.tenant === slug) refreshCartCount();
     };
     const onStorage = (ev: StorageEvent) => {
       if (!ev.key) return;
-      const expected = `chaya_cart_v1:${encodeURIComponent(slug)}`;
-      if (ev.key === expected) refreshCartCount();
+      const cartKey = `chaya_cart_v1:${encodeURIComponent(slug)}`;
+      if (ev.key === cartKey) refreshCartCount();
     };
-    window.addEventListener(CHAYA_CART_CHANGED_EVENT, onChanged);
+    window.addEventListener(CHAYA_CART_CHANGED_EVENT, onCartChanged);
     window.addEventListener("storage", onStorage);
     return () => {
-      window.removeEventListener(CHAYA_CART_CHANGED_EVENT, onChanged);
+      window.removeEventListener(CHAYA_CART_CHANGED_EVENT, onCartChanged);
       window.removeEventListener("storage", onStorage);
     };
   }, [slug, refreshCartCount]);
@@ -59,58 +100,50 @@ export function BottomNav({ tenant }: Props) {
   const onCart = pathname.startsWith(`${basePath}/cart`);
   const onOrders = pathname.startsWith(`${basePath}/orders`);
 
-  const itemClass = (active: boolean) =>
-    [
-      "relative flex flex-1 flex-col items-center justify-center gap-1 rounded-lg px-2 py-1.5 font-bold leading-none tracking-tight transition-colors",
-      easyMode
-        ? "min-h-[52px] min-w-[4.75rem] max-w-[6rem] text-xs sm:min-w-[5rem] sm:text-sm"
-        : "min-h-[44px] min-w-[4.25rem] max-w-[5.5rem] gap-0.5 py-1 text-[10px] font-semibold sm:min-w-[4.5rem] sm:text-[11px]",
-      active
-        ? "bg-chaya-primary text-chaya-on-primary"
-        : "text-zinc-600 hover:bg-zinc-100/80 dark:text-zinc-400 dark:hover:bg-zinc-800/60",
-    ].join(" ");
+  const iconSize = "size-[18px]";
 
-  const iconClass = (active: boolean) => (active ? "text-chaya-on-primary" : "text-zinc-500 dark:text-zinc-400");
+  const cartIcon = (
+    <span className="relative inline-flex">
+      <ShoppingCart className={iconSize} strokeWidth={2} />
+      {cartCount > 0 ? (
+        <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-chaya-primary text-[10px] font-semibold text-chaya-on-primary">
+          {cartCount > 99 ? "99+" : cartCount}
+        </span>
+      ) : null}
+    </span>
+  );
 
   return (
     <nav
-      className="fixed bottom-0 left-0 z-50 flex w-full justify-around border-t border-zinc-200/90 bg-chaya-surface px-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5 shadow-[0_-2px_12px_rgba(0,0,0,0.05)] dark:border-zinc-800 dark:bg-zinc-950"
+      className="fixed bottom-0 left-0 right-0 z-50 border-t border-chaya-border/80 bg-chaya-bg/95 pb-[max(0.25rem,env(safe-area-inset-bottom))] pt-1 backdrop-blur supports-[backdrop-filter]:bg-chaya-bg/80 dark:border-zinc-800 dark:bg-zinc-950/95"
       aria-label={m.nav.menu}
     >
-      <Link
-        href={base}
-        className={itemClass(onMenu)}
-        aria-current={onMenu ? "page" : undefined}
-        aria-label={m.menu.boardTitle}
-      >
-        <Menu className={`${easyMode ? "size-5" : "size-[1.125rem]"} ${iconClass(onMenu)}`} aria-hidden strokeWidth={2} />
-        <span>{m.nav.menu}</span>
-      </Link>
-      <Link
-        href={cartHref}
-        className={itemClass(onCart)}
-        aria-current={onCart ? "page" : undefined}
-        aria-label={cartCount > 0 ? `${m.nav.cart}, ${cartCount}` : m.nav.cart}
-      >
-        <span className="relative inline-flex" aria-hidden>
-          <ShoppingCart className={`${easyMode ? "size-5" : "size-[1.125rem]"} ${iconClass(onCart)}`} strokeWidth={2} />
-          {cartCount > 0 ? (
-            <span className="absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full border border-chaya-surface bg-red-500 px-0.5 text-[9px] font-bold leading-none text-white dark:border-zinc-950">
-              {cartCount > 99 ? "99+" : cartCount}
-            </span>
-          ) : null}
-        </span>
-        <span>{m.nav.cart}</span>
-      </Link>
-      <Link
-        href={ordersHref}
-        className={itemClass(onOrders)}
-        aria-current={onOrders ? "page" : undefined}
-        aria-label={m.nav.orders}
-      >
-        <ClipboardList className={`${easyMode ? "size-5" : "size-[1.125rem]"} ${iconClass(onOrders)}`} strokeWidth={2} aria-hidden />
-        <span>{m.nav.orders}</span>
-      </Link>
+      <div className={`${chayaAppShellNavInnerClass} chaya-app-shell--consumer flex items-center justify-around`}>
+        <NavItem
+          href={base}
+          active={onMenu}
+          label={m.nav.menu}
+          ariaLabel={m.menu.boardTitle}
+          easyMode={easyMode}
+          icon={<Menu className={iconSize} strokeWidth={2} />}
+        />
+        <NavItem
+          href={cartHref}
+          active={onCart}
+          label={m.nav.cart}
+          ariaLabel={cartCount > 0 ? `${m.nav.cart}, ${cartCount}` : m.nav.cart}
+          easyMode={easyMode}
+          icon={cartIcon}
+        />
+        <NavItem
+          href={ordersHref}
+          active={onOrders}
+          label={m.nav.orders}
+          ariaLabel={m.nav.orders}
+          easyMode={easyMode}
+          icon={<ClipboardList className={iconSize} strokeWidth={2} />}
+        />
+      </div>
     </nav>
   );
 }

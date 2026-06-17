@@ -2,8 +2,16 @@ import { createConsumerSupabase } from "@/lib/supabase/create-consumer-client";
 import { withSupabaseReadRetry, withSupabaseWriteRetry } from "@/lib/supabase/transient-retry";
 
 import type { GuestOrderErrorCode, GuestOrderErrorParams } from "@/lib/i18n/guest-order-error-codes";
+import { trackExperienceEvent } from "@/lib/experience/track-experience-event";
 import { runMerchantGuestOrderCreatedNotification } from "@/lib/notifications/merchant-notification-pipeline";
+import {
+  fetchTenantStoreSettings,
+  isWithinStoreBreakTime,
+} from "@/lib/tenant/tenant-store-settings";
 
+import { validateGuestTableNo } from "@/lib/tables/validate-guest-table";
+
+import { parseOrderNoField } from "./format-order-no";
 import type { GuestOrderLine } from "./guest-order-validation";
 import {
   GUEST_ORDER_LIMITS,
@@ -15,10 +23,9 @@ import {
 export type { GuestOrderLine } from "./guest-order-validation";
 
 export type SubmitGuestOrderResult =
-  | { ok: true; orderId: string }
+  | { ok: true; orderId: string; orderNo: number | null }
   | { ok: false; code: GuestOrderErrorCode; params?: GuestOrderErrorParams };
 
-const MAX_TABLE = 30;
 const MAX_NOTE = 500;
 
 export async function submitGuestOrder(input: {
@@ -33,6 +40,14 @@ export async function submitGuestOrder(input: {
     return { ok: false, code: tenantCheck.code, params: tenantCheck.params };
   }
   const slug = tenantCheck.slug;
+
+  const storeSettings = await fetchTenantStoreSettings(slug);
+  if (!storeSettings.ordersAccepting) {
+    return { ok: false, code: "orders_closed" };
+  }
+  if (isWithinStoreBreakTime(storeSettings)) {
+    return { ok: false, code: "break_time" };
+  }
 
   const linesCheck = sanitizeGuestOrderLines(input.lines);
   if (!linesCheck.ok) {
@@ -116,9 +131,12 @@ export async function submitGuestOrder(input: {
     row.guest_session_id = sid;
   }
 
-  const table = input.tableNo?.trim().slice(0, MAX_TABLE) ?? "";
-  if (table) {
-    row.table_no = table;
+  const tableCheck = await validateGuestTableNo(slug, input.tableNo);
+  if (!tableCheck.ok) {
+    return { ok: false, code: tableCheck.code };
+  }
+  if (tableCheck.tableNo) {
+    row.table_no = tableCheck.tableNo;
   }
 
   const note = input.guestNote?.trim().slice(0, MAX_NOTE) ?? "";
@@ -127,28 +145,44 @@ export async function submitGuestOrder(input: {
   }
 
   const { data, error } = await withSupabaseWriteRetry(() =>
-    client.from("orders").insert(row).select("id").single(),
+    client.from("orders").insert(row).select("id, order_no").single(),
   );
 
   if (error) {
     console.error("[submitGuestOrder]", error.code ?? "", error.message);
     return { ok: false, code: "submit_failed" };
   }
-  const id = data && typeof data === "object" && "id" in data ? (data as { id: unknown }).id : null;
+  const inserted =
+    data && typeof data === "object" ? (data as Record<string, unknown>) : null;
+  const id = inserted?.id;
   if (id == null) {
     return { ok: false, code: "no_order_id" };
   }
   const orderIdStr = String(id);
+  const orderNo = inserted ? parseOrderNoField(inserted.order_no) : null;
   try {
     await runMerchantGuestOrderCreatedNotification({
       tenantSlug: slug,
       orderId: orderIdStr,
       totalPrice: total_price,
-      tableNo: table || null,
+      tableNo: tableCheck.tableNo || null,
     });
   } catch (e) {
     console.error("[submitGuestOrder] merchant notification", e);
   }
 
-  return { ok: true, orderId: orderIdStr };
+  if (sid) {
+    void trackExperienceEvent({
+      guestSessionId: sid,
+      tenantSlug: slug,
+      eventType: "order_placed",
+      metadata: {
+        order_id: orderIdStr,
+        total_price,
+        order_no: orderNo,
+      },
+    });
+  }
+
+  return { ok: true, orderId: orderIdStr, orderNo };
 }

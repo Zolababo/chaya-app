@@ -1,17 +1,23 @@
 import Link from "next/link";
 
+import { isMerchantInternalUiVisible } from "@/lib/merchant/merchant-internal-ui";
+
 type Props = {
   tenantSlug: string;
 };
 
-/** 대외 「영업 도입 홍보」와 구분하기 위한 안내 — docs/ARCHITECTURE.md §5.1 과 정합 */
+/** 운영·개발용 안내. 점주 기본 화면에는 `NEXT_PUBLIC_MERCHANT_INTERNAL_UI=true` 일 때만 표시. */
 export function MerchantPreviewBanner({ tenantSlug }: Props) {
+  if (!isMerchantInternalUiVisible()) {
+    return null;
+  }
+
   const t = encodeURIComponent(tenantSlug);
   const legacyMerchantUrl = process.env.NEXT_PUBLIC_LEGACY_MERCHANT_URL?.trim() || null;
 
   return (
     <aside
-      className="mb-6 rounded-xl border border-amber-300/90 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-700 dark:bg-amber-950/45 dark:text-amber-50"
+      className="mb-6 rounded-2xl border border-amber-300/80 bg-amber-50 px-4 py-3.5 text-sm text-amber-950 shadow-sm dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-50"
       aria-label="점주 화면 안내"
     >
       <p className="font-semibold">내부 운영 미리보기</p>

@@ -2,6 +2,20 @@
 
 앱 배포(Vercel 등)와 DB 마이그레이션(Supabase)은 **별도 단계**입니다. 코드가 `main`에 올라가도, 아래 SQL이 프로젝트에 적용되어야 런타임에서 감사 로그 insert가 성공합니다.
 
+## 다음 구현 우선순위 (파일럿 — 2026-06)
+
+**기존 Phase 1–4(콘솔·감사·알림·역할)는 코드 기준 대부분 완료.** 파일럿 이전 단계에서 **새로 넣을 작업**은 아래 순서를 따릅니다. 상세: **`docs/CHAYA_PRODUCT_PRIORITY_PILOT.md`**.
+
+| 순서 | ID | 내용 | 상태 |
+|------|-----|------|------|
+| 1 | **P0** | 점주 비밀번호 찾기·변경, 로그인/로그아웃 안정화 | ✅ `docs/MERCHANT_ACCOUNT_PASSWORD.md` |
+| 2 | **DATA** | 소비자 `store_visit` 등 방문 데이터 설계·확장 | 🔲 설계 |
+| — | ~~P1 직원 초대~~ | **보류** — `docs/MERCHANT_ACCOUNT_POLICY.md` (1계정·다기기) | ⏸️ |
+| 4 | **P2** | 점주 셀프 가입 | ⏸️ 보류 |
+| 5 | — | 자동 승인·SaaS형 온보딩 | ⏸️ 보류 |
+
+**제품 원칙:** 장기 자산은 점주 온보딩 UX보다 **소비자 행동 데이터**(`guest_session_id`, 방문·재방문·주문 이력)가 우선이다.
+
 ## 배포 체크리스트
 
 1. **Git push** — 원격 저장소에 반영되면 연결된 프론트 배포(Vercel)가 빌드됩니다.
@@ -49,6 +63,7 @@
 - ✅ **기간 필터**(KST 달력일, 최대 120일) 및 **CSV** — `GET /m/[tenant]/audit/export` (동일 필터, 최대 5,000건, 초과 시 `X-Audit-Export-Truncated`).
 - ✅ 플랫폼 **`/ops/audit`** — 전 매장 조회·필터·CSV (`GET /ops/audit/export`). DB에 `merchant_audit_events_select_platform_operator` 정책 필요(`20260512160000_*` 마이그레이션).
 - ✅ **`/ops/merchants` 운영 액션 감사** — 초대·승인·연결 삭제·주문 메일 토글 성공 시 `merchant_audit_events`에 기록(액션 접두사 `ops.`; 이메일·전화·비밀번호는 detail에 넣지 않음). `SUPABASE_SERVICE_ROLE_KEY` 필요.
+- ✅ **`/ops/stores/{slug}` 매장별 운영** — 공지·주문 정지·`billing_plan`·데모 주문 초기화·카카오 연동. `docs/MERCHANT_MORE_HUB.md` QA 참고.
 
 ### Phase 3 — 알림 ✅
 

@@ -148,6 +148,11 @@ export async function removeMerchantMembership(formData: FormData): Promise<void
     backToMerchants({ e: "delete_not_found" });
   }
 
+  const confirmSlug = normalizeTenantSlug(String(formData.get("confirm_slug") ?? "").trim());
+  if (confirmSlug !== tenantSlug) {
+    backToMerchants({ e: "delete_confirm" });
+  }
+
   const { error } = await supabase.from("merchant_tenant_members").delete().eq("id", id);
   if (error) {
     backToMerchants({ e: "delete_failed" });

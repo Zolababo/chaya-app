@@ -7,8 +7,9 @@ import { useCallback, useEffect, useState } from "react";
 
 import { useConsumerLocale } from "@/lib/i18n/consumer-locale-context";
 import { formatConsumerMoney } from "@/lib/i18n/format-consumer-money";
-import { withConsumerLang } from "@/lib/i18n/with-consumer-lang";
+import { useConsumerNavHref } from "@/lib/i18n/use-consumer-nav-href";
 import { CHAYA_CART_CHANGED_EVENT, cartTotalQty, readCart } from "@/lib/cart/local-cart";
+import { chayaAppShellNavInnerClass } from "@/lib/responsive/chaya-app-shell";
 
 type Props = {
   tenant: string;
@@ -17,6 +18,7 @@ type Props = {
 /** 메뉴판 하단: 담긴 품목이 있을 때 장바구니로 가는 고정 바. */
 export function MenuCartStickyBar({ tenant }: Props) {
   const { locale, m } = useConsumerLocale();
+  const navHref = useConsumerNavHref(tenant);
   const pathname = usePathname();
   const slug = tenant.trim();
   const [qty, setQty] = useState(0);
@@ -42,9 +44,11 @@ export function MenuCartStickyBar({ tenant }: Props) {
   }, [slug, refresh]);
 
   const onMenuItemDetail = /\/menu\/[^/]+/.test(pathname);
-  if (qty <= 0 || pathname.includes("/cart") || onMenuItemDetail) return null;
+  if (qty <= 0 || pathname.includes("/cart") || pathname.includes("/orders") || onMenuItemDetail) {
+    return null;
+  }
 
-  const cartHref = withConsumerLang(`/t/${slug}/cart`, locale);
+  const cartHref = navHref(`/t/${slug}/cart`);
   const countLabel =
     locale === "ko" || locale === "ja"
       ? `${qty}개`
@@ -53,10 +57,10 @@ export function MenuCartStickyBar({ tenant }: Props) {
         : `×${qty}`;
 
   return (
-    <div className="fixed inset-x-0 bottom-[calc(max(4.25rem,env(safe-area-inset-bottom)+3.75rem))] z-30 flex justify-center px-4">
+    <div className="fixed inset-x-0 bottom-[var(--chaya-consumer-cart-bar-offset)] z-30">
       <Link
         href={cartHref}
-        className="flex min-h-[48px] w-full max-w-lg items-center justify-between gap-2 rounded-xl bg-chaya-primary px-4 py-2.5 text-chaya-on-primary shadow-[0_4px_20px_rgba(164,55,0,0.28)] transition hover:bg-chaya-primary-hover active:scale-[0.99]"
+        className={`${chayaAppShellNavInnerClass} chaya-app-shell--consumer flex min-h-[40px] w-full items-center justify-between gap-2 rounded-xl bg-chaya-primary px-3.5 py-2 text-chaya-on-primary shadow-lg transition hover:bg-chaya-primary-hover active:scale-[0.99]`}
         aria-label={`${m.nav.cart} ${countLabel}, ${formatConsumerMoney(total, locale)}`}
       >
         <span className="inline-flex items-center gap-2 text-sm font-semibold">

@@ -196,6 +196,20 @@ export function merchantAuditActionLabel(action: string): string {
       return "품절 여부 변경";
     case "menu_delete":
       return "메뉴 삭제";
+    case "ops.kakao_alimtalk_link":
+      return "카카오 알림톡 연동 (운영)";
+    case "ops.kakao_alimtalk_unlink":
+      return "카카오 알림톡 해제 (운영)";
+    case "ops.store_announcement":
+      return "매장 공지 발송 (운영)";
+    case "ops.orders_accepting_on":
+      return "주문 접수 재개 (운영)";
+    case "ops.orders_accepting_off":
+      return "주문 접수 정지 (운영)";
+    case "ops.billing_plan_set":
+      return "요금 플랜 변경 (운영)";
+    case "ops.orders_reset":
+      return "주문 데이터 초기화 (운영)";
     default:
       return action || "기타";
   }

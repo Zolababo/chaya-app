@@ -19,6 +19,10 @@ self.addEventListener("push", (event) => {
     self.registration.showNotification(title, {
       body,
       data: { url },
+      vibrate: [280, 120, 280, 120, 420],
+      tag: "chaya-guest-order",
+      renotify: true,
+      requireInteraction: true,
     }),
   );
 });

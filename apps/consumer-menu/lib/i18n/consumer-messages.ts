@@ -8,6 +8,7 @@ type MessageTree = {
   nav: { menu: string; cart: string; orders: string };
   menu: {
     boardTitle: string;
+    loading: string;
     empty: string;
     listType: string;
     addToCart: string;
@@ -27,14 +28,24 @@ type MessageTree = {
     categoryAll: string;
     categoryEmpty: string;
     optionRequired: string;
+    noOptionsHint: string;
+    detailSheetClose: string;
     todaysMenuLabel: string;
+    recentPopularLabel: string;
+    storeRecommendedLabel: string;
+    badgeFeatured: string;
+    badgePopular: string;
+    badgeNew: string;
     guestNoteToggle: string;
     guestNoteHide: string;
+    spiceLevelAria: string;
   };
   header: {
     orderMenu: string;
     tableNone: string;
     tableBadge: string;
+    invalidTableQr: string;
+    tableLockedHint: string;
     languageOpen: string;
     languageDialogTitle: string;
     languageClose: string;
@@ -55,9 +66,10 @@ type CoreMessageTree = Omit<
 >;
 
 const KO: CoreMessageTree = {
-  nav: { menu: "메뉴", cart: "장바구니", orders: "주문" },
+  nav: { menu: "메뉴", cart: "장바구니", orders: "주문내역" },
   menu: {
     boardTitle: "메뉴판",
+    loading: "메뉴 불러오는 중…",
     empty: "표시할 메뉴가 없습니다.",
     listType: "목록형 메뉴",
     addToCart: "담기",
@@ -77,22 +89,33 @@ const KO: CoreMessageTree = {
     categoryAll: "전체",
     categoryEmpty: "이 카테고리에 표시할 메뉴가 없습니다.",
     optionRequired: "(필수)",
+    noOptionsHint: "이 메뉴는 선택 옵션이 없어요",
+    detailSheetClose: "메뉴 상세 닫기",
     todaysMenuLabel: "오늘의 메뉴",
+    recentPopularLabel: "요즘 뜨는",
+    storeRecommendedLabel: "사장님 Pick",
+    badgeFeatured: "대표",
+    badgePopular: "인기",
+    badgeNew: "신규",
     guestNoteToggle: "요청사항 추가",
     guestNoteHide: "접기",
+    spiceLevelAria: "매운맛 {level}단계",
   },
   header: {
     orderMenu: "주문 메뉴",
     tableNone: "테이블 번호 없음",
     tableBadge: "테이블 {table}",
+    invalidTableQr:
+      "등록되지 않은 테이블 QR입니다. 테이블에 붙은 QR을 다시 스캔하거나 아래에서 테이블을 선택해 주세요.",
+    tableLockedHint: "QR로 지정된 테이블입니다. 번호를 바꿀 수 없습니다.",
     languageOpen: "언어 선택",
     languageDialogTitle: "표시 언어",
     languageClose: "닫기",
     easyMenu: "큰글씨·목록",
-    easyMenuAria: "큰글씨·목록 보기 켜기. 메뉴 화면에서는 목록형으로 열립니다",
-    easyMenuOff: "일반 글씨",
-    easyMenuOffAria: "큰글씨·목록 보기 끄기. 현재 화면을 유지합니다",
-    toolbarLabel: "언어 및 쉬운 메뉴",
+    easyMenuAria: "읽기 쉬운·목록형 메뉴 켜기. 큰 글씨 목록 화면으로 열립니다",
+    easyMenuOff: "일반 보기",
+    easyMenuOffAria: "읽기 쉬운·목록형 메뉴 끄기. 지금 화면을 유지합니다",
+    toolbarLabel: "언어 및 읽기 쉬운 메뉴",
   },
   flow: {
     step1: "① 메뉴 고르기",
@@ -105,6 +128,7 @@ const EN: CoreMessageTree = {
   nav: { menu: "Menu", cart: "Cart", orders: "Orders" },
   menu: {
     boardTitle: "Menu",
+    loading: "Loading menu…",
     empty: "No menu items to show.",
     listType: "List menu",
     addToCart: "Add",
@@ -124,22 +148,33 @@ const EN: CoreMessageTree = {
     categoryAll: "All",
     categoryEmpty: "No items in this category.",
     optionRequired: "(required)",
+    noOptionsHint: "No options for this item",
+    detailSheetClose: "Close menu details",
     todaysMenuLabel: "Today's pick",
+    recentPopularLabel: "Trending",
+    storeRecommendedLabel: "Owner's pick",
+    badgeFeatured: "Pick",
+    badgePopular: "Hot",
+    badgeNew: "New",
     guestNoteToggle: "Add a note",
     guestNoteHide: "Hide note",
+    spiceLevelAria: "Spicy level {level}",
   },
   header: {
     orderMenu: "Order menu",
     tableNone: "No table number",
     tableBadge: "Table {table}",
+    invalidTableQr:
+      "This table QR is not registered. Scan the QR on your table or select your table below.",
+    tableLockedHint: "Table set by QR. You cannot change the number.",
     languageOpen: "Choose language",
     languageDialogTitle: "Display language",
     languageClose: "Close",
     easyMenu: "Large text · List",
-    easyMenuAria: "Turn on large-text list view. Opens list menu from the menu screen",
-    easyMenuOff: "Normal text",
-    easyMenuOffAria: "Turn off large-text list view and stay on this screen",
-    toolbarLabel: "Language and easy menu",
+    easyMenuAria: "Turn on easy-to-read list menu. Opens large-text list view from the menu screen",
+    easyMenuOff: "Standard view",
+    easyMenuOffAria: "Turn off easy-to-read list menu and stay on this screen",
+    toolbarLabel: "Language and easy-read menu",
   },
   flow: {
     step1: "① Choose items",
@@ -152,6 +187,7 @@ const JA: CoreMessageTree = {
   nav: { menu: "メニュー", cart: "カート", orders: "注文" },
   menu: {
     boardTitle: "メニュー",
+    loading: "メニューを読み込み中…",
     empty: "表示するメニューがありません。",
     listType: "リストメニュー",
     addToCart: "追加",
@@ -171,14 +207,25 @@ const JA: CoreMessageTree = {
     categoryAll: "すべて",
     categoryEmpty: "このカテゴリーにメニューはありません。",
     optionRequired: "（必須）",
+    noOptionsHint: "選択オプションはありません",
+    detailSheetClose: "詳細を閉じる",
     todaysMenuLabel: "本日のおすすめ",
+    recentPopularLabel: "今人気",
+    storeRecommendedLabel: "店長Pick",
+    badgeFeatured: "おすすめ",
+    badgePopular: "人気",
+    badgeNew: "新着",
     guestNoteToggle: "リクエストを追加",
     guestNoteHide: "閉じる",
+    spiceLevelAria: "辛さ {level}",
   },
   header: {
     orderMenu: "注文メニュー",
     tableNone: "テーブル番号なし",
     tableBadge: "テーブル {table}",
+    invalidTableQr:
+      "登録されていないテーブルQRです。テーブルのQRを再度読み取るか、下からテーブルを選んでください。",
+    tableLockedHint: "QRで指定されたテーブルです。番号は変更できません。",
     languageOpen: "言語を選ぶ",
     languageDialogTitle: "表示言語",
     languageClose: "閉じる",
@@ -199,6 +246,7 @@ const ZH_HANS: CoreMessageTree = {
   nav: { menu: "菜单", cart: "购物车", orders: "订单" },
   menu: {
     boardTitle: "菜单",
+    loading: "正在加载菜单…",
     empty: "暂无菜品。",
     listType: "列表菜单",
     addToCart: "加入",
@@ -218,14 +266,24 @@ const ZH_HANS: CoreMessageTree = {
     categoryAll: "全部",
     categoryEmpty: "该分类下暂无菜品。",
     optionRequired: "（必选）",
-    todaysMenuLabel: EN.menu.todaysMenuLabel,
+    noOptionsHint: "此菜品无可选规格",
+    detailSheetClose: "关闭详情",
+    todaysMenuLabel: "今日推荐",
+    recentPopularLabel: "当下热门",
+    storeRecommendedLabel: "店长 Pick",
+    badgeFeatured: "招牌",
+    badgePopular: "人气",
+    badgeNew: "新品",
     guestNoteToggle: EN.menu.guestNoteToggle,
     guestNoteHide: EN.menu.guestNoteHide,
+    spiceLevelAria: "辣度 {level}",
   },
   header: {
     orderMenu: "点餐",
     tableNone: "无桌号",
     tableBadge: "桌号 {table}",
+    invalidTableQr: EN.header.invalidTableQr,
+    tableLockedHint: EN.header.tableLockedHint,
     languageOpen: "选择语言",
     languageDialogTitle: "显示语言",
     languageClose: "关闭",
@@ -242,6 +300,7 @@ const ZH_HANT: CoreMessageTree = {
   nav: { menu: "菜單", cart: "購物車", orders: "訂單" },
   menu: {
     boardTitle: "菜單",
+    loading: "正在載入菜單…",
     empty: "暫無餐點。",
     listType: "列表菜單",
     addToCart: "加入",
@@ -261,14 +320,24 @@ const ZH_HANT: CoreMessageTree = {
     categoryAll: "全部",
     categoryEmpty: "此分類暫無餐點。",
     optionRequired: "（必選）",
+    noOptionsHint: "此菜品無可選規格",
+    detailSheetClose: "關閉詳情",
     todaysMenuLabel: EN.menu.todaysMenuLabel,
+    recentPopularLabel: EN.menu.recentPopularLabel,
+    storeRecommendedLabel: "店長 Pick",
+    badgeFeatured: "招牌",
+    badgePopular: "人氣",
+    badgeNew: "新品",
     guestNoteToggle: EN.menu.guestNoteToggle,
     guestNoteHide: EN.menu.guestNoteHide,
+    spiceLevelAria: "辣度 {level}",
   },
   header: {
     orderMenu: "點餐",
     tableNone: "無桌號",
     tableBadge: "桌號 {table}",
+    invalidTableQr: EN.header.invalidTableQr,
+    tableLockedHint: EN.header.tableLockedHint,
     languageOpen: "選擇語言",
     languageDialogTitle: "顯示語言",
     languageClose: "關閉",
@@ -281,141 +350,12 @@ const ZH_HANT: CoreMessageTree = {
   flow: { step1: "① 選擇餐點", step2: "② 確認購物車", step3: "③ 送至廚房" },
 };
 
-const VI: CoreMessageTree = {
-  nav: { menu: "Thực đơn", cart: "Giỏ hàng", orders: "Đơn hàng" },
-  menu: {
-    boardTitle: "Thực đơn",
-    empty: "Chưa có món.",
-    listType: "Danh sách món",
-    addToCart: "Thêm",
-    addedToast: "Đã thêm vào giỏ",
-    soldOut: "Hết",
-    detailBack: "Về thực đơn",
-    categoryFallback: "Món",
-    soldOutBanner: "Đã hết món.",
-    soldOutCart: "Món đã hết. Vui lòng chọn món khác.",
-    quantity: "Số lượng",
-    decreaseQty: "Giảm số lượng",
-    increaseQty: "Tăng số lượng",
-    addToCartBar: "Thêm vào giỏ",
-    guestNote: "Ghi chú (tùy chọn)",
-    guestNotePlaceholder: "VD: ít cay",
-    categoryNav: "Danh mục",
-    categoryAll: "Tất cả",
-    categoryEmpty: "Không có món trong danh mục này.",
-    optionRequired: "(bắt buộc)",
-    todaysMenuLabel: EN.menu.todaysMenuLabel,
-    guestNoteToggle: EN.menu.guestNoteToggle,
-    guestNoteHide: EN.menu.guestNoteHide,
-  },
-  header: {
-    ...EN.header,
-    orderMenu: "Đặt món",
-    tableNone: "Không có số bàn",
-    tableBadge: "Bàn {table}",
-    easyMenu: "Chữ lớn · Danh sách",
-    easyMenuAria: "Mở màn hình menu dạng danh sách chữ lớn",
-  },
-  flow: {
-    step1: "① Chọn món",
-    step2: "② Xem giỏ",
-    step3: "③ Gửi bếp",
-  },
-};
-
-const TH: CoreMessageTree = {
-  nav: { menu: "เมนู", cart: "ตะกร้า", orders: "คำสั่งซื้อ" },
-  menu: {
-    boardTitle: "เมนู",
-    empty: "ไม่มีรายการเมนู",
-    listType: "เมนูแบบรายการ",
-    addToCart: "เพิ่ม",
-    addedToast: "เพิ่มในตะกร้าแล้ว",
-    soldOut: "หมด",
-    detailBack: "กลับไปเมนู",
-    categoryFallback: "เมนู",
-    soldOutBanner: "สินค้าหมดชั่วคราว",
-    soldOutCart: "หมดแล้ว กรุณาเลือกเมนูอื่น",
-    quantity: "จำนวน",
-    decreaseQty: "ลดจำนวน",
-    increaseQty: "เพิ่มจำนวน",
-    addToCartBar: "ใส่ตะกร้า",
-    guestNote: "หมายเหตุ (ไม่บังคับ)",
-    guestNotePlaceholder: "เช่น ไม่เผ็ด",
-    categoryNav: "หมวดหมู่",
-    categoryAll: "ทั้งหมด",
-    categoryEmpty: "ไม่มีเมนูในหมวดนี้",
-    optionRequired: "(จำเป็น)",
-    todaysMenuLabel: EN.menu.todaysMenuLabel,
-    guestNoteToggle: EN.menu.guestNoteToggle,
-    guestNoteHide: EN.menu.guestNoteHide,
-  },
-  header: {
-    ...EN.header,
-    orderMenu: "สั่งอาหาร",
-    tableNone: "ไม่มีเลขโต๊ะ",
-    tableBadge: "โต๊ะ {table}",
-    easyMenu: "ตัวใหญ่ · รายการ",
-    easyMenuAria: "ไปหน้าเมนูแบบรายการตัวใหญ่",
-  },
-  flow: {
-    step1: "① เลือกเมนู",
-    step2: "② ตรวจตะกร้า",
-    step3: "③ ส่งครัว",
-  },
-};
-
-const RU: CoreMessageTree = {
-  nav: { menu: "Меню", cart: "Корзина", orders: "Заказы" },
-  menu: {
-    boardTitle: "Меню",
-    empty: "Нет блюд для отображения.",
-    listType: "Список меню",
-    addToCart: "В корзину",
-    addedToast: "Добавлено в корзину",
-    soldOut: "Нет в наличии",
-    detailBack: "К меню",
-    categoryFallback: "Блюдо",
-    soldOutBanner: "Сейчас нет в наличии.",
-    soldOutCart: "Нет в наличии. Выберите другое блюдо.",
-    quantity: "Количество",
-    decreaseQty: "Уменьшить",
-    increaseQty: "Увеличить",
-    addToCartBar: "В корзину",
-    guestNote: "Пожелания (необяз.)",
-    guestNotePlaceholder: "напр. не остро",
-    categoryNav: "Категории",
-    categoryAll: "Все",
-    categoryEmpty: "В этой категории нет блюд.",
-    optionRequired: "(обяз.)",
-    todaysMenuLabel: EN.menu.todaysMenuLabel,
-    guestNoteToggle: EN.menu.guestNoteToggle,
-    guestNoteHide: EN.menu.guestNoteHide,
-  },
-  header: {
-    ...EN.header,
-    orderMenu: "Меню заказа",
-    tableNone: "Нет номера стола",
-    tableBadge: "Стол {table}",
-    easyMenu: "Крупный текст · Список",
-    easyMenuAria: "Открыть меню крупным списком",
-  },
-  flow: {
-    step1: "① Выберите блюда",
-    step2: "② Проверьте корзину",
-    step3: "③ Отправить на кухню",
-  },
-};
-
 const MESSAGES: Record<AppLocale, CoreMessageTree> = {
   ko: KO,
   en: EN,
   ja: JA,
   "zh-Hans": ZH_HANS,
   "zh-Hant": ZH_HANT,
-  vi: VI,
-  th: TH,
-  ru: RU,
 };
 
 export function consumerMessages(locale: AppLocale): MessageTree {
@@ -423,11 +363,21 @@ export function consumerMessages(locale: AppLocale): MessageTree {
   const menu = {
     ...base.menu,
     todaysMenuLabel: base.menu.todaysMenuLabel ?? EN.menu.todaysMenuLabel,
+    recentPopularLabel: base.menu.recentPopularLabel ?? EN.menu.recentPopularLabel,
+    storeRecommendedLabel: base.menu.storeRecommendedLabel ?? EN.menu.storeRecommendedLabel,
+    badgeFeatured: base.menu.badgeFeatured ?? EN.menu.badgeFeatured,
+    badgePopular: base.menu.badgePopular ?? EN.menu.badgePopular,
+    badgeNew: base.menu.badgeNew ?? EN.menu.badgeNew,
     guestNoteToggle: base.menu.guestNoteToggle ?? EN.menu.guestNoteToggle,
     guestNoteHide: base.menu.guestNoteHide ?? EN.menu.guestNoteHide,
+    noOptionsHint: base.menu.noOptionsHint ?? EN.menu.noOptionsHint,
+    detailSheetClose: base.menu.detailSheetClose ?? EN.menu.detailSheetClose,
+    spiceLevelAria: base.menu.spiceLevelAria ?? EN.menu.spiceLevelAria,
   };
   const header = {
     ...base.header,
+    invalidTableQr: base.header.invalidTableQr ?? EN.header.invalidTableQr,
+    tableLockedHint: base.header.tableLockedHint ?? EN.header.tableLockedHint,
     easyMenuOff: base.header.easyMenuOff ?? EN.header.easyMenuOff,
     easyMenuOffAria: base.header.easyMenuOffAria ?? EN.header.easyMenuOffAria,
   };

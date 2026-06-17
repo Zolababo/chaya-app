@@ -129,6 +129,32 @@ export function categoryLabelOf(item: { category?: string | null }): string {
   return normalizeCategoryLabel(item.category);
 }
 
+export type MenuCategoryGroup = {
+  category: string;
+  items: ChayaMenuRow[];
+};
+
+/** 전체 탭 스크롤용 — 카테고리 헤더 + 구간별 목록 */
+export function groupMenuItemsByCategory(
+  items: ChayaMenuRow[],
+  orderedCategories: string[],
+): MenuCategoryGroup[] {
+  const buckets = new Map<string, ChayaMenuRow[]>();
+  for (const item of items) {
+    const cat = categoryLabelOf(item);
+    const list = buckets.get(cat) ?? [];
+    list.push(item);
+    buckets.set(cat, list);
+  }
+  const order =
+    orderedCategories.length > 0
+      ? orderedCategories
+      : sortCategoryNames([...buckets.keys()]);
+  return order
+    .map((category) => ({ category, items: buckets.get(category) ?? [] }))
+    .filter((g) => g.items.length > 0);
+}
+
 /** 주문 내역 라인 — 메뉴 카탈로그 이름으로 카테고리 순 정렬. */
 function menuNameToCategory(menuItems: ChayaMenuRow[]): Map<string, string> {
   const map = new Map<string, string>();

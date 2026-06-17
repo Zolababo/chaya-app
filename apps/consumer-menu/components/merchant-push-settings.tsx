@@ -27,13 +27,13 @@ function errMessage(code: string): string {
     case "push_no_session":
       return "세션이 없습니다. 다시 로그인해 주세요.";
     case "push_save_failed":
-      return "서버에 구독을 저장하지 못했습니다. DB 마이그레이션 적용 여부를 확인해 주세요.";
+      return "알림 설정을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.";
     case "push_role_forbidden":
-      return "조회 전용(viewer·finance) 계정은 브라우저 알림 구독을 사용할 수 없습니다.";
+      return "이 계정은 브라우저 알림을 켤 수 없습니다.";
     case "unsupported":
       return "이 브라우저에서는 웹 푸시를 지원하지 않습니다.";
     case "no_key":
-      return "서버에 VAPID 공개 키가 없습니다.";
+      return "브라우저 알림을 아직 사용할 수 없습니다.";
     case "denied":
       return "알림 권한이 거부되었습니다. 브라우저 설정에서 허용할 수 있습니다.";
     default:
@@ -136,27 +136,23 @@ export function MerchantPushSettings({ tenant, vapidPublicKey }: Props) {
 
   if (!vapidPublicKey) {
     return (
-      <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900/80 dark:text-zinc-400">
-        웹 푸시를 쓰려면 호스트에{" "}
-        <span className="font-mono">NEXT_PUBLIC_VAPID_PUBLIC_KEY</span>, <span className="font-mono">VAPID_PRIVATE_KEY</span>,{" "}
-        <span className="font-mono">VAPID_SUBJECT</span> (예: mailto:you@domain) 를 설정하고 재배포하세요. DB에는{" "}
-        <span className="font-mono">20260512220000_merchant_push_subscriptions.sql</span> 마이그레이션이 필요합니다.
-      </div>
+      <p className="text-xs font-medium text-[#9CA3AF]">
+        브라우저 푸시를 아직 사용할 수 없습니다. 주문은 대시보드·주문 탭에서 확인해 주세요.
+      </p>
     );
   }
 
   return (
-    <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-3 text-sm dark:border-zinc-700 dark:bg-zinc-900/80">
-      <p className="font-medium text-zinc-900 dark:text-zinc-100">브라우저 새 주문 알림 (웹 푸시)</p>
-      <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
-        모바일·데스크톱에서 허용하면 백그라운드에서도 알림을 받을 수 있습니다. (iOS는 PWA 홈 화면에 추가한 뒤 동작하는 경우가 많습니다.)
+    <div className="space-y-3">
+      <p className="text-xs font-medium leading-relaxed text-[#4B5563] dark:text-zinc-400">
+        허용하면 앱을 닫아도 이 기기로 주문 알림을 받을 수 있습니다.
       </p>
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2">
         <button
           type="button"
           disabled={busy}
           onClick={() => void onSubscribe()}
-          className="rounded-lg bg-indigo-700 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50 dark:bg-indigo-400 dark:text-indigo-950"
+          className="flex min-h-[44px] flex-1 items-center justify-center rounded-xl bg-chaya-primary px-4 text-sm font-bold text-white disabled:opacity-50"
         >
           {busy ? "처리 중…" : "이 기기에서 알림 켜기"}
         </button>
@@ -164,13 +160,13 @@ export function MerchantPushSettings({ tenant, vapidPublicKey }: Props) {
           type="button"
           disabled={busy}
           onClick={() => void onUnsubscribe()}
-          className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-800 disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-200"
+          className="min-h-[44px] rounded-xl border-[1.5px] border-[#E5E7EB] px-4 text-sm font-bold text-[#4B5563] disabled:opacity-50 dark:border-zinc-700"
         >
-          알림 끄기 (이 기기)
+          알림 끄기
         </button>
       </div>
       {message ? (
-        <p className="mt-2 text-xs text-zinc-700 dark:text-zinc-300" role="status">
+        <p className="text-xs font-semibold text-[#00A85A]" role="status">
           {message}
         </p>
       ) : null}

@@ -1,6 +1,5 @@
-import { MenuBoard } from "@/components/menu-board";
-import { TodaysMenuBanner } from "@/components/todays-menu-banner";
-import { isConsumerMenuUiV2 } from "@/lib/consumer/future-features";
+import { ExperienceTrackQrScan } from "@/components/experience-track-qr-scan";
+import { MenuHomeCatalogClient } from "@/components/menu-home-catalog-client";
 import { consumerMessages } from "@/lib/i18n/consumer-messages";
 import { getConsumerLocale } from "@/lib/i18n/get-consumer-locale";
 import { collectCategories, listMenusForTenant } from "@/lib/menus/queries";
@@ -19,7 +18,8 @@ export default async function MenuHomePage({ params, searchParams }: Props) {
   const categories = collectCategories(result.items);
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
+      <ExperienceTrackQrScan tenant={tenant} />
       <h1 id="menu-home-heading" className="sr-only">
         {m.menu.boardTitle}
       </h1>
@@ -41,12 +41,8 @@ export default async function MenuHomePage({ params, searchParams }: Props) {
       {result.items.length === 0 ? (
         <p className="text-center text-sm text-chaya-muted dark:text-zinc-400">{m.menu.empty}</p>
       ) : (
-        <>
-          {isConsumerMenuUiV2() ? <TodaysMenuBanner tenant={tenant} items={result.items} /> : null}
-          <MenuBoard tenant={tenant} items={result.items} categories={categories} />
-        </>
+        <MenuHomeCatalogClient tenant={tenant} items={result.items} categories={categories} />
       )}
-
     </div>
   );
 }

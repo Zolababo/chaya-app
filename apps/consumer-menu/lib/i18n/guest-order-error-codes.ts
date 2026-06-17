@@ -17,7 +17,12 @@ export type GuestOrderErrorCode =
   | "menu_stale"
   | "price_check_failed"
   | "submit_failed"
-  | "no_order_id";
+  | "no_order_id"
+  | "table_required"
+  | "invalid_table"
+  | "invalid_table_format"
+  | "orders_closed"
+  | "break_time";
 
 export type GuestOrderErrorParams = {
   max?: string;

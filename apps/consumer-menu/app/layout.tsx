@@ -1,6 +1,10 @@
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
 import { Be_Vietnam_Pro } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
+
+import { consumerLightBootScript } from "@/lib/consumer/consumer-light-boot-script";
 
 /** OG·메타데이터 canonical. 로컬은 localhost, Vercel은 호스트 자동 반영 가능 */
 function metadataSiteUrl(): string {
@@ -43,14 +47,29 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const isConsumerMenu = (await headers()).get("x-chaya-consumer") === "1";
+
   return (
-    <html lang="ko">
-      <body className={`${chayaSans.variable} touch-manipulation font-sans antialiased`}>{children}</body>
+    <html
+      lang="ko"
+      {...(isConsumerMenu ? { "data-chaya-consumer": "" } : {})}
+      style={isConsumerMenu ? { colorScheme: "only light" } : undefined}
+      suppressHydrationWarning
+    >
+      <head>
+        {isConsumerMenu ? <meta name="color-scheme" content="only light" /> : null}
+      </head>
+      <body className={`${chayaSans.variable} touch-manipulation font-sans antialiased`}>
+        <Script id="chaya-consumer-light-boot" strategy="beforeInteractive">
+          {consumerLightBootScript}
+        </Script>
+        {children}
+      </body>
     </html>
   );
 }

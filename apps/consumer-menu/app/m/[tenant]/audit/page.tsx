@@ -1,17 +1,12 @@
 import Link from "next/link";
 
-import { MerchantPreviewBanner } from "@/components/merchant-preview-banner";
-import { MerchantSubnav } from "@/components/merchant-subnav";
-import { OrderStatusRefresh } from "@/components/order-status-refresh";
 import { requireMerchantForTenant } from "@/lib/merchant/merchant-access";
-import { canManageMerchantMenus } from "@/lib/merchant/merchant-role-capabilities";
 import {
   listMerchantAuditEvents,
   MERCHANT_AUDIT_CSV_MAX_ROWS,
   merchantAuditActionLabel,
   MERCHANT_AUDIT_ACTION_FILTERS,
 } from "@/lib/merchant/list-merchant-audit-events";
-import { countMerchantPendingOrders } from "@/lib/orders/list-orders-for-merchant";
 import { createSupabaseServerClient } from "@/lib/supabase/create-server-session-client";
 import { resolveServerUser } from "@/lib/supabase/resolve-server-user";
 
@@ -69,22 +64,18 @@ export default async function MerchantAuditPage({ params, searchParams }: Props)
   const fromParam = typeof sp.from === "string" ? sp.from : undefined;
   const toParam = typeof sp.to === "string" ? sp.to : undefined;
 
-  const { role } = await requireMerchantForTenant(tenant);
-  const canManageMenus = canManageMerchantMenus(role);
+  await requireMerchantForTenant(tenant);
 
   const supabase = await createSupabaseServerClient();
   const user = supabase ? await resolveServerUser(supabase) : null;
 
-  const [pendingCount, audit] = await Promise.all([
-    countMerchantPendingOrders(tenant),
-    listMerchantAuditEvents({
-      tenantSlug: tenant,
-      page: pageParam,
-      action: actionParam,
-      fromYmd: fromParam,
-      toYmd: toParam,
-    }),
-  ]);
+  const audit = await listMerchantAuditEvents({
+    tenantSlug: tenant,
+    page: pageParam,
+    action: actionParam,
+    fromYmd: fromParam,
+    toYmd: toParam,
+  });
 
   const tEnc = encodeURIComponent(tenant);
 
@@ -100,7 +91,7 @@ export default async function MerchantAuditPage({ params, searchParams }: Props)
   const exportHref = buildExportHref(tEnc, actionFilter, fromYmd, toYmd);
 
   return (
-    <div className="mx-auto min-h-dvh max-w-4xl px-4 py-8 pb-[max(2rem,env(safe-area-inset-bottom))]">
+    <>
       <header className="mb-6 border-b border-chaya-border pb-4 dark:border-zinc-700">
         <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Merchant</p>
         <h1 className="mt-1 text-2xl font-bold">활동 기록 — {tenant}</h1>
@@ -108,14 +99,6 @@ export default async function MerchantAuditPage({ params, searchParams }: Props)
           주문 상태·메뉴 변경 등 콘솔에서 수행한 작업을 시간순으로 봅니다. (세션 + RLS로 본인 매장만 조회)
         </p>
       </header>
-
-      <MerchantPreviewBanner tenantSlug={tenant} />
-
-      <MerchantSubnav tenant={tenant} pendingOrderCount={pendingCount} canManageMenus={canManageMenus} />
-
-      <div className="mb-6">
-        <OrderStatusRefresh />
-      </div>
 
       <section className="mb-6 rounded-xl border border-chaya-border bg-chaya-surface p-4 dark:border-zinc-700 dark:bg-zinc-950">
         <form method="get" className="flex flex-wrap items-end gap-3">
@@ -278,6 +261,6 @@ export default async function MerchantAuditPage({ params, searchParams }: Props)
           대시보드로
         </Link>
       </p>
-    </div>
+    </>
   );
 }

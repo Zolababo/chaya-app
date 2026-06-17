@@ -1,5 +1,6 @@
 "use client";
 
+import { useTenantTableSelection } from "@/lib/cart/use-tenant-table-selection";
 import { useConsumerEasyMode } from "@/lib/consumer/consumer-easy-mode-context";
 import { useConsumerLocale } from "@/lib/i18n/consumer-locale-context";
 import { withConsumerLang } from "@/lib/i18n/with-consumer-lang";
@@ -8,7 +9,8 @@ import { withConsumerLang } from "@/lib/i18n/with-consumer-lang";
 export function useEasyMenuHref(tenant: string): string {
   const { locale } = useConsumerLocale();
   const { easyMode } = useConsumerEasyMode();
+  const { effectiveCode: table } = useTenantTableSelection(tenant);
   const slug = encodeURIComponent(tenant.trim());
   const path = easyMode ? `/t/${slug}/barrier-free` : `/t/${slug}`;
-  return withConsumerLang(path, locale);
+  return withConsumerLang(path, locale, table || undefined);
 }

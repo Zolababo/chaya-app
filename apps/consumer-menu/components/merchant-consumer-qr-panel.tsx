@@ -111,7 +111,17 @@ export function MerchantConsumerQrPanel({ tenantSlug, siteBase }: Props) {
         </p>
       ) : null}
 
-      <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-500">
+      <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">
+        테이블 번호·QR 인쇄는{" "}
+        <a
+          href={`/m/${t}/tables`}
+          className="font-semibold text-chaya-primary underline dark:text-orange-400"
+        >
+          테이블 QR
+        </a>
+        에서 번호만 넣으면 됩니다 (CHAYA가 QR을 만들어 드립니다).
+      </p>
+      <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-500">
         상세 절차: <span className="font-mono">docs/CONSUMER_TENANT_QR_SETUP.md</span>
       </p>
     </section>

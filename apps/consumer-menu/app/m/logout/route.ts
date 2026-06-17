@@ -25,6 +25,7 @@ export async function POST(request: NextRequest) {
   }
 
   const loginUrl = new URL("/m/login", request.nextUrl.origin);
+  loginUrl.searchParams.set("ok", "logged_out");
   if (nextPath) {
     loginUrl.searchParams.set("next", nextPath);
   }

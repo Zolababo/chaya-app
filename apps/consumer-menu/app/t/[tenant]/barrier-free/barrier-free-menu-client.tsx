@@ -1,21 +1,23 @@
 "use client";
 
+import { Plus } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { MenuCategoryChips } from "@/components/menu-category-chips";
+import { MenuScrollPad } from "@/components/menu-scroll-pad";
 import { MenuListRow } from "@/components/menu-list-row";
 import {
-  menuAddButtonEasyClass,
-  menuFlatListBleedClass,
-  menuFlatListItemClass,
+  menuAddIconButtonEasyClass,
+  menuCardItemClass,
+  menuCardListClass,
 } from "@/components/menu-list-styles";
-import { useConsumerEasyMode } from "@/lib/consumer/consumer-easy-mode-context";
+import { useConsumerVoiceAnnounce } from "@/lib/consumer/use-consumer-voice-announce";
 import { useConsumerLocale } from "@/lib/i18n/consumer-locale-context";
 import { formatConsumerMoney } from "@/lib/i18n/format-consumer-money";
-import { withConsumerLang } from "@/lib/i18n/with-consumer-lang";
+import { useConsumerNavHref } from "@/lib/i18n/use-consumer-nav-href";
 import { addLine } from "@/lib/cart/local-cart";
 import { sortMenuItemsForDisplay } from "@/lib/menus/queries";
-import { resolveMenuRowForLocale } from "@/lib/menus/resolve-menu-text";
+import { buildCategoryDisplayMap, resolveMenuRowForLocale } from "@/lib/menus/resolve-menu-text";
 import type { ChayaMenuRow } from "@/lib/menus/types";
 
 type Props = {
@@ -28,16 +30,13 @@ const ALL_CATEGORY_KEY = "__all__";
 
 export function BarrierFreeMenuClient({ tenant, items, categories }: Props) {
   const { locale, m } = useConsumerLocale();
-  const { enterEasyMode } = useConsumerEasyMode();
+  const navHref = useConsumerNavHref(tenant);
+  const { speak } = useConsumerVoiceAnnounce();
   const slug = tenant.trim();
   const [active, setActive] = useState<string>(ALL_CATEGORY_KEY);
   const [addedToast, setAddedToast] = useState(false);
   const [lastMessage, setLastMessage] = useState("");
   const toastHide = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    enterEasyMode();
-  }, [enterEasyMode]);
 
   useEffect(() => {
     setLastMessage(m.barrierFree.ready);
@@ -50,15 +49,25 @@ export function BarrierFreeMenuClient({ tenant, items, categories }: Props) {
   }, []);
 
   const flashAdded = (name: string) => {
-    setLastMessage(m.barrierFree.addedOne.replace("{name}", name));
+    const msg = m.barrierFree.addedOne.replace("{name}", name);
+    setLastMessage(msg);
+    speak(msg);
     setAddedToast(true);
     if (toastHide.current) clearTimeout(toastHide.current);
     toastHide.current = setTimeout(() => setAddedToast(false), 2200);
   };
 
+  const categoryLabels = useMemo(
+    () => buildCategoryDisplayMap(items, categories, locale),
+    [items, categories, locale],
+  );
+
   const tabCategories = useMemo(
-    () => [{ key: ALL_CATEGORY_KEY, label: m.menu.categoryAll }, ...categories.map((c) => ({ key: c, label: c }))],
-    [categories, m.menu.categoryAll],
+    () => [
+      { key: ALL_CATEGORY_KEY, label: m.menu.categoryAll },
+      ...categories.map((c) => ({ key: c, label: categoryLabels.get(c) ?? c })),
+    ],
+    [categories, m.menu.categoryAll, categoryLabels],
   );
 
   const sortedItems = useMemo(() => sortMenuItemsForDisplay(items), [items]);
@@ -71,7 +80,9 @@ export function BarrierFreeMenuClient({ tenant, items, categories }: Props) {
   const handleCategorySelect = (key: string) => {
     setActive(key);
     const label = tabCategories.find((c) => c.key === key)?.label ?? key;
-    setLastMessage(m.barrierFree.categoryChanged.replace("{category}", label));
+    const msg = m.barrierFree.categoryChanged.replace("{category}", label);
+    setLastMessage(msg);
+    speak(msg);
   };
 
   return (
@@ -101,16 +112,15 @@ export function BarrierFreeMenuClient({ tenant, items, categories }: Props) {
       />
 
       {filtered.length > 0 ? (
-        <ul aria-label={m.barrierFree.menuList} className={menuFlatListBleedClass}>
+        <ul aria-label={m.barrierFree.menuList} className={menuCardListClass}>
           {filtered.map((raw) => {
             const item = resolveMenuRowForLocale(raw, locale);
             const name = item.name;
-            const detailHref = withConsumerLang(
+            const detailHref = navHref(
               `/t/${encodeURIComponent(slug)}/menu/${encodeURIComponent(item.id)}`,
-              locale,
             );
             return (
-              <li key={item.id} className={menuFlatListItemClass}>
+              <li key={item.id} className={menuCardItemClass}>
                 <MenuListRow
                   xlarge
                   name={name}
@@ -118,7 +128,6 @@ export function BarrierFreeMenuClient({ tenant, items, categories }: Props) {
                   priceLabel={formatConsumerMoney(item.price, locale)}
                   imageUrl={item.imageUrl}
                   soldOut={item.isSoldOut}
-                  soldOutLabel={m.barrierFree.soldOut}
                   detailHref={detailHref}
                   detailAriaLabel={m.barrierFree.detailAria.replace("{name}", name)}
                   trailing={
@@ -133,13 +142,13 @@ export function BarrierFreeMenuClient({ tenant, items, categories }: Props) {
                       <button
                         type="button"
                         aria-label={`${name} ${m.menu.addToCart}`}
-                        className={menuAddButtonEasyClass}
+                        className={menuAddIconButtonEasyClass}
                         onClick={() => {
                           addLine(slug, item, 1, null);
                           flashAdded(name);
                         }}
                       >
-                        {m.menu.addToCart}
+                        <Plus className="size-6" strokeWidth={2.5} aria-hidden />
                       </button>
                     )
                   }
@@ -151,6 +160,7 @@ export function BarrierFreeMenuClient({ tenant, items, categories }: Props) {
       ) : (
         <p className="py-10 text-center text-base text-zinc-500 dark:text-zinc-400">{m.barrierFree.categoryEmpty}</p>
       )}
+      <MenuScrollPad tenant={slug} />
     </>
   );
 }

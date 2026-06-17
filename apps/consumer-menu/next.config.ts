@@ -39,6 +39,11 @@ const nextConfig: NextConfig = {
     serverActions: {
       bodySizeLimit: "6mb",
     },
+    /** 탭 왕복 시 RSC 재요청 완화 — Next 15 기본 dynamic=0초라 매 클릭마다 서버 왕복 */
+    staleTimes: {
+      dynamic: 60,
+      static: 180,
+    },
   },
   turbopack: {
     root: workspaceRoot,

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { chayaFormCardClass, chayaInputClass, chayaPrimaryButtonClass } from "@/components/menu-list-styles";
 import { GUEST_SESSION_STORAGE_KEY } from "@/lib/guest-session/constants";
 
 type Props = {
@@ -27,7 +28,7 @@ export function ConsumerLoginForm({ tenant, nextPath, errorMessage }: Props) {
     <form
       action={`/t/${encodeURIComponent(tenant)}/login/submit`}
       method="post"
-      className="mx-auto max-w-sm space-y-4 rounded-xl border border-chaya-border bg-chaya-surface p-6 dark:border-zinc-700 dark:bg-zinc-950"
+      className={`mx-auto max-w-sm ${chayaFormCardClass}`}
     >
       <input type="hidden" name="next" value={nextPath} />
       <input type="hidden" name="guest_session_id" value={guestSession} readOnly />
@@ -48,7 +49,7 @@ export function ConsumerLoginForm({ tenant, nextPath, errorMessage }: Props) {
           type="email"
           autoComplete="email"
           required
-          className="mt-1 min-h-[44px] w-full rounded-lg border border-chaya-border bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
+          className={chayaInputClass}
         />
       </div>
       <div>
@@ -61,7 +62,7 @@ export function ConsumerLoginForm({ tenant, nextPath, errorMessage }: Props) {
           type="password"
           autoComplete="current-password"
           required
-          className="mt-1 min-h-[44px] w-full rounded-lg border border-chaya-border bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
+          className={chayaInputClass}
         />
       </div>
 
@@ -78,7 +79,7 @@ export function ConsumerLoginForm({ tenant, nextPath, errorMessage }: Props) {
 
       <button
         type="submit"
-        className="min-h-[48px] w-full rounded-2xl bg-chaya-primary py-3 font-bold text-chaya-on-primary"
+        className={`w-full ${chayaPrimaryButtonClass}`}
       >
         로그인
       </button>

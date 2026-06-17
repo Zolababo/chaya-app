@@ -1,16 +1,10 @@
-export default function CartLoading() {
-  return (
-    <div
-      className="space-y-6"
-      role="status"
-      aria-live="polite"
-      aria-busy="true"
-      aria-label="장바구니를 불러오는 중"
-    >
-      <div className="h-8 w-48 max-w-full animate-pulse rounded-lg bg-zinc-200 dark:bg-zinc-800" />
-      <div className="h-4 w-full max-w-xl animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
-      <div className="h-40 animate-pulse rounded-xl border border-chaya-border bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900" />
-      <div className="h-14 animate-pulse rounded-2xl bg-zinc-200 dark:bg-zinc-800" />
-    </div>
-  );
+import { ConsumerLoadingCenter } from "@/components/consumer-loading-center";
+import { consumerMessages } from "@/lib/i18n/consumer-messages";
+import { getConsumerLocale } from "@/lib/i18n/get-consumer-locale";
+
+export default async function CartLoading() {
+  const locale = await getConsumerLocale();
+  const m = consumerMessages(locale);
+
+  return <ConsumerLoadingCenter label={m.cart.loading} />;
 }

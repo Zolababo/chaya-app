@@ -30,7 +30,7 @@ export const CONSUMER_SPLIT_BILL_UI_VISIBLE = true as const;
 /**
  * 손님 메뉴 UI 버전.
  * - `1`: 기본 메뉴판만
- * - `2`: 헤더 아래 「오늘의 메뉴」 컴팩트 배너
+ * - `2`: 오늘의 메뉴(점주 지정)·최근 인기(주문 집계)·사장님 추천 섹션
  */
 export const CONSUMER_MENU_UI_VERSION = 2 as const;
 

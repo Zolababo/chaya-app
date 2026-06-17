@@ -7,7 +7,7 @@
 
 ## 1. 손님 — 주문 MVP (필수)
 
-- [ ] QR `/t/{tenant}` 진입 후 **언어 선택** 가능 (ko + en, ja, zh-Hans, zh-Hant, vi, th, ru)
+- [ ] QR `/t/{tenant}` 진입 후 **언어 선택** 가능 (ko, en, ja, zh-Hans, zh-Hant)
 - [ ] 메뉴·상세·장바구니·주문 제출·주문 현황 **끝까지** (카운터 결제 안내)
 - [ ] 번역 없는 메뉴는 **한국어 이름으로 폴백**
 - [ ] `pnpm smoke:consumer` 프로덕션 PASS

@@ -1,68 +1,40 @@
 "use client";
 
-import { ALargeSmall, Type } from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
 
+import { BarrierFreeModeIcon } from "@/components/barrier-free-mode-icon";
+import { ConsumerA11ySettingsSheet } from "@/components/consumer-a11y-settings-sheet";
+import { ConsumerHeaderIconButton } from "@/components/consumer-header-icon-button";
 import { LocalePickerButton } from "@/components/locale-picker-button";
 import { useConsumerEasyMode } from "@/lib/consumer/consumer-easy-mode-context";
-import {
-  isBarrierFreeMenuPath,
-  isMenuHomePath,
-  menuPathForEasyMode,
-} from "@/lib/consumer/easy-mode-routes";
 import { useConsumerLocale } from "@/lib/i18n/consumer-locale-context";
-import { withConsumerLang } from "@/lib/i18n/with-consumer-lang";
-
-const btnBase =
-  "inline-flex min-h-[44px] max-w-[8rem] items-center justify-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-semibold shadow-sm sm:min-h-[48px] sm:max-w-[8.5rem] sm:text-sm";
 
 type Props = {
   tenant: string;
 };
 
 export function ConsumerHeaderToolbar({ tenant }: Props) {
-  const { locale, m } = useConsumerLocale();
-  const { easyMode, enterEasyMode, exitEasyMode } = useConsumerEasyMode();
-  const pathname = usePathname();
-  const router = useRouter();
-
-  const label = easyMode ? m.header.easyMenuOff : m.header.easyMenu;
-  const aria = easyMode ? m.header.easyMenuOffAria : m.header.easyMenuAria;
-  const btnClass = easyMode
-    ? `${btnBase} border-chaya-primary/50 bg-orange-50 text-chaya-primary dark:border-orange-500/60 dark:bg-orange-950/50 dark:text-orange-300`
-    : `${btnBase} border-chaya-border bg-white text-zinc-800 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100`;
-
-  const toggleEasyMode = () => {
-    if (easyMode) {
-      exitEasyMode();
-      if (isBarrierFreeMenuPath(pathname)) {
-        router.push(withConsumerLang(menuPathForEasyMode(tenant, false), locale));
-      }
-      return;
-    }
-    enterEasyMode();
-    if (isMenuHomePath(pathname, tenant)) {
-      router.push(withConsumerLang(menuPathForEasyMode(tenant, true), locale));
-    }
-  };
+  const { m } = useConsumerLocale();
+  const { a11yActive } = useConsumerEasyMode();
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   return (
-    <div className="flex shrink-0 items-center gap-1.5" role="group" aria-label={m.header.toolbarLabel}>
-      <LocalePickerButton />
-      <button
-        type="button"
-        className={btnClass}
-        aria-label={aria}
-        aria-pressed={easyMode}
-        onClick={toggleEasyMode}
-      >
-        {easyMode ? (
-          <Type className="size-4 shrink-0 text-chaya-primary dark:text-orange-400" aria-hidden strokeWidth={2} />
-        ) : (
-          <ALargeSmall className="size-4 shrink-0 text-chaya-primary dark:text-orange-400" aria-hidden strokeWidth={2} />
-        )}
-        <span className="truncate leading-tight">{label}</span>
-      </button>
-    </div>
+    <>
+      <div className="flex shrink-0 items-center gap-2" role="group" aria-label={m.header.toolbarLabel}>
+        <LocalePickerButton />
+        <ConsumerHeaderIconButton
+          variant="a11y"
+          active={a11yActive}
+          aria-label={m.settings.openAria}
+          aria-haspopup="dialog"
+          aria-expanded={sheetOpen}
+          title={m.settings.openAria}
+          onClick={() => setSheetOpen(true)}
+        >
+          <BarrierFreeModeIcon className="size-7 shrink-0" />
+        </ConsumerHeaderIconButton>
+      </div>
+      <ConsumerA11ySettingsSheet tenant={tenant} open={sheetOpen} onClose={() => setSheetOpen(false)} />
+    </>
   );
 }

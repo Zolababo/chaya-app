@@ -1,14 +1,38 @@
-import { isMerchantOrderStatus } from "@/lib/orders/merchant-status-constants";
+import { cache } from "react";
+
+import { parseOrderNoField } from "@/lib/orders/format-order-no";
+import {
+  parseOrderLineSummaries,
+  type OrderLineSummary,
+} from "@/lib/orders/format-order-line-summary";
+import { getKstCalendarDayBounds } from "@/lib/orders/merchant-analytics";
+import {
+  isMerchantOrderListBucket,
+  isMerchantOrderStatus,
+  MERCHANT_COOKING_STATUSES,
+  MERCHANT_IN_PROGRESS_STATUSES,
+  type MerchantOrderStatus,
+} from "@/lib/orders/merchant-status-constants";
 import { createServiceSupabase } from "@/lib/supabase/create-service-client";
 import { withSupabaseReadRetry, withSupabaseReadRetryResult } from "@/lib/supabase/transient-retry";
 
+export type ListMerchantOrdersQuery = {
+  status?: MerchantOrderStatus | null;
+  bucket?: "in_progress" | "cooking" | "all_active" | null;
+  /** `completed`·`cancelled` 등 — KST 당일 접수만. */
+  todayKst?: boolean;
+};
+
 export type MerchantOrderRow = {
   id: string;
+  order_no: number | null;
   created_at: string;
   status: string;
   table_no: string | null;
   guest_note: string | null;
+  cancel_reason: string | null;
   total_price: number;
+  lines: OrderLineSummary[];
 };
 
 export type ListMerchantOrdersResult =
@@ -40,19 +64,35 @@ function parseRow(raw: Record<string, unknown>): MerchantOrderRow | null {
   if (total == null) return null;
   const table_no = raw.table_no;
   const guest_note = raw.guest_note;
+  const cancel_reason = raw.cancel_reason;
   return {
     id,
+    order_no: parseOrderNoField(raw.order_no),
     created_at: created,
     status,
     table_no: typeof table_no === "string" && table_no.trim() ? table_no : null,
     guest_note: typeof guest_note === "string" && guest_note.trim() ? guest_note : null,
+    cancel_reason:
+      typeof cancel_reason === "string" && cancel_reason.trim() ? cancel_reason.trim() : null,
     total_price: total,
+    lines: parseOrderLineSummaries(raw.items),
   };
+}
+
+function normalizeListQuery(
+  query?: string | null | ListMerchantOrdersQuery,
+): ListMerchantOrdersQuery {
+  if (query == null) return {};
+  if (typeof query === "string") {
+    const s = query.trim();
+    return isMerchantOrderStatus(s) ? { status: s } : {};
+  }
+  return query;
 }
 
 export async function listOrdersForMerchant(
   tenantSlug: string,
-  statusFilter?: string | null,
+  query?: string | null | ListMerchantOrdersQuery,
 ): Promise<ListMerchantOrdersResult> {
   const slug = tenantSlug.trim();
   if (!slug) {
@@ -68,30 +108,50 @@ export async function listOrdersForMerchant(
     };
   }
 
-  const filter =
-    statusFilter && typeof statusFilter === "string" && isMerchantOrderStatus(statusFilter.trim())
-      ? statusFilter.trim()
-      : null;
+  const { status: statusFilter, bucket, todayKst } = normalizeListQuery(query);
+  const bucketFilter =
+    bucket && isMerchantOrderListBucket(bucket) ? bucket : null;
 
-  const fetchRows = () => {
-    let q = client
-      .from("orders")
-      .select("id, created_at, status, table_no, guest_note, total_price")
-      .eq("tenant_slug", slug);
-    if (filter) {
-      q = q.eq("status", filter);
+  const buildQuery = (withCancelReason: boolean) => {
+    const cols = withCancelReason
+      ? "id, order_no, created_at, status, table_no, guest_note, cancel_reason, total_price, items"
+      : "id, order_no, created_at, status, table_no, guest_note, total_price, items";
+    let q = client.from("orders").select(cols).eq("tenant_slug", slug);
+    if (bucketFilter === "cooking") {
+      q = q.in("status", [...MERCHANT_COOKING_STATUSES]);
+    } else if (bucketFilter === "in_progress") {
+      q = q.in("status", [...MERCHANT_IN_PROGRESS_STATUSES]);
+    } else if (bucketFilter === "all_active") {
+      q = q.in("status", ["pending", "accepted", "preparing", "ready"]);
+    } else if (statusFilter) {
+      q = q.eq("status", statusFilter);
     }
-    return q.order("created_at", { ascending: false }).limit(100);
+    if (todayKst) {
+      const { sinceIso, untilIso } = getKstCalendarDayBounds();
+      q = q.gte("created_at", sinceIso).lt("created_at", untilIso);
+    }
+    const activeQueue =
+      bucketFilter === "cooking" ||
+      bucketFilter === "in_progress" ||
+      bucketFilter === "all_active" ||
+      statusFilter === "pending" ||
+      statusFilter === "ready";
+    return q.order("created_at", { ascending: activeQueue }).limit(100);
   };
 
-  const { data, error } = await withSupabaseReadRetry(() => fetchRows());
+  let { data, error } = await withSupabaseReadRetry(() => buildQuery(true));
+
+  // cancel_reason 컬럼이 아직 DB에 없을 때(마이그레이션 미적용) 폴백
+  if (error && /cancel_reason|column.*does not exist/i.test(error.message ?? "")) {
+    ({ data, error } = await withSupabaseReadRetry(() => buildQuery(false)));
+  }
 
   if (error) {
     return { ok: false, message: error.message ?? error.code ?? "주문 목록을 불러오지 못했습니다." };
   }
 
   const rows: MerchantOrderRow[] = [];
-  for (const r of data ?? []) {
+  for (const r of (data as unknown[]) ?? []) {
     const row = parseRow(r as Record<string, unknown>);
     if (row) rows.push(row);
   }
@@ -99,8 +159,10 @@ export async function listOrdersForMerchant(
   return { ok: true, rows };
 }
 
-/** `pending` 상태 주문만 집계(대기 뱃지·내비용). 실패 시 `null`. */
-export async function countMerchantPendingOrders(tenantSlug: string): Promise<number | null> {
+/** `pending` 상태 주문만 집계(대기 뱃지·내비용). 실패 시 `null`. 요청당 1회. */
+export const countMerchantPendingOrders = cache(async function countMerchantPendingOrders(
+  tenantSlug: string,
+): Promise<number | null> {
   const slug = tenantSlug.trim();
   if (!slug) return null;
 
@@ -117,7 +179,7 @@ export async function countMerchantPendingOrders(tenantSlug: string): Promise<nu
 
   if (error) return null;
   return count ?? 0;
-}
+});
 
 export type MerchantDashboard24hMetrics =
   | {
@@ -181,7 +243,7 @@ export async function getMerchantOrderMetricsSinceDays(
   return { ok: true, orderCount: rows.length, totalSales, byStatus };
 }
 
-/** 최근 24시간 주문 요약 (실사용 대시보드 카드용). */
+/** 최근 24시간 주문 요약 (롤링). 홈 대시보드는 `getMerchantTodayKstMetrics` 사용. */
 export async function getMerchantDashboard24hMetrics(tenantSlug: string): Promise<MerchantDashboard24hMetrics> {
   return getMerchantOrderMetricsSinceDays(tenantSlug, 1);
 }

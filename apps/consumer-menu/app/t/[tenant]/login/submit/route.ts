@@ -83,10 +83,19 @@ export async function POST(request: NextRequest, context: RouteContext) {
   }
 
   if (tenantCheck.ok && sid) {
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData.user?.id;
+
     const { data: claimed, error: claimErr } = await supabase.rpc("claim_guest_orders_for_user", {
       p_tenant_slug: tenantCheck.slug,
       p_guest_session_id: sid,
     });
+    if (userId) {
+      await supabase.rpc("claim_experience_events_for_user", {
+        p_guest_session_id: sid,
+        p_user_id: userId,
+      });
+    }
     if (!claimErr && claimed != null) {
       const n = typeof claimed === "number" ? claimed : Number(claimed);
       if (Number.isFinite(n) && n > 0) {

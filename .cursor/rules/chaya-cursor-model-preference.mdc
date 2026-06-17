@@ -1,0 +1,29 @@
+---
+description: CHAYA 작업 시 Agent 모델 선택 가이드 (사람·AI 공통)
+alwaysApply: true
+---
+
+# CHAYA — Cursor Agent 모델 (권장)
+
+이 저장소 작업 시 **기본은 Claude Sonnet**(또는 Opus)을 쓰고, **짧은 반복 작업**만 Composer 2.5로 바꿉니다.
+
+## 사람이 Cursor에서 설정
+
+1. **Cursor Settings** → **Models** → **Claude 4.6 Sonnet**(또는 Sonnet) **켜기** (숨김이면 목록에서 활성화).
+2. Agent 채팅 상단 **모델 선택**에서 **Auto가 아닌 Claude Sonnet** 고정.
+3. 빠른 수정만 필요할 때: **`Ctrl + /`** 로 **Composer 2.5**로 전환.
+4. Plan / Ask 모드도 각각 Sonnet 고정 권장 (모드마다 모델이 따로 저장됨).
+
+## CHAYA에 Claude가 잘 맞는 이유
+
+- `.cursor/rules`의 경계(`/t/*`, RLS, 결제 미노출)를 긴 작업에서도 지키기 쉬움.
+- consumer-menu i18n·UI를 한 흐름으로 맞추기 좋음.
+
+## Composer를 쓸 때
+
+- 단일 파일 스타일 수정, 빌드 확인, 아주 작은 패치.
+- Auto/Composer 사용량 풀을 아끼고 싶을 때.
+
+## 이 규칙만으로 모델이 바뀌지는 않음
+
+실제 모델은 **Cursor UI의 모델 선택**으로 결정됩니다. 위 설정을 한 번 해 두면 대화마다 유지됩니다.

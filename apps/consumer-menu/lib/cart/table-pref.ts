@@ -1,6 +1,17 @@
 /** QR `?table=` 과 장바구니 테이블 입력 연동 (submit-guest-order 와 동일 상한). */
 export const PREF_TABLE_MAX = 30;
 
+export const CHAYA_TABLE_PREF_CHANGED_EVENT = "chaya:table-pref-changed";
+
+function notifyTablePrefChanged(tenant: string): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(
+    new CustomEvent(CHAYA_TABLE_PREF_CHANGED_EVENT, {
+      detail: { tenant: tenant.trim() },
+    }),
+  );
+}
+
 export function tablePrefStorageKey(tenant: string): string {
   return `chaya_pref_table:${tenant.trim()}`;
 }
@@ -17,6 +28,21 @@ export function persistTablePrefFromQuery(tenant: string, tableParam: string | n
     const t = tableParam.trim().slice(0, PREF_TABLE_MAX);
     if (t) localStorage.setItem(key, t);
     else localStorage.removeItem(key);
+    notifyTablePrefChanged(tenant);
+  } catch {
+    /* quota / private mode */
+  }
+}
+
+/** 장바구니·헤더에서 테이블 번호를 바꿀 때 호출합니다. */
+export function writeTablePref(tenant: string, value: string): void {
+  if (typeof window === "undefined") return;
+  const key = tablePrefStorageKey(tenant);
+  try {
+    const t = value.trim().slice(0, PREF_TABLE_MAX);
+    if (t) localStorage.setItem(key, t);
+    else localStorage.removeItem(key);
+    notifyTablePrefChanged(tenant);
   } catch {
     /* quota / private mode */
   }

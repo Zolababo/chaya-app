@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { ConsumerSignupForm } from "@/components/consumer-signup-form";
+import { chayaConsumerContentClass } from "@/lib/responsive/chaya-app-shell";
 import { sanitizeConsumerNextPath } from "@/lib/consumer/consumer-path";
 import { createSupabaseServerClient } from "@/lib/supabase/create-server-session-client";
 import { resolveServerUser } from "@/lib/supabase/resolve-server-user";
@@ -51,9 +52,9 @@ export default async function ConsumerSignupPage({ params, searchParams }: Props
   const err = errorMessage(typeof sp.e === "string" ? sp.e : undefined);
 
   return (
-    <div className="mx-auto max-w-md space-y-6 px-4 py-8">
+    <div className={`${chayaConsumerContentClass} space-y-6 py-8`}>
       <div className="text-center">
-        <h1 className="text-2xl font-bold">회원가입</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">회원가입</h1>
         <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
           {tenant} · 주문 내역을 계정으로 모으려면 가입하세요.
         </p>

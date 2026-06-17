@@ -2,38 +2,14 @@ import { createSupabaseServerClient } from "@/lib/supabase/create-server-session
 import { resolveServerUser } from "@/lib/supabase/resolve-server-user";
 import { withSupabaseReadRetry } from "@/lib/supabase/transient-retry";
 
+import { parseOrderListRow } from "@/lib/orders/parse-order-list-row";
+
 import { sanitizeTenantSlug } from "./guest-order-validation";
 import type { GuestOrderListItem } from "./list-guest-orders";
 
 export type UserOrdersListResult =
   | { ok: true; orders: GuestOrderListItem[] }
   | { ok: false; orders: []; errorKind: "no_client" | "no_user" | "rpc" };
-
-function num(v: unknown): number | null {
-  if (typeof v === "number" && Number.isFinite(v)) return v;
-  if (typeof v === "string") {
-    const n = Number(v);
-    return Number.isFinite(n) ? n : null;
-  }
-  return null;
-}
-
-function parseRow(raw: unknown): GuestOrderListItem | null {
-  if (!raw || typeof raw !== "object") return null;
-  const o = raw as Record<string, unknown>;
-  const id = typeof o.id === "string" ? o.id : null;
-  const total = num(o.total_price);
-  if (!id || total == null) return null;
-  const created =
-    typeof o.created_at === "string"
-      ? o.created_at
-      : o.created_at instanceof Date
-        ? o.created_at.toISOString()
-        : null;
-  const st = o.status;
-  const status = typeof st === "string" && st.trim() ? st.trim() : "pending";
-  return { id, total_price: total, created_at: created, status };
-}
 
 export async function listUserOrdersForTenant(tenant: string): Promise<UserOrdersListResult> {
   const tenantCheck = sanitizeTenantSlug(tenant);
@@ -78,7 +54,7 @@ export async function listUserOrdersForTenant(tenant: string): Promise<UserOrder
 
   const out: GuestOrderListItem[] = [];
   for (const row of rows) {
-    const item = parseRow(row);
+    const item = parseOrderListRow(row);
     if (item) out.push(item);
   }
   return { ok: true, orders: out };

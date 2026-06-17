@@ -1,12 +1,10 @@
 import Link from "next/link";
 
-import { MerchantPreviewBanner } from "@/components/merchant-preview-banner";
-import { MerchantSubnav } from "@/components/merchant-subnav";
-import { OrderStatusRefresh } from "@/components/order-status-refresh";
+import { MerchantPageHeader } from "@/components/merchant-page-header";
 import { requireMerchantForTenant } from "@/lib/merchant/merchant-access";
+import { merchantOwnerLoadErrorMessage } from "@/lib/merchant/merchant-owner-copy";
 import { canManageMerchantMenus } from "@/lib/merchant/merchant-role-capabilities";
 import { listMenusForMerchant } from "@/lib/menus/list-menus-for-merchant";
-import { countMerchantPendingOrders } from "@/lib/orders/list-orders-for-merchant";
 
 export const dynamic = "force-dynamic";
 
@@ -19,10 +17,7 @@ export default async function MerchantCategoriesPage({ params }: Props) {
   const { role } = await requireMerchantForTenant(tenant);
   const canManageMenus = canManageMerchantMenus(role);
 
-  const [pendingCount, list] = await Promise.all([
-    countMerchantPendingOrders(tenant),
-    listMenusForMerchant(tenant),
-  ]);
+  const list = await listMenusForMerchant(tenant);
 
   const tEnc = encodeURIComponent(tenant);
 
@@ -36,29 +31,19 @@ export default async function MerchantCategoriesPage({ params }: Props) {
   const rows = [...counts.entries()].sort((a, b) => a[0].localeCompare(b[0], "ko"));
 
   return (
-    <div className="mx-auto min-h-dvh max-w-4xl px-4 py-8 pb-[max(2rem,env(safe-area-inset-bottom))]">
-      <header className="mb-6 border-b border-chaya-border pb-4 dark:border-zinc-700">
-        <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Merchant</p>
-        <h1 className="mt-1 text-2xl font-bold">카테고리 — {tenant}</h1>
-        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-          메뉴에 적힌 카테고리별로 개수를 보여 줍니다. 이름 변경은 메뉴 수정에서 각 메뉴마다 바꿀 수 있습니다.
-        </p>
-      </header>
-
-      <MerchantPreviewBanner tenantSlug={tenant} />
-
-      <MerchantSubnav tenant={tenant} pendingOrderCount={pendingCount} canManageMenus={canManageMenus} />
-
-      <div className="mb-6">
-        <OrderStatusRefresh />
-      </div>
+    <>
+      <MerchantPageHeader
+        tenant={tenant}
+        title="카테고리"
+        description="메뉴에 적힌 카테고리별 개수입니다. 이름은 메뉴 관리에서 각 메뉴를 수정하면 바뀝니다."
+      />
 
       {!list.ok ? (
         <p
           role="status"
           className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100"
         >
-          {list.message}
+          {merchantOwnerLoadErrorMessage("menus", list.message)}
         </p>
       ) : rows.length === 0 ? (
         <p className="text-sm text-zinc-600 dark:text-zinc-400">등록된 메뉴가 없습니다.</p>
@@ -94,6 +79,6 @@ export default async function MerchantCategoriesPage({ params }: Props) {
           에서 카테고리 문자열을 수정하면 이 화면도 함께 바뀝니다.
         </p>
       ) : null}
-    </div>
+    </>
   );
 }

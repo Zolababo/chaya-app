@@ -1,6 +1,26 @@
 import type { AppLocale } from "./locales";
 
 export type A11yMessageTree = {
+  settings: {
+    title: string;
+    intro: string;
+    openAria: string;
+    fontSizeLabel: string;
+    fontNormal: string;
+    fontLarge: string;
+    fontXl: string;
+    displayLabel: string;
+    highContrastName: string;
+    highContrastDesc: string;
+    voiceName: string;
+    voiceDesc: string;
+    voiceBadge: string;
+    voiceOn: string;
+    voiceOff: string;
+    done: string;
+    listMenuHint: string;
+    listMenuLink: string;
+  };
   barrierFree: {
     pageTitle: string;
     pageIntro: string;
@@ -24,6 +44,9 @@ export type A11yMessageTree = {
     statusLabel: string;
     ready: string;
     addedOne: string;
+    voiceOrderPlaced: string;
+    voiceOrderStatus: string;
+    voiceOrdersHubSummary: string;
     dataFail: string;
     dataDemo: string;
     dataDb: string;
@@ -42,6 +65,26 @@ export type A11yMessageTree = {
 };
 
 const KO: A11yMessageTree = {
+  settings: {
+    title: "베리어프리 설정",
+    intro: "글자·화면·음성 보조 설정이에요. 이 브라우저를 쓰는 동안 유지됩니다.",
+    openAria: "베리어프리·접근성 설정 열기",
+    fontSizeLabel: "글자 크기",
+    fontNormal: "기본",
+    fontLarge: "크게",
+    fontXl: "매우 크게",
+    displayLabel: "화면 설정",
+    highContrastName: "고대비 모드",
+    highContrastDesc: "글씨와 테두리를 더 또렷하게",
+    voiceName: "음성 안내",
+    voiceDesc: "메뉴 이름·가격을 소리로 읽어드려요",
+    voiceBadge: "음성 안내 켜짐",
+    voiceOn: "음성 안내가 켜졌어요. 메뉴를 선택하면 읽어드려요.",
+    voiceOff: "음성 안내가 꺼졌어요.",
+    done: "설정 완료",
+    listMenuHint: "매우 크게 모드에서는 목록형 메뉴가 더 편할 수 있어요.",
+    listMenuLink: "목록형 메뉴 열기",
+  },
   barrierFree: {
     pageTitle: "큰글씨·목록 메뉴",
     pageIntro:
@@ -65,7 +108,11 @@ const KO: A11yMessageTree = {
     cartSummary: "이 브라우저에 저장된 수량 합계: {count}개 (메뉴판·목록형·상세가 공유합니다)",
     statusLabel: "상태 알림",
     ready: "준비되었습니다.",
-    addedOne: "{name} 1개를 같은 장바구니에 담았습니다.",
+    addedOne: "{name} 장바구니에 담았습니다.",
+    voiceOrderPlaced: "주문이 접수됐어요. 카운터에서 결제해 주세요.",
+    voiceOrderStatus: "주문 상태, {status}.",
+    voiceOrdersHubSummary:
+      "진행 중 주문 {count}건, 카운터 결제 예정 {total}. 결제는 카운터에서 해 주세요.",
     dataFail: "연결 실패로 데모 목록 사용 중",
     dataDemo: "로컬 데모",
     dataDb: "Supabase ChayaMenus",
@@ -84,6 +131,26 @@ const KO: A11yMessageTree = {
 };
 
 const EN: A11yMessageTree = {
+  settings: {
+    title: "Accessibility",
+    intro: "Text, display, and voice settings stay on for this browser session.",
+    openAria: "Open accessibility settings",
+    fontSizeLabel: "Text size",
+    fontNormal: "Default",
+    fontLarge: "Large",
+    fontXl: "Extra large",
+    displayLabel: "Display",
+    highContrastName: "High contrast",
+    highContrastDesc: "Sharper text and borders",
+    voiceName: "Voice guidance",
+    voiceDesc: "Reads menu names and prices aloud",
+    voiceBadge: "Voice on",
+    voiceOn: "Voice guidance is on. Select a menu item to hear it.",
+    voiceOff: "Voice guidance is off.",
+    done: "Done",
+    listMenuHint: "Extra large text works well with the list menu view.",
+    listMenuLink: "Open list menu",
+  },
   barrierFree: {
     pageTitle: "Large text · List",
     pageIntro:
@@ -107,7 +174,11 @@ const EN: A11yMessageTree = {
     cartSummary: "Items in this browser: {count} (shared across menu views)",
     statusLabel: "Status",
     ready: "Ready.",
-    addedOne: "Added 1 × {name} to cart.",
+    addedOne: "Added {name} to cart.",
+    voiceOrderPlaced: "Your order is in. Please pay at the counter.",
+    voiceOrderStatus: "Order status: {status}.",
+    voiceOrdersHubSummary:
+      "{count} order(s) in progress, {total} due at the counter. Please pay at the counter.",
     dataFail: "Using demo list (connection failed)",
     dataDemo: "Local demo",
     dataDb: "Supabase ChayaMenus",
@@ -126,7 +197,26 @@ const EN: A11yMessageTree = {
 };
 
 const JA: A11yMessageTree = {
-  ...EN,
+  settings: {
+    title: "バリアフリー設定",
+    intro: "文字・画面・音声の補助設定です。このブラウザを使う間は保持されます。",
+    openAria: "バリアフリー・アクセシビリティ設定を開く",
+    fontSizeLabel: "文字サイズ",
+    fontNormal: "標準",
+    fontLarge: "大きく",
+    fontXl: "とても大きく",
+    displayLabel: "画面設定",
+    highContrastName: "ハイコントラスト",
+    highContrastDesc: "文字と枠線をよりはっきり",
+    voiceName: "音声ガイド",
+    voiceDesc: "メニュー名・価格を読み上げます",
+    voiceBadge: "音声ガイドオン",
+    voiceOn: "音声ガイドがオンになりました。メニューを選ぶと読み上げます。",
+    voiceOff: "音声ガイドがオフになりました。",
+    done: "設定完了",
+    listMenuHint: "とても大きい文字ではリスト型メニューが使いやすい場合があります。",
+    listMenuLink: "リスト型メニューを開く",
+  },
   barrierFree: {
     ...EN.barrierFree,
     pageTitle: "リストメニュー",
@@ -145,7 +235,26 @@ const JA: A11yMessageTree = {
 };
 
 const ZH_HANS: A11yMessageTree = {
-  ...EN,
+  settings: {
+    title: "无障碍设置",
+    intro: "文字、显示与语音辅助设置，在本浏览器会话期间会保持。",
+    openAria: "打开无障碍设置",
+    fontSizeLabel: "文字大小",
+    fontNormal: "默认",
+    fontLarge: "较大",
+    fontXl: "特大",
+    displayLabel: "显示",
+    highContrastName: "高对比度",
+    highContrastDesc: "让文字与边框更清晰",
+    voiceName: "语音播报",
+    voiceDesc: "朗读菜单名称与价格",
+    voiceBadge: "语音已开启",
+    voiceOn: "语音播报已开启。选择菜单项即可朗读。",
+    voiceOff: "语音播报已关闭。",
+    done: "完成",
+    listMenuHint: "特大文字模式下，列表菜单可能更易阅读。",
+    listMenuLink: "打开列表菜单",
+  },
   barrierFree: {
     ...EN.barrierFree,
     pageTitle: "列表菜单",
@@ -159,15 +268,41 @@ const ZH_HANS: A11yMessageTree = {
   orderLive: { ...EN.orderLive, refresh: "刷新状态", refreshPending: "加载中…" },
 };
 
+const ZH_HANT: A11yMessageTree = {
+  settings: {
+    title: "無障礙設定",
+    intro: "文字、顯示與語音輔助設定，在本瀏覽器工作階段期間會保持。",
+    openAria: "開啟無障礙設定",
+    fontSizeLabel: "文字大小",
+    fontNormal: "預設",
+    fontLarge: "較大",
+    fontXl: "特大",
+    displayLabel: "顯示",
+    highContrastName: "高對比",
+    highContrastDesc: "讓文字與邊框更清晰",
+    voiceName: "語音播報",
+    voiceDesc: "朗讀菜單名稱與價格",
+    voiceBadge: "語音已開啟",
+    voiceOn: "語音播報已開啟。選擇菜單項目即可朗讀。",
+    voiceOff: "語音播報已關閉。",
+    done: "完成",
+    listMenuHint: "特大文字模式下，列表菜單可能較易閱讀。",
+    listMenuLink: "開啟列表菜單",
+  },
+  barrierFree: {
+    ...ZH_HANS.barrierFree,
+    pageTitle: "列表菜單",
+    toGridMenu: "返回主菜單",
+  },
+  orderLive: { ...ZH_HANS.orderLive },
+};
+
 const BY_LOCALE: Record<AppLocale, A11yMessageTree> = {
   ko: KO,
   en: EN,
   ja: JA,
   "zh-Hans": ZH_HANS,
-  "zh-Hant": { ...ZH_HANS, barrierFree: { ...ZH_HANS.barrierFree, pageTitle: "列表菜單", toGridMenu: "返回主菜單" } },
-  vi: EN,
-  th: EN,
-  ru: EN,
+  "zh-Hant": ZH_HANT,
 };
 
 export function a11yMessages(locale: AppLocale): A11yMessageTree {

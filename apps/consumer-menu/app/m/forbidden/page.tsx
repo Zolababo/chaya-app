@@ -1,8 +1,14 @@
 import Link from "next/link";
 
+import { chayaAuthShellClass } from "@/lib/responsive/chaya-app-shell";
+
 export default function MerchantForbiddenPage() {
   return (
-    <div className="mx-auto max-w-md p-8 text-center" role="alert" aria-live="assertive">
+    <div
+      className={`min-h-dvh py-12 pb-[max(2rem,env(safe-area-inset-bottom))] text-center ${chayaAuthShellClass}`}
+      role="alert"
+      aria-live="assertive"
+    >
       <h1 className="text-xl font-bold">접근 거부</h1>
       <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">
         이 계정으로는 점주 화면에 연결된 가게가 없습니다. Supabase 대시보드에서{" "}
@@ -17,11 +23,11 @@ export default function MerchantForbiddenPage() {
           로그인 화면
         </Link>
         <Link
-          href="/"
+          href="/start"
           className="inline-flex min-h-[48px] items-center justify-center text-sm font-medium text-zinc-500 underline-offset-4 hover:underline dark:text-zinc-400"
-          aria-label="앱 처음으로"
+          aria-label="역할 선택 화면"
         >
-          처음으로
+          역할 선택
         </Link>
       </p>
     </div>

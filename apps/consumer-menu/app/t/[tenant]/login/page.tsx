@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { ConsumerLoginForm } from "@/components/consumer-login-form";
+import { chayaConsumerContentClass } from "@/lib/responsive/chaya-app-shell";
 import { sanitizeConsumerNextPath } from "@/lib/consumer/consumer-path";
 import { createSupabaseServerClient } from "@/lib/supabase/create-server-session-client";
 import { resolveServerUser } from "@/lib/supabase/resolve-server-user";
@@ -57,9 +58,9 @@ export default async function ConsumerLoginPage({ params, searchParams }: Props)
       : null;
 
   return (
-    <div className="mx-auto max-w-md space-y-6 px-4 py-8">
+    <div className={`${chayaConsumerContentClass} space-y-6 py-8`}>
       <div className="text-center">
-        <h1 className="text-2xl font-bold">로그인</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">로그인</h1>
         <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
           {tenant} · 주문을 계정에 연결하려면 로그인하세요.
         </p>

@@ -1,8 +1,10 @@
 import Link from "next/link";
 
+import { chayaConsumerContentClass } from "@/lib/responsive/chaya-app-shell";
+
 export default function MenuItemNotFound() {
   return (
-    <div className="mx-auto max-w-md space-y-4 py-16 text-center" role="alert" aria-live="assertive">
+    <div className={`${chayaConsumerContentClass} space-y-4 py-16 text-center`} role="alert" aria-live="assertive">
       <h1 className="text-xl font-bold">메뉴를 찾을 수 없습니다</h1>
       <p className="text-sm text-chaya-muted dark:text-zinc-400">
         주소가 잘못되었거나 삭제된 메뉴일 수 있습니다.

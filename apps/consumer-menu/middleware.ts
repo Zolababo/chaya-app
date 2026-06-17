@@ -27,7 +27,12 @@ export async function middleware(request: NextRequest) {
   }
 
   if (pathname.startsWith("/t/")) {
-    return applyLocaleCookie(request, NextResponse.next({ request }));
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set("x-chaya-consumer", "1");
+    return applyLocaleCookie(
+      request,
+      NextResponse.next({ request: { headers: requestHeaders } }),
+    );
   }
 
   return NextResponse.next({ request });

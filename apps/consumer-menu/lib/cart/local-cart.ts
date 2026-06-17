@@ -102,8 +102,13 @@ function parseLine(raw: unknown): CartLine | null {
     imageUrl: typeof o.imageUrl === "string" ? o.imageUrl : null,
     sortOrder: sortOrderNorm,
     isSoldOut,
+    isTodaysPick: false,
+    isStoreRecommended: false,
+    createdAt: null,
     optionGroups: parseMenuOptionGroups(o.optionGroups ?? o.options_json),
     translations: {},
+    translationSource: null,
+    spiceLevel: null,
     selectedOptions,
     unitPrice,
   };

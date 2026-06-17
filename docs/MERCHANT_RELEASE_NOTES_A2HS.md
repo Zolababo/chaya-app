@@ -4,7 +4,7 @@
 
 ## 이번에 반영된 동작·문서
 
-1. **홈 화면 manifest** — `/m/login/homescreen-manifest` 의 `start_url` 은 `/m/login` 고정. 루트 `/` 는 역할 선택만 하고 손님으로 강제 리다이렉트하지 않음(`app/page.tsx` 주석 참고).
+1. **홈 화면 manifest** — `/m/login/homescreen-manifest` 의 `start_url` 은 `/m/login` 고정. 루트 `/` 는 손님 데모(`/t/demo`)로 바로 이동. 역할 선택은 `/start` 또는 `CHAYA_ROOT_ROLE_PICKER=1`.
 2. **세션 스킵** — 유효 세션이 있으면 `/m/login` 에서 자동으로 점주 화면으로 이동(단일 테넌트 등 기존 로직).
 3. **`reauth=1`** — `?reauth=1` 로 자동 이동을 끄고 로그인 폼만 보이게 함. 운영·현장 안내: `docs/MERCHANT_MIGRATION_RUNBOOK.md`, `docs/MERCHANT_FIELD_ONBOARDING.md`.
 4. **로그아웃 → `/m/login`** — POST `/m/logout` 후 로그인 URL로 리다이렉트. GET 은 **405**(세션 변경 없음). `docs/MERCHANT_A2HS_DEVICE_QA_LOG.md` 배포 직후 점검 줄 참고.

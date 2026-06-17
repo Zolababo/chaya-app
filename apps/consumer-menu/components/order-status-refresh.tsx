@@ -1,5 +1,6 @@
 "use client";
 
+import { RefreshCw } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -8,9 +9,17 @@ import { ORDER_STATUS_POLL_MS } from "@/lib/orders/status-poll";
 type Props = {
   /** 자동 새로고침 간격(ms). `prefers-reduced-motion: reduce` 이면 사용하지 않습니다. */
   intervalMs?: number;
+  /** 점주 대시보드 등 — 자동 갱신 안내 문구 생략 */
+  compact?: boolean;
+  /** false면 수동 새로고침만 (점주 툴바). 기본 true — 손님 주문 상세 등 */
+  autoRefresh?: boolean;
 };
 
-export function OrderStatusRefresh({ intervalMs = ORDER_STATUS_POLL_MS }: Props) {
+export function OrderStatusRefresh({
+  intervalMs = ORDER_STATUS_POLL_MS,
+  compact = false,
+  autoRefresh = true,
+}: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const [reducedMotion, setReducedMotion] = useState(false);
@@ -44,13 +53,13 @@ export function OrderStatusRefresh({ intervalMs = ORDER_STATUS_POLL_MS }: Props)
   }, []);
 
   useEffect(() => {
-    if (reducedMotion) return;
+    if (!autoRefresh || reducedMotion) return;
     const id = window.setInterval(() => {
       if (document.visibilityState !== "visible") return;
       reloadLatest();
     }, intervalMs);
     return () => window.clearInterval(id);
-  }, [intervalMs, reducedMotion, reloadLatest]);
+  }, [intervalMs, reducedMotion, reloadLatest, autoRefresh]);
 
   useEffect(() => {
     const onVisibility = () => {
@@ -59,6 +68,19 @@ export function OrderStatusRefresh({ intervalMs = ORDER_STATUS_POLL_MS }: Props)
     document.addEventListener("visibilitychange", onVisibility);
     return () => document.removeEventListener("visibilitychange", onVisibility);
   }, [reloadLatest]);
+
+  if (compact) {
+    return (
+      <button
+        type="button"
+        onClick={() => reloadLatest()}
+        aria-label="최신 상태로 새로고침"
+        className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
+      >
+        <RefreshCw className="h-4 w-4" strokeWidth={2.25} />
+      </button>
+    );
+  }
 
   return (
     <div

@@ -1,0 +1,13 @@
+---
+description: 소비자앱 결제 정책 — 오프라인 카운터, 온라인 PG는 구조만
+alwaysApply: true
+---
+
+# 소비자앱(`/t/*`) 결제 정책
+
+- **당분간 앱 내 온라인 결제 없음.** 손님은 **주문 내역·합계 확인**만 하고, **매장 카운터에서 오프라인 결제**한다.
+- **결제 UI는 노출하지 않는다.** `CONSUMER_CHECKOUT_PAYMENT_UI_VISIBLE` 은 `false` 유지. 카드·간편결제·PG 버튼·결제 단계 링크를 추가하지 말 것.
+- **구조만 유지:** `lib/consumer/future-features.ts`, `POST /t/{tenant}/checkout/payment`(501 스텁). 사용량이 커질 때 PG 연동 시 `CONSUMER_CHECKOUT_PAYMENT_IMPLEMENTED`·UI 플래그를 함께 켠다.
+- 손님 화면에는 필요 시 `ConsumerOfflinePaymentCallout` 으로 카운터 결제 안내만 표시한다.
+- PG·결제 비밀키는 **서버 전용**; `NEXT_PUBLIC_*` 로 노출 금지.
+- **직원 호출:** `CONSUMER_STAFF_CALL_UI_VISIBLE` = false — 헤더에 비활성 버튼 노출하지 말 것.

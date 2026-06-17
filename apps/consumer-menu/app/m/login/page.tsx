@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { merchantLoginUsesSms } from "@/lib/merchant/merchant-login-mode";
+import { chayaAuthShellClass } from "@/lib/responsive/chaya-app-shell";
 import { sanitizeMerchantNextPath } from "@/lib/merchant/merchant-access";
 import { createSupabaseServerClient } from "@/lib/supabase/create-server-session-client";
 import { resolveServerUser } from "@/lib/supabase/resolve-server-user";
@@ -9,7 +10,7 @@ import { resolveServerUser } from "@/lib/supabase/resolve-server-user";
 export const dynamic = "force-dynamic";
 
 type Props = {
-  searchParams: Promise<{ next?: string; e?: string; phase?: string; reauth?: string }>;
+  searchParams: Promise<{ next?: string; e?: string; ok?: string; phase?: string; reauth?: string }>;
 };
 
 function smsAlertMessage(code: string | undefined): string | null {
@@ -43,6 +44,8 @@ function emailAlertMessage(code: string | undefined): string | null {
       return "로그인에 실패했습니다. 이메일·비밀번호를 확인해 주세요.";
     case "unconfirmed":
       return "이메일 인증이 아직 완료되지 않았습니다.";
+    case "sms_no_password":
+      return "문자(SMS) 로그인은 비밀번호가 없습니다. 등록된 번호로 인증번호를 받아 주세요.";
     case "no_anon":
       return "NEXT_PUBLIC_SUPABASE_URL·NEXT_PUBLIC_SUPABASE_ANON_KEY 를 확인해 주세요.";
     case "rate_limit":
@@ -78,11 +81,12 @@ export default async function MerchantLoginPage({ searchParams }: Props) {
   const err = useSms
     ? smsAlertMessage(typeof sp.e === "string" ? sp.e : undefined)
     : emailAlertMessage(typeof sp.e === "string" ? sp.e : undefined);
+  const loggedOut = typeof sp.ok === "string" && sp.ok === "logged_out";
 
   return (
-    <div className="mx-auto min-h-dvh max-w-md px-4 py-10 pb-[max(2.5rem,env(safe-area-inset-bottom))]">
+    <div className={`min-h-dvh py-10 pb-[max(2.5rem,env(safe-area-inset-bottom))] ${chayaAuthShellClass}`}>
       <header className="mb-8">
-        <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Merchant</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">CHAYA 점주</p>
         <h1 className="mt-2 text-2xl font-bold">{useSms ? (isConfirm ? "문자 인증" : "점주 로그인") : "점주 로그인"}</h1>
         <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
           {useSms
@@ -103,6 +107,15 @@ export default async function MerchantLoginPage({ searchParams }: Props) {
           </p>
         ) : null}
       </header>
+
+      {loggedOut ? (
+        <p
+          className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-950 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-100"
+          role="status"
+        >
+          로그아웃했습니다. 다시 로그인해 주세요.
+        </p>
+      ) : null}
 
       {err ? (
         <p
@@ -207,6 +220,17 @@ export default async function MerchantLoginPage({ searchParams }: Props) {
         </form>
       )}
 
+      {!useSms ? (
+        <p className="mt-4 text-center text-sm">
+          <Link
+            href="/m/forgot-password"
+            className="font-medium text-chaya-primary underline-offset-4 hover:underline"
+          >
+            비밀번호를 잊었습니다
+          </Link>
+        </p>
+      ) : null}
+
       {useSms ? (
         <p className="mt-6 text-center">
           <Link
@@ -219,7 +243,7 @@ export default async function MerchantLoginPage({ searchParams }: Props) {
       ) : null}
 
       <p className="mt-10 text-center text-sm text-zinc-500 dark:text-zinc-400">
-        <Link href="/" className="font-medium text-chaya-primary underline-offset-4 hover:underline">
+        <Link href="/t/demo" className="font-medium text-chaya-primary underline-offset-4 hover:underline">
           손님 메뉴판으로 돌아가기
         </Link>
       </p>

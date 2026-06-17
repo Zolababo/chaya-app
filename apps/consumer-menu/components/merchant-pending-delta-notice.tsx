@@ -29,13 +29,7 @@ export function MerchantPendingDeltaNotice({ tenantSlug, pendingCount }: Props) 
 
     if (prev != null && pendingCount > prev) {
       const delta = pendingCount - prev;
-      setMessage(`새 대기 주문 ${delta}건이 들어왔습니다. (현재 대기 ${pendingCount}건)`);
-    }
-
-    try {
-      window.localStorage.setItem(storageKey, String(pendingCount));
-    } catch {
-      // ignore private mode / quota
+      setMessage(`주문이 들어왔습니다 · 대기 ${pendingCount}건 (+${delta})`);
     }
   }, [pendingCount, storageKey]);
 
