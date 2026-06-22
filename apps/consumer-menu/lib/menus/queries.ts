@@ -8,6 +8,7 @@ import { parseMenuTranslationSource } from "@/lib/merchant/merchant-menu-transla
 
 import {
   CHAYA_MENU_SELECT_BASE,
+  CHAYA_MENU_SELECT_BOARD,
   CHAYA_MENU_SELECT_FULL,
   CHAYA_MENU_SELECT_LEGACY_FULL,
   CHAYA_MENU_SELECT_MERCH_FULL,
@@ -27,6 +28,7 @@ import type { ChayaMenuRow, MenuListResult } from "./types";
 export { sortCategoryNames, sortMenuItemsForDisplay } from "./category-order";
 
 const MENU_SELECT_BASE = CHAYA_MENU_SELECT_BASE;
+const MENU_SELECT_BOARD = CHAYA_MENU_SELECT_BOARD;
 const MENU_SELECT_WITH_OPTIONS = CHAYA_MENU_SELECT_WITH_OPTIONS;
 const MENU_SELECT_FULL = CHAYA_MENU_SELECT_FULL;
 
@@ -113,13 +115,16 @@ async function queryMenusForTenant(
 }
 
 /** 목록 조회. DB 컬럼 `tenant_slug` 가 URL 세그먼트 `tenant` 와 일치하는 행만 반환합니다. */
-async function listMenusForTenantUncached(slug: string): Promise<MenuListResult> {
+async function listMenusForTenantUncached(
+  slug: string,
+  select: string = MENU_SELECT_FULL,
+): Promise<MenuListResult> {
   const client = createConsumerSupabase();
   if (!client) {
     return { ok: true, source: "demo", items: DEMO_ITEMS };
   }
 
-  let { data, error } = await queryMenusForTenant(client, slug, MENU_SELECT_FULL);
+  let { data, error } = await queryMenusForTenant(client, slug, select);
 
   if (error && isMissingTranslationsJsonColumn(error)) {
     const withoutTr = await queryMenusForTenant(client, slug, MENU_SELECT_WITH_OPTIONS);
@@ -193,6 +198,27 @@ export const listMenusForTenant = cache(async function listMenusForTenant(
     () => listMenusForTenantUncached(slug),
     ["chaya-consumer-menus", slug],
     { revalidate: 30, tags: [`chaya-menus-${slug}`] },
+  )();
+});
+
+/** 메뉴 보드용 — options 제외, translations_json 포함 (locale 이름 표시) */
+export const listMenusForTenantBoard = cache(async function listMenusForTenantBoard(
+  tenant: string,
+): Promise<MenuListResult> {
+  const slug = tenant.trim();
+  if (!slug) {
+    return {
+      ok: true,
+      source: "demo",
+      items: [],
+      notice: "유효한 테넌트 경로가 아닙니다.",
+    };
+  }
+
+  return unstable_cache(
+    () => listMenusForTenantUncached(slug, MENU_SELECT_BOARD),
+    ["chaya-consumer-menus-board", slug],
+    { revalidate: 60, tags: [`chaya-menus-board-${slug}`] },
   )();
 });
 

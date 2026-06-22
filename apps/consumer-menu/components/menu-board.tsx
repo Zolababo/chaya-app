@@ -1,10 +1,10 @@
 "use client";
 
 import { Plus } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { MenuCategoryChips } from "@/components/menu-category-chips";
-import { MenuDetailSheet } from "@/components/menu-detail-sheet";
 import { MenuItemBadgeStrip } from "@/components/menu-item-badge-strip";
 import { MenuScrollPad } from "@/components/menu-scroll-pad";
 import { MenuListRow } from "@/components/menu-list-row";
@@ -14,46 +14,50 @@ import {
 } from "@/components/menu-list-styles";
 import { useConsumerLocale } from "@/lib/i18n/consumer-locale-context";
 import { addLine } from "@/lib/cart/local-cart";
-import { useConsumerEasyMode } from "@/lib/consumer/consumer-easy-mode-context";
-import { useConsumerVoiceAnnounce } from "@/lib/consumer/use-consumer-voice-announce";
 import { formatConsumerMoney } from "@/lib/i18n/format-consumer-money";
 import {
   groupMenuItemsByCategory,
   sortMenuItemsForDisplay,
 } from "@/lib/menus/category-order";
 import { menuCardClassForCategoryIndex } from "@/lib/menus/menu-category-tints";
+import { menuBoardClientRowAsCartItem } from "@/lib/menus/menu-board-client-row";
+import type { MenuBoardClientRow } from "@/lib/menus/menu-board-client-row";
 import { resolveMenuItemBadges } from "@/lib/menus/menu-item-badges";
 import { menuHasSelectableOptions } from "@/lib/menus/menu-options";
-import { resolveMenuRowForLocale, buildCategoryDisplayMap } from "@/lib/menus/resolve-menu-text";
 import type { ChayaMenuRow } from "@/lib/menus/types";
+
+const MenuDetailSheet = dynamic(
+  () => import("@/components/menu-detail-sheet").then((m) => m.MenuDetailSheet),
+  { ssr: false },
+);
 
 type Props = {
   tenant: string;
-  items: ChayaMenuRow[];
+  items: MenuBoardClientRow[];
   categories: string[];
+  categoryLabels: Record<string, string>;
   popularMenuIds?: string[];
 };
 
 const ALL_CATEGORY_KEY = "__all__";
 
-export function MenuBoard({ tenant, items, categories, popularMenuIds = [] }: Props) {
+export function MenuBoard({
+  tenant,
+  items,
+  categories,
+  categoryLabels,
+  popularMenuIds = [],
+}: Props) {
   const { locale, m } = useConsumerLocale();
-  const { fontScale } = useConsumerEasyMode();
-  const { speak } = useConsumerVoiceAnnounce();
   const [active, setActive] = useState<string>(ALL_CATEGORY_KEY);
   const [addedToast, setAddedToast] = useState(false);
   const [sheetItem, setSheetItem] = useState<ChayaMenuRow | null>(null);
   const toastHide = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const categoryLabels = useMemo(
-    () => buildCategoryDisplayMap(items, categories, locale),
-    [items, categories, locale],
-  );
-
   const tabCategories = useMemo(
     () => [
       { key: ALL_CATEGORY_KEY, label: m.menu.categoryAll },
-      ...categories.map((c) => ({ key: c, label: categoryLabels.get(c) ?? c })),
+      ...categories.map((c) => ({ key: c, label: categoryLabels[c] ?? c })),
     ],
     [categories, m.menu.categoryAll, categoryLabels],
   );
@@ -73,13 +77,20 @@ export function MenuBoard({ tenant, items, categories, popularMenuIds = [] }: Pr
     };
   }, []);
 
+  useLayoutEffect(() => {
+    document.getElementById("menu-board-ssr")?.remove();
+  }, []);
+
   const flashAdded = () => {
     setAddedToast(true);
     if (toastHide.current) clearTimeout(toastHide.current);
     toastHide.current = setTimeout(() => setAddedToast(false), 2200);
   };
 
-  const sortedItems = useMemo(() => sortMenuItemsForDisplay(items), [items]);
+  const sortedItems = useMemo(
+    () => sortMenuItemsForDisplay(items as unknown as ChayaMenuRow[]),
+    [items],
+  );
 
   const filtered = useMemo(() => {
     if (active === ALL_CATEGORY_KEY || categories.length <= 1) return sortedItems;
@@ -94,18 +105,18 @@ export function MenuBoard({ tenant, items, categories, popularMenuIds = [] }: Pr
     [showCategorySections, filtered, categories],
   );
 
-  const openSheet = (raw: ChayaMenuRow) => {
-    setSheetItem(resolveMenuRowForLocale(raw, locale));
+  const openSheet = (raw: MenuBoardClientRow) => {
+    setSheetItem(menuBoardClientRowAsCartItem(raw));
   };
 
-  const renderCard = (raw: ChayaMenuRow, categoryTintIndex = 0) => {
-    const item = resolveMenuRowForLocale(raw, locale);
-    const badges = resolveMenuItemBadges(item, popularMenuIds, badgeLabels);
+  const renderCard = (raw: MenuBoardClientRow, categoryTintIndex = 0, listIndex?: number) => {
+    const item = raw;
+    const badges = resolveMenuItemBadges(menuBoardClientRowAsCartItem(item), popularMenuIds, badgeLabels);
     const badgeSuffix = badges.length > 0 ? `, ${badges.map((b) => b.label).join(", ")}` : "";
-    const hasOptions = menuHasSelectableOptions(item.optionGroups);
+    const hasOptions = menuHasSelectableOptions(menuBoardClientRowAsCartItem(item).optionGroups);
 
-    const rowLarge = fontScale === "large";
-    const rowXlarge = fontScale === "xl";
+    const rowLarge = false;
+    const rowXlarge = false;
 
     return (
       <li key={item.id} className={`relative ${menuCardClassForCategoryIndex(categoryTintIndex)}`}>
@@ -113,6 +124,7 @@ export function MenuBoard({ tenant, items, categories, popularMenuIds = [] }: Pr
         <MenuListRow
           large={rowLarge}
           xlarge={rowXlarge}
+          imagePriority={listIndex != null && listIndex < 6}
           name={item.name}
           description={item.description}
           priceLabel={formatConsumerMoney(item.price, locale)}
@@ -138,8 +150,7 @@ export function MenuBoard({ tenant, items, categories, popularMenuIds = [] }: Pr
                     openSheet(raw);
                     return;
                   }
-                  addLine(tenant, item, 1, null);
-                  speak(m.barrierFree.addedOne.replace("{name}", item.name));
+                  addLine(tenant, menuBoardClientRowAsCartItem(item), 1, null);
                   flashAdded();
                 }}
               >
@@ -171,7 +182,6 @@ export function MenuBoard({ tenant, items, categories, popularMenuIds = [] }: Pr
         active={active}
         onSelect={setActive}
         ariaLabel={m.menu.categoryNav}
-        easyMode={fontScale !== "normal"}
       />
 
       {filtered.length > 0 ? (
@@ -181,21 +191,24 @@ export function MenuBoard({ tenant, items, categories, popularMenuIds = [] }: Pr
               <section key={section.category} aria-labelledby={`menu-cat-${sectionIndex}`}>
                 <h2
                   id={`menu-cat-${sectionIndex}`}
-                  className={`sticky top-0 z-[1] -mx-1 border-b border-chaya-border/50 bg-background/90 px-1 pb-2 pt-1 font-bold tracking-tight text-zinc-800 backdrop-blur-sm dark:border-zinc-800 dark:text-zinc-100 ${
-                    fontScale === "xl" ? "text-lg" : fontScale === "large" ? "text-base" : "text-sm"
-                  }`}
+                  className="sticky top-0 z-[1] -mx-1 border-b border-chaya-border/50 bg-background/90 px-1 pb-2 pt-1 text-sm font-bold tracking-tight text-zinc-800 backdrop-blur-sm dark:border-zinc-800 dark:text-zinc-100"
                 >
-                  {categoryLabels.get(section.category) ?? section.category}
+                  {categoryLabels[section.category] ?? section.category}
                 </h2>
                 <ul className={`${menuCardListClass} mt-2`}>
-                  {section.items.map((raw) => renderCard(raw, sectionIndex))}
+                  {section.items.map((raw, itemIndex) => {
+                    const flatIndex = categorySections
+                      .slice(0, sectionIndex)
+                      .reduce((n, s) => n + s.items.length, 0) + itemIndex;
+                    return renderCard(raw, sectionIndex, flatIndex);
+                  })}
                 </ul>
               </section>
             ))}
           </div>
         ) : (
           <ul aria-label={m.menu.boardTitle} className={menuCardListClass}>
-            {filtered.map((raw) => renderCard(raw, 0))}
+            {filtered.map((raw, index) => renderCard(raw, 0, index))}
           </ul>
         )
       ) : (

@@ -5,6 +5,8 @@ export const CHAYA_MENU_SELECT_MERCH =
 /** 점주 홈 메뉴 현황 카드 — 최소 컬럼 */
 export const CHAYA_MENU_SELECT_HOME = "id,name,price,category,is_sold_out,sort_order";
 export const CHAYA_MENU_SELECT_BASE = `${CHAYA_MENU_SELECT_MERCH},created_at`;
+/** 손님 메뉴판 — options 제외, locale 이름용 translations 포함 */
+export const CHAYA_MENU_SELECT_BOARD = `${CHAYA_MENU_SELECT_BASE},translations_json`;
 export const CHAYA_MENU_SELECT_WITH_OPTIONS = `${CHAYA_MENU_SELECT_BASE},options_json`;
 export const CHAYA_MENU_SELECT_FULL = `${CHAYA_MENU_SELECT_WITH_OPTIONS},translations_json`;
 export const CHAYA_MENU_SELECT_MERCH_WITH_OPTIONS = `${CHAYA_MENU_SELECT_MERCH},options_json`;

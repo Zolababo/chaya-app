@@ -4,11 +4,11 @@ import { MenuPromoCarousel } from "@/components/menu-promo-carousel";
 import { isConsumerMenuUiV2 } from "@/lib/consumer/future-features";
 import { useConsumerLocale } from "@/lib/i18n/consumer-locale-context";
 import { buildMenuPromoSlides } from "@/lib/menus/build-menu-promo-slides";
-import type { ChayaMenuRow } from "@/lib/menus/types";
+import type { MenuBoardClientRow } from "@/lib/menus/menu-board-client-row";
 
 type Props = {
   tenant: string;
-  items: ChayaMenuRow[];
+  items: MenuBoardClientRow[];
   showRecentPopular: boolean;
   popularMenuIds: string[];
 };

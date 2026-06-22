@@ -17,6 +17,8 @@ type Props = {
   large?: boolean;
   /** 큰글씨·목록(Big UI) */
   xlarge?: boolean;
+  /** 첫 화면 썸네일 — eager 로드 */
+  imagePriority?: boolean;
 };
 
 const tapTargetClass =
@@ -35,6 +37,7 @@ export function MenuListRow({
   trailing,
   large = false,
   xlarge = false,
+  imagePriority = false,
 }: Props) {
   const nameClass = xlarge
     ? "text-xl font-bold leading-snug tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-2xl"
@@ -64,7 +67,7 @@ export function MenuListRow({
 
   const body = (
     <>
-      <MenuListThumb imageUrl={imageUrl} large={large} xlarge={xlarge} />
+      <MenuListThumb imageUrl={imageUrl} large={large} xlarge={xlarge} priority={imagePriority} />
       {textBlock}
     </>
   );

@@ -1,21 +1,32 @@
 "use client";
 
+import dynamic from "next/dynamic";
+
+import { MenuBoardIdleMount } from "@/components/menu-board-idle-mount";
+import { fetchMenuPopularityAction } from "@/lib/consumer/menu-popularity-action";
+import type { MenuBoardClientRow } from "@/lib/menus/menu-board-client-row";
+import { shouldShowRecentPopularSection } from "@/lib/orders/menu-popularity";
 import { useEffect, useState } from "react";
 
-import { fetchMenuPopularityAction } from "@/lib/consumer/menu-popularity-action";
-import { MenuBoard } from "@/components/menu-board";
-import { MenuMerchandisingSections } from "@/components/menu-merchandising-sections";
-import type { ChayaMenuRow } from "@/lib/menus/types";
-import { shouldShowRecentPopularSection } from "@/lib/orders/menu-popularity";
+const MenuMerchandisingSections = dynamic(
+  () =>
+    import("@/components/menu-merchandising-sections").then((m) => m.MenuMerchandisingSections),
+  { ssr: false },
+);
 
 type Props = {
   tenant: string;
-  items: ChayaMenuRow[];
+  items: MenuBoardClientRow[];
   categories: string[];
+  categoryLabels: Record<string, string>;
 };
 
-/** 메뉴 목록은 SSR, 인기 집계·뱃지는 마운트 후 비동기 — 첫 paint 가속 */
-export function MenuHomeCatalogClient({ tenant, items, categories }: Props) {
+export function MenuHomeCatalogClient({
+  tenant,
+  items,
+  categories,
+  categoryLabels,
+}: Props) {
   const [popularMenuIds, setPopularMenuIds] = useState<string[]>([]);
   const [showRecentPopular, setShowRecentPopular] = useState(false);
 
@@ -39,10 +50,11 @@ export function MenuHomeCatalogClient({ tenant, items, categories }: Props) {
         showRecentPopular={showRecentPopular}
         popularMenuIds={popularMenuIds}
       />
-      <MenuBoard
+      <MenuBoardIdleMount
         tenant={tenant}
         items={items}
         categories={categories}
+        categoryLabels={categoryLabels}
         popularMenuIds={popularMenuIds}
       />
     </>

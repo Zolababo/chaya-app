@@ -6,8 +6,6 @@ import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import {
-  ConsumerHeaderIconButton,
-  consumerHeaderIconClass,
   consumerHeaderIconStroke,
 } from "@/components/consumer-header-icon-button";
 import { useConsumerLocale } from "@/lib/i18n/consumer-locale-context";
@@ -115,7 +113,9 @@ export function LocalePickerButton() {
 
   return (
     <>
-      <ConsumerHeaderIconButton
+      <button
+        type="button"
+        className="inline-flex h-11 min-w-11 shrink-0 flex-col items-center justify-center gap-0.5 rounded-full border border-zinc-300/90 bg-white px-1.5 text-zinc-800 shadow-sm transition-colors hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-zinc-500 dark:hover:bg-zinc-800"
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-controls={titleId}
@@ -123,8 +123,11 @@ export function LocalePickerButton() {
         title={ariaLabel}
         onClick={() => setOpen(true)}
       >
-        <Globe className={consumerHeaderIconClass} aria-hidden strokeWidth={consumerHeaderIconStroke} />
-      </ConsumerHeaderIconButton>
+        <Globe className="size-[1.15rem] shrink-0" aria-hidden strokeWidth={consumerHeaderIconStroke} />
+        <span className="text-[9px] font-extrabold leading-none tracking-wide text-zinc-600 dark:text-zinc-300">
+          {activeMeta.shortLabel}
+        </span>
+      </button>
 
       {open && mounted
         ? createPortal(

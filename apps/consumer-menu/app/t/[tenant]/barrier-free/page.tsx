@@ -1,7 +1,7 @@
 import { BarrierFreeMenuClient } from "./barrier-free-menu-client";
 import { consumerMessages } from "@/lib/i18n/consumer-messages";
 import { getConsumerLocale } from "@/lib/i18n/get-consumer-locale";
-import { collectCategories, listMenusForTenant } from "@/lib/menus/queries";
+import { collectCategories, listMenusForTenantBoard } from "@/lib/menus/queries";
 
 type Props = {
   params: Promise<{ tenant: string }>;
@@ -13,7 +13,7 @@ export default async function BarrierFreeMenuPage({ params, searchParams }: Prop
   const sp = await searchParams;
   const locale = await getConsumerLocale(typeof sp.lang === "string" ? sp.lang : null);
   const m = consumerMessages(locale);
-  const result = await listMenusForTenant(tenant);
+  const result = await listMenusForTenantBoard(tenant);
   const categories = collectCategories(result.items);
 
   const dataLabel = !result.ok

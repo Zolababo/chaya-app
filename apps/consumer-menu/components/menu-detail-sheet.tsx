@@ -7,8 +7,6 @@ import { MenuItemSpiceLine } from "@/components/menu-item-spice-line";
 import { MenuItemOptionGroups } from "@/components/menu-item-option-groups";
 import { cartQtyMinusClass, cartQtyPlusClass } from "@/components/menu-list-styles";
 import { addLine } from "@/lib/cart/local-cart";
-import { useConsumerEasyMode } from "@/lib/consumer/consumer-easy-mode-context";
-import { useConsumerVoiceAnnounce } from "@/lib/consumer/use-consumer-voice-announce";
 import { useConsumerLocale } from "@/lib/i18n/consumer-locale-context";
 import { formatConsumerMoney } from "@/lib/i18n/format-consumer-money";
 import {
@@ -29,8 +27,6 @@ type Props = {
 
 export function MenuDetailSheet({ tenant, item, open, onClose, onAdded }: Props) {
   const { locale, m } = useConsumerLocale();
-  const { fontScale } = useConsumerEasyMode();
-  const { speak } = useConsumerVoiceAnnounce();
   const [qty, setQty] = useState(1);
   const [selected, setSelected] = useState<SelectedMenuOption[]>([]);
   const [optError, setOptError] = useState<string | null>(null);
@@ -53,10 +49,7 @@ export function MenuDetailSheet({ tenant, item, open, onClose, onAdded }: Props)
     setQty(1);
     setSelected([]);
     setOptError(null);
-    const desc = item.description?.trim();
-    const price = formatConsumerMoney(item.price, locale);
-    speak(`${item.name}, ${price}${desc ? `. ${desc}` : ""}`);
-  }, [open, item?.id, item?.name, item?.description, item?.price, locale, speak]);
+  }, [open, item?.id]);
 
   useEffect(() => {
     if (!open) return;
@@ -168,15 +161,14 @@ export function MenuDetailSheet({ tenant, item, open, onClose, onAdded }: Props)
     setOptError(null);
     const combined = formatSelectedOptionsForNotes(selected) || null;
     addLine(tenant, item, qty, combined, selected);
-    speak(m.barrierFree.addedOne.replace("{name}", item.name));
     onAdded?.();
     onClose();
   };
 
   if (!open || !item) return null;
 
-  const qtySize = fontScale !== "normal" ? "size-11" : "size-8";
-  const iconSize = fontScale !== "normal" ? "size-4" : "size-3.5";
+  const qtySize = "size-8";
+  const iconSize = "size-3.5";
 
   return (
     <div
@@ -293,7 +285,7 @@ export function MenuDetailSheet({ tenant, item, open, onClose, onAdded }: Props)
                       <Minus className={iconSize} aria-hidden />
                     </button>
                     <span
-                      className={`min-w-8 text-center font-extrabold tabular-nums text-zinc-900 dark:text-zinc-50 ${fontScale !== "normal" ? "text-lg" : "text-base"}`}
+                      className="min-w-8 text-center text-base font-extrabold tabular-nums text-zinc-900 dark:text-zinc-50"
                     >
                       {qty}
                     </span>

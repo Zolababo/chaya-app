@@ -94,3 +94,7 @@ export const menuAddButtonClass =
 
 export const menuAddButtonEasyClass =
   "touch-manipulation min-h-[44px] shrink-0 rounded-full bg-chaya-primary px-4 py-2 text-sm font-semibold text-chaya-on-primary transition hover:bg-chaya-primary-hover active:scale-[0.98]";
+
+/** TalkBack/VoiceOver 목록 메뉴 — 텍스트 담기 버튼 */
+export const srMenuAddButtonClass =
+  "touch-manipulation min-h-[48px] min-w-[4.5rem] shrink-0 rounded-xl bg-chaya-primary px-4 text-base font-bold text-chaya-on-primary shadow-sm transition hover:bg-chaya-primary-hover active:scale-[0.98]";

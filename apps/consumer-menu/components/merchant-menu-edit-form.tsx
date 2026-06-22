@@ -1,12 +1,13 @@
 "use client";
 
-import { useRef, useState, useId } from "react";
+import { useRef, useState, useId, useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft, Plus, X, ChevronDown, ChevronUp } from "lucide-react";
 
-import { uploadMenuImageOnlyFromForm, updateMenuFromForm, deleteMenuFromForm } from "@/app/m/[tenant]/menus/actions";
+import { updateMenuFromForm, deleteMenuFromForm } from "@/app/m/[tenant]/menus/actions";
 import type { ChayaMenuRow } from "@/lib/menus/types";
 import type { MenuOptionGroup, MenuOptionChoice } from "@/lib/menus/menu-options";
+import { uploadMerchantMenuImageFile } from "@/lib/merchant/upload-merchant-menu-image-client";
 
 // ── 타입 ──────────────────────────────────────────────────────
 type StatusMode = "selling" | "soldout";
@@ -76,6 +77,17 @@ export function MerchantMenuEditForm({
   // ── 모달 ──
   const [showPriceModal, setShowPriceModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  // ── 사진 탭 ──
+  const [imagePreview, setImagePreview] = useState(item.imageUrl ?? "");
+  const [imageBusy, setImageBusy] = useState(false);
+  const [imagePickError, setImagePickError] = useState<string | null>(null);
+  const [imageSavedHint, setImageSavedHint] = useState(false);
+  const imageFileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setImagePreview(item.imageUrl ?? "");
+  }, [item.imageUrl]);
 
   // ── form refs ──
   const mainFormRef = useRef<HTMLFormElement>(null);
@@ -416,19 +428,17 @@ export function MerchantMenuEditForm({
 
       {/* ════ 사진 탭 ════ */}
       {tab === "photo" ? (
-        <form action={uploadMenuImageOnlyFromForm} encType="multipart/form-data" className="flex flex-col gap-3">
-          {commonHidden}
-          <input type="hidden" name="preserve_tab" value="photo" />
-          <input type="hidden" name="return_to" value="edit" />
-
+        <div className="flex flex-col gap-3">
           <div className="rounded-2xl bg-white p-4 shadow-sm dark:bg-zinc-900">
             <p className="mb-1 text-[14px] font-extrabold text-zinc-900 dark:text-zinc-50">메뉴 사진</p>
-            <p className="mb-4 text-[11px] text-zinc-400">갤러리에서 선택한 사진만 저장돼요 · 최대 5MB · JPEG·PNG·HEIC</p>
+            <p className="mb-4 text-[11px] text-zinc-400">
+              갤러리·카메라 사진 OK · 큰 사진은 자동으로 줄여서 저장해요
+            </p>
 
-            {item.imageUrl ? (
+            {imagePreview ? (
               <div className="relative mb-4 overflow-hidden rounded-xl">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={item.imageUrl} alt="" className="h-44 w-full rounded-xl object-cover" />
+                <img src={imagePreview} alt="" className="h-44 w-full rounded-xl object-cover" />
                 <span className="absolute bottom-2 left-2 rounded-md bg-black/60 px-2 py-0.5 text-[10px] font-bold text-white">
                   손님에게 이렇게 보여요
                 </span>
@@ -440,27 +450,58 @@ export function MerchantMenuEditForm({
               </div>
             )}
 
-            <label className="mb-1.5 block text-[12px] font-bold text-zinc-700 dark:text-zinc-300">
-              {item.imageUrl ? "사진 교체" : "사진 선택"}
-            </label>
             <input
-              name="file"
+              ref={imageFileRef}
               type="file"
               accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif,image/*"
-              className="block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-chaya-primary file:px-3 file:py-2 file:text-sm file:font-bold file:text-white"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (!f) return;
+                setImagePickError(null);
+                setImageSavedHint(false);
+                setImageBusy(true);
+                void uploadMerchantMenuImageFile(tenant, item.id, f)
+                  .then((result) => {
+                    if (!result.ok) {
+                      setImagePickError(result.message);
+                      if (imageFileRef.current) imageFileRef.current.value = "";
+                      return;
+                    }
+                    setImagePreview(result.url);
+                    setImageSavedHint(true);
+                  })
+                  .finally(() => setImageBusy(false));
+              }}
             />
-            <p className="mt-1 text-[11px] text-zinc-400">· 사진 교체 시 기존 사진은 삭제돼요</p>
+            <button
+              type="button"
+              disabled={imageBusy}
+              onClick={() => imageFileRef.current?.click()}
+              className="flex min-h-[44px] w-full items-center justify-center rounded-xl bg-chaya-primary text-[15px] font-extrabold text-white disabled:opacity-60"
+            >
+              {imageBusy ? "사진 올리는 중…" : imagePreview ? "사진 교체" : "사진 선택"}
+            </button>
+            {imagePickError ? (
+              <p role="alert" className="mt-2 text-xs font-semibold text-[#DC2626]">
+                {imagePickError}
+              </p>
+            ) : imageSavedHint ? (
+              <p className="mt-2 text-xs font-semibold text-[#059669]">사진이 저장됐어요.</p>
+            ) : (
+              <p className="mt-2 text-[11px] text-zinc-400">· 사진 교체 시 기존 사진은 삭제돼요</p>
+            )}
           </div>
 
           <div className="flex gap-2">
-            <Link href={listHref} className="flex h-12 flex-1 items-center justify-center rounded-xl border border-zinc-200 text-[14px] font-bold text-zinc-600 dark:border-zinc-700 dark:text-zinc-300">
+            <Link
+              href={listHref}
+              className="flex h-12 flex-1 items-center justify-center rounded-xl border border-zinc-200 text-[14px] font-bold text-zinc-600 dark:border-zinc-700 dark:text-zinc-300"
+            >
               목록으로
             </Link>
-            <button type="submit" className="flex h-12 flex-[2] items-center justify-center rounded-xl bg-chaya-primary text-[15px] font-extrabold text-white">
-              사진 저장
-            </button>
           </div>
-        </form>
+        </div>
       ) : null}
 
       {/* ════ 옵션 탭 ════ */}

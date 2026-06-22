@@ -3,12 +3,16 @@ import type { MerchantOrderRow } from "@/lib/orders/list-orders-for-merchant";
 import type { MerchantHomeOpsCounts } from "@/lib/orders/merchant-home-ops";
 import type { MerchantTodayKstMetrics } from "@/lib/orders/merchant-analytics";
 import type { ChayaMenuRow } from "@/lib/menus/types";
+import type { MerchantGuestInsightsSnapshot,
+} from "@/lib/merchant/merchant-guest-insights";
+import type { MerchantSettingsSheetSnapshot } from "@/lib/merchant/merchant-settings-sheet-types";
 
 import type { MerchantAnalyticsSnapshot } from "@/lib/orders/merchant-analytics";
 
 export type MerchantLiveAnalyticsPayload = {
   ok: true;
   snapshot: Extract<MerchantAnalyticsSnapshot, { ok: true }>;
+  guestSnapshot: Extract<MerchantGuestInsightsSnapshot, { ok: true }>;
 };
 
 export type MerchantLiveAnalyticsError = {
@@ -25,7 +29,15 @@ export function parseMerchantLiveAnalytics(
   if (o.ok !== true || !o.snapshot || typeof o.snapshot !== "object") return null;
   const s = o.snapshot as { ok?: unknown };
   if (s.ok !== true) return null;
-  return { ok: true, snapshot: o.snapshot as MerchantLiveAnalyticsPayload["snapshot"] };
+  const guestRaw = (o as { guestSnapshot?: unknown }).guestSnapshot;
+  if (!guestRaw || typeof guestRaw !== "object") return null;
+  const g = guestRaw as { ok?: unknown };
+  if (g.ok !== true) return null;
+  return {
+    ok: true,
+    snapshot: o.snapshot as MerchantLiveAnalyticsPayload["snapshot"],
+    guestSnapshot: guestRaw as MerchantLiveAnalyticsPayload["guestSnapshot"],
+  };
 }
 
 export type MerchantLiveMenusPayload = {
@@ -57,6 +69,28 @@ export type MerchantLiveOrdersError = {
   ok: false;
   message: string;
 };
+
+export type MerchantLiveGuestsPayload = {
+  ok: true;
+  snapshot: Extract<MerchantGuestInsightsSnapshot, { ok: true }>;
+};
+
+export type MerchantLiveGuestsError = {
+  ok: false;
+  message: string;
+};
+
+export function parseMerchantLiveGuests(
+  json: unknown,
+): MerchantLiveGuestsPayload | MerchantLiveGuestsError | null {
+  if (!json || typeof json !== "object") return null;
+  const o = json as { ok?: unknown; snapshot?: unknown; message?: unknown };
+  if (o.ok === false && typeof o.message === "string") return { ok: false, message: o.message };
+  if (o.ok !== true || !o.snapshot || typeof o.snapshot !== "object") return null;
+  const s = o.snapshot as { ok?: unknown };
+  if (s.ok !== true) return null;
+  return { ok: true, snapshot: o.snapshot as MerchantLiveGuestsPayload["snapshot"] };
+}
 
 export type MerchantLiveDashboardPayload = {
   ok: true;
@@ -133,4 +167,24 @@ export function parseMerchantLiveDashboard(
     metrics: o.metrics as MerchantTodayKstMetrics,
     menuItems: o.menuItems as ChayaMenuRow[],
   };
+}
+
+export type MerchantLiveMorePayload = {
+  ok: true;
+  snapshot: MerchantSettingsSheetSnapshot;
+};
+
+export type MerchantLiveMoreError = {
+  ok: false;
+  message: string;
+};
+
+export function parseMerchantLiveMore(
+  json: unknown,
+): MerchantLiveMorePayload | MerchantLiveMoreError | null {
+  if (!json || typeof json !== "object") return null;
+  const o = json as { ok?: unknown; snapshot?: unknown; message?: unknown };
+  if (o.ok === false && typeof o.message === "string") return { ok: false, message: o.message };
+  if (o.ok !== true || !o.snapshot || typeof o.snapshot !== "object") return null;
+  return { ok: true, snapshot: o.snapshot as MerchantSettingsSheetSnapshot };
 }

@@ -3,18 +3,19 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, type TouchEvent } from "react";
 
+import { MenuLazyImage } from "@/components/menu-lazy-image";
+import { optimizeMenuThumbUrl } from "@/lib/menus/optimize-menu-thumb-url";
 import { isPromoHorizontalSwipe } from "@/lib/consumer/menu-promo-carousel-dom";
 import { chayaAppShellBleedClass } from "@/lib/responsive/chaya-app-shell";
 import { useConsumerLocale } from "@/lib/i18n/consumer-locale-context";
 import { formatConsumerMoney } from "@/lib/i18n/format-consumer-money";
 import { useConsumerNavHref } from "@/lib/i18n/use-consumer-nav-href";
-import { resolveMenuRowForLocale } from "@/lib/menus/resolve-menu-text";
-import type { ChayaMenuRow } from "@/lib/menus/types";
+import type { MenuBoardClientRow } from "@/lib/menus/menu-board-client-row";
 
 const AUTO_MS = 4500;
 
 export type MenuPromoSlide = {
-  item: ChayaMenuRow;
+  item: MenuBoardClientRow;
   /** 카드 상단 작은 라벨 (오늘의 메뉴 · 최근 인기 · 사장님 추천) */
   badge: string;
 };
@@ -94,7 +95,7 @@ export function MenuPromoCarousel({ tenant, slides, ariaLabel }: Props) {
           style={{ transform: `translateX(-${safeIndex * 100}%)` }}
         >
           {slides.map((slide, i) => {
-            const item = resolveMenuRowForLocale(slide.item, locale);
+            const item = slide.item;
             const href = navHref(`/t/${tenant}/menu/${encodeURIComponent(item.id)}`);
             const badge = slide.badge;
 
@@ -111,11 +112,11 @@ export function MenuPromoCarousel({ tenant, slides, ariaLabel }: Props) {
                   }}
                 >
                   {item.imageUrl?.trim() ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={item.imageUrl}
-                      alt=""
+                    <MenuLazyImage
+                      src={optimizeMenuThumbUrl(item.imageUrl, "promo") ?? item.imageUrl}
+                      fallbackSrc={item.imageUrl.trim()}
                       className="h-20 w-20 shrink-0 rounded-lg object-cover"
+                      priority={i === 0}
                     />
                   ) : (
                     <div

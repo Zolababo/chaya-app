@@ -11,6 +11,10 @@ import {
   merchantMainTabHref,
   type MerchantMainTab,
 } from "@/lib/merchant/merchant-main-tab";
+import {
+  prefetchMerchantOrdersLive,
+  prefetchMerchantOrdersQueuePane,
+} from "@/lib/merchant/merchant-live-prefetch";
 import { useMerchantPendingCount } from "@/lib/merchant/merchant-pending-count-context";
 import {
   chayaAppShellNavInnerClass,
@@ -82,8 +86,12 @@ export function MerchantBottomNav({ tenant, canManageMenus = true }: Props) {
     (href: string) => {
       if (pathname === href) return;
       router.prefetch(href);
+      if (href === merchantMainTabHref(tenant, "orders")) {
+        prefetchMerchantOrdersLive(tenant, "all");
+        prefetchMerchantOrdersQueuePane();
+      }
     },
-    [pathname, router],
+    [pathname, router, tenant],
   );
 
   return (

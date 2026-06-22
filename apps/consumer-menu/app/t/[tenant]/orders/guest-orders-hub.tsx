@@ -15,9 +15,8 @@ import {
   shouldShowCancelledConsumerOrder,
 } from "@/lib/consumer/consumer-cancelled-order-display";
 import type { GuestOrderListItem } from "@/lib/orders/list-guest-orders";
-import { useConsumerEasyMode } from "@/lib/consumer/consumer-easy-mode-context";
-import { useEasyMenuHref } from "@/lib/consumer/use-easy-menu-href";
-import { useConsumerVoiceAnnounce } from "@/lib/consumer/use-consumer-voice-announce";
+import { useConsumerScreenReaderMode } from "@/lib/consumer/consumer-screen-reader-mode-context";
+import { useScreenReaderMenuHref } from "@/lib/consumer/use-screen-reader-menu-href";
 import { useConsumerLocale } from "@/lib/i18n/consumer-locale-context";
 import { formatConsumerMoney } from "@/lib/i18n/format-consumer-money";
 import { orderStatusLabelForLocale } from "@/lib/i18n/order-status-for-locale";
@@ -84,9 +83,8 @@ export function GuestOrdersHub({
   ssrGuestOrdersHydrated = false,
 }: Props) {
   const { locale, m } = useConsumerLocale();
-  const { easyMode } = useConsumerEasyMode();
-  const menuHref = useEasyMenuHref(tenant);
-  const { speak } = useConsumerVoiceAnnounce();
+  const { screenReaderMode } = useConsumerScreenReaderMode();
+  const menuHref = useScreenReaderMenuHref(tenant);
   const statusSpokenRef = useRef<Map<string, string>>(new Map());
   const hubSummarySpokenRef = useRef(false);
   const [orders, setOrders] = useState<GuestOrderListItem[] | null>(
@@ -196,38 +194,21 @@ export function GuestOrdersHub({
   const visitTotal = useMemo(() => sumOrderTotals(activeOrders), [activeOrders]);
 
   useEffect(() => {
-    if (orders === null || hubSummarySpokenRef.current) return;
+    if (orders === null) return;
     hubSummarySpokenRef.current = true;
-    if (activeOrders.length === 0) return;
-    const totalText = formatConsumerMoney(visitTotal, locale);
-    speak(
-      m.barrierFree.voiceOrdersHubSummary
-        .replace("{count}", String(activeOrders.length))
-        .replace("{total}", totalText),
-    );
-  }, [activeOrders.length, locale, m.barrierFree.voiceOrdersHubSummary, orders, speak, visitTotal]);
+  }, [orders]);
 
   useEffect(() => {
     for (const o of allOrders) {
-      const prev = statusSpokenRef.current.get(o.id);
-      if (prev === o.status) continue;
-      if (prev != null && prev !== o.status) {
-        if (isCancelledConsumerOrderStatus(o.status)) {
-          speak(m.progress.cancelled);
-        } else {
-          const label = orderStatusLabelForLocale(o.status, locale);
-          speak(m.barrierFree.voiceOrderStatus.replace("{status}", label));
-        }
-      }
       statusSpokenRef.current.set(o.id, o.status);
     }
-  }, [allOrders, locale, m.barrierFree.voiceOrderStatus, m.progress.cancelled, speak]);
+  }, [allOrders]);
 
   if (orders === null) {
     return (
       <ConsumerLoadingCenter
         label={pending ? m.orders.loading : m.orders.preparing}
-        easyMode={easyMode}
+        screenReaderMode={screenReaderMode}
       />
     );
   }
@@ -235,13 +216,13 @@ export function GuestOrdersHub({
   if (!loadError && visibleOrderCount === 0) {
     return (
       <ConsumerEmptyState
-        easyMode={easyMode}
+        screenReaderMode={screenReaderMode}
         icon={<ClipboardList className="size-7 text-zinc-400 dark:text-zinc-500" strokeWidth={1.75} />}
         message={m.orders.empty}
         action={
           <Link
             href={menuHref}
-            className={`${chayaPrimaryButtonClass} px-8 ${easyMode ? "min-h-[48px]" : "min-h-[44px]"}`}
+            className={`${chayaPrimaryButtonClass} px-8 ${screenReaderMode ? "min-h-[48px]" : "min-h-[44px]"}`}
             aria-label={m.cart.emptyCtaAria}
           >
             {m.cart.emptyCta}
@@ -281,10 +262,22 @@ export function GuestOrdersHub({
               >
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+                    <p
+                      className={
+                        screenReaderMode
+                          ? "text-base font-semibold text-zinc-800 dark:text-zinc-100"
+                          : "text-sm font-semibold text-zinc-800 dark:text-zinc-100"
+                      }
+                    >
                       {m.orders.counterVisitTotal}
                     </p>
-                    <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+                    <p
+                      className={
+                        screenReaderMode
+                          ? "mt-1 text-sm leading-relaxed text-zinc-600 dark:text-zinc-300"
+                          : "mt-0.5 text-xs text-zinc-500 dark:text-zinc-400"
+                      }
+                    >
                       {m.orders.counterVisitTotalHint}
                     </p>
                   </div>
@@ -307,7 +300,7 @@ export function GuestOrdersHub({
                         totalLabel={m.orderDetail.total}
                         cardTitle={m.orderDetail.linesHeading}
                         linkAria={m.orders.orderLinkAria}
-                        easyMode={easyMode}
+                        screenReaderMode={screenReaderMode}
                       />
                     </li>
                   ))}
@@ -331,7 +324,7 @@ export function GuestOrdersHub({
                       totalLabel={m.orderDetail.total}
                       cardTitle={m.orderDetail.linesHeading}
                       linkAria={m.orders.orderLinkAria}
-                      easyMode={easyMode}
+                      screenReaderMode={screenReaderMode}
                       cancelledNotice={m.progress.cancelled}
                     />
                   </li>

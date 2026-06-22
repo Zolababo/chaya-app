@@ -18,6 +18,7 @@ type Props = {
   cardTitle: string;
   linkAria: string;
   easyMode?: boolean;
+  screenReaderMode?: boolean;
   cancelledNotice?: string;
 };
 
@@ -29,8 +30,10 @@ export function GuestOrderHistoryCard({
   cardTitle,
   linkAria,
   easyMode = false,
+  screenReaderMode = false,
   cancelledNotice,
 }: Props) {
+  const sr = easyMode || screenReaderMode;
   const navHref = useConsumerNavHref(tenant);
   const href = navHref(`/t/${tenant}/orders/${order.id}`);
   const orderNoText = formatConsumerOrderNo(order.order_no, order.id);
@@ -42,7 +45,7 @@ export function GuestOrderHistoryCard({
     >
       <Link
         href={href}
-        className={`block px-3 py-3 transition active:opacity-90 ${easyMode ? "min-h-[48px]" : ""}`}
+        className={`block px-3 py-3 transition active:opacity-90 ${sr ? "min-h-[48px]" : ""}`}
         aria-label={`${cardTitle} ${orderNoText}, ${formatConsumerMoney(order.total_price, locale)}, ${linkAria}`}
       >
         {cancelledNotice ? (
@@ -56,7 +59,7 @@ export function GuestOrderHistoryCard({
         <div className="mb-2 flex items-start justify-between gap-2">
           <div className="min-w-0">
             <p
-              className={`font-extrabold text-zinc-900 dark:text-zinc-50 ${easyMode ? "text-lg" : "text-base"}`}
+              className={`font-extrabold text-zinc-900 dark:text-zinc-50 ${sr ? "text-lg" : "text-base"}`}
             >
               {orderNoText}
             </p>
@@ -68,7 +71,7 @@ export function GuestOrderHistoryCard({
           locale={locale}
           cardTitle={cardTitle}
           totalLabel={totalLabel}
-          easyMode={easyMode}
+          screenReaderMode={sr}
           hideHeader
         />
       </Link>

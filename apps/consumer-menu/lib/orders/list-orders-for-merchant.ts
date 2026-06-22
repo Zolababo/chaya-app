@@ -1,10 +1,15 @@
 import { cache } from "react";
 
+import {
+  buildGuestOrderContexts,
+  type MerchantGuestOrderContext,
+} from "@/lib/merchant/guest-order-context";
 import { parseOrderNoField } from "@/lib/orders/format-order-no";
 import {
   parseOrderLineSummaries,
   type OrderLineSummary,
 } from "@/lib/orders/format-order-line-summary";
+import { sanitizeGuestSessionId } from "@/lib/orders/guest-order-validation";
 import { getKstCalendarDayBounds } from "@/lib/orders/merchant-analytics";
 import {
   isMerchantOrderListBucket,
@@ -19,7 +24,7 @@ import { withSupabaseReadRetry, withSupabaseReadRetryResult } from "@/lib/supaba
 export type ListMerchantOrdersQuery = {
   status?: MerchantOrderStatus | null;
   bucket?: "in_progress" | "cooking" | "all_active" | null;
-  /** `completed`·`cancelled` 등 — KST 당일 접수만. */
+  /** `completed` — KST 당일 결제완료(`completed_at`). 그 외 — 당일 접수(`created_at`). */
   todayKst?: boolean;
 };
 
@@ -33,6 +38,12 @@ export type MerchantOrderRow = {
   cancel_reason: string | null;
   total_price: number;
   lines: OrderLineSummary[];
+  /** 익명 손님 — guest_session_id 는 서버에서만 사용 */
+  guestContext?: MerchantGuestOrderContext | null;
+};
+
+type MerchantOrderRowInternal = MerchantOrderRow & {
+  guest_session_id: string | null;
 };
 
 export type ListMerchantOrdersResult =
@@ -48,7 +59,7 @@ function num(v: unknown): number | null {
   return null;
 }
 
-function parseRow(raw: Record<string, unknown>): MerchantOrderRow | null {
+function parseRow(raw: Record<string, unknown>): MerchantOrderRowInternal | null {
   const id = raw.id;
   const created_at = raw.created_at;
   const status = raw.status;
@@ -76,6 +87,9 @@ function parseRow(raw: Record<string, unknown>): MerchantOrderRow | null {
       typeof cancel_reason === "string" && cancel_reason.trim() ? cancel_reason.trim() : null,
     total_price: total,
     lines: parseOrderLineSummaries(raw.items),
+    guest_session_id: sanitizeGuestSessionId(
+      typeof raw.guest_session_id === "string" ? raw.guest_session_id : null,
+    ),
   };
 }
 
@@ -112,10 +126,11 @@ export async function listOrdersForMerchant(
   const bucketFilter =
     bucket && isMerchantOrderListBucket(bucket) ? bucket : null;
 
-  const buildQuery = (withCancelReason: boolean) => {
-    const cols = withCancelReason
-      ? "id, order_no, created_at, status, table_no, guest_note, cancel_reason, total_price, items"
-      : "id, order_no, created_at, status, table_no, guest_note, total_price, items";
+  const buildQuery = (withCancelReason: boolean, withCompletedAt: boolean) => {
+    const baseCols = withCancelReason
+      ? "id, order_no, created_at, status, table_no, guest_note, cancel_reason, total_price, items, guest_session_id"
+      : "id, order_no, created_at, status, table_no, guest_note, total_price, items, guest_session_id";
+    const cols = withCompletedAt ? `${baseCols}, completed_at` : baseCols;
     let q = client.from("orders").select(cols).eq("tenant_slug", slug);
     if (bucketFilter === "cooking") {
       q = q.in("status", [...MERCHANT_COOKING_STATUSES]);
@@ -128,7 +143,9 @@ export async function listOrdersForMerchant(
     }
     if (todayKst) {
       const { sinceIso, untilIso } = getKstCalendarDayBounds();
-      q = q.gte("created_at", sinceIso).lt("created_at", untilIso);
+      const useCompletedAt = statusFilter === "completed" && withCompletedAt;
+      const dateCol = useCompletedAt ? "completed_at" : "created_at";
+      q = q.gte(dateCol, sinceIso).lt(dateCol, untilIso);
     }
     const activeQueue =
       bucketFilter === "cooking" ||
@@ -136,25 +153,96 @@ export async function listOrdersForMerchant(
       bucketFilter === "all_active" ||
       statusFilter === "pending" ||
       statusFilter === "ready";
-    return q.order("created_at", { ascending: activeQueue }).limit(100);
+    const paidToday = todayKst && statusFilter === "completed";
+    const orderCol = paidToday && withCompletedAt ? "completed_at" : "created_at";
+    return q.order(orderCol, { ascending: activeQueue }).limit(100);
   };
 
-  let { data, error } = await withSupabaseReadRetry(() => buildQuery(true));
+  let data: unknown[] | null = null;
+  let error: { message?: string; code?: string } | null = null;
 
-  // cancel_reason 컬럼이 아직 DB에 없을 때(마이그레이션 미적용) 폴백
-  if (error && /cancel_reason|column.*does not exist/i.test(error.message ?? "")) {
-    ({ data, error } = await withSupabaseReadRetry(() => buildQuery(false)));
+  {
+    const first = await withSupabaseReadRetry(() => buildQuery(true, true));
+    data = (first.data as unknown[] | null) ?? null;
+    error = first.error;
+    if (error && /cancel_reason|column.*does not exist/i.test(error.message ?? "")) {
+      const second = await withSupabaseReadRetry(() => buildQuery(false, true));
+      data = (second.data as unknown[] | null) ?? null;
+      error = second.error;
+    }
+    if (error && /completed_at|column.*does not exist/i.test(error.message ?? "")) {
+      const third = await withSupabaseReadRetry(() => buildQuery(true, false));
+      data = (third.data as unknown[] | null) ?? null;
+      error = third.error;
+      if (error && /cancel_reason|column.*does not exist/i.test(error.message ?? "")) {
+        const fourth = await withSupabaseReadRetry(() => buildQuery(false, false));
+        data = (fourth.data as unknown[] | null) ?? null;
+        error = fourth.error;
+      }
+    }
+  }
+
+  // guest_session_id 컬럼 미적용 DB 폴백
+  if (error && /guest_session_id|column.*does not exist/i.test(error.message ?? "")) {
+    const buildWithoutGuest = (withCancel: boolean) => {
+      const cols = withCancel
+        ? "id, order_no, created_at, status, table_no, guest_note, cancel_reason, total_price, items"
+        : "id, order_no, created_at, status, table_no, guest_note, total_price, items";
+      let q = client.from("orders").select(cols).eq("tenant_slug", slug);
+      if (bucketFilter === "cooking") {
+        q = q.in("status", [...MERCHANT_COOKING_STATUSES]);
+      } else if (bucketFilter === "in_progress") {
+        q = q.in("status", [...MERCHANT_IN_PROGRESS_STATUSES]);
+      } else if (bucketFilter === "all_active") {
+        q = q.in("status", ["pending", "accepted", "preparing", "ready"]);
+      } else if (statusFilter) {
+        q = q.eq("status", statusFilter);
+      }
+      if (todayKst) {
+        const { sinceIso, untilIso } = getKstCalendarDayBounds();
+        q = q.gte("created_at", sinceIso).lt("created_at", untilIso);
+      }
+      const activeQueue =
+        bucketFilter === "cooking" ||
+        bucketFilter === "in_progress" ||
+        bucketFilter === "all_active" ||
+        statusFilter === "pending" ||
+        statusFilter === "ready";
+      return q.order("created_at", { ascending: activeQueue }).limit(100);
+    };
+    const first = await withSupabaseReadRetry(() => buildWithoutGuest(true));
+    data = (first.data as unknown[] | null) ?? null;
+    error = first.error;
+    if (error && /cancel_reason|column.*does not exist/i.test(error.message ?? "")) {
+      const second = await withSupabaseReadRetry(() => buildWithoutGuest(false));
+      data = (second.data as unknown[] | null) ?? null;
+      error = second.error;
+    }
   }
 
   if (error) {
     return { ok: false, message: error.message ?? error.code ?? "주문 목록을 불러오지 못했습니다." };
   }
 
-  const rows: MerchantOrderRow[] = [];
+  const internal: MerchantOrderRowInternal[] = [];
   for (const r of (data as unknown[]) ?? []) {
     const row = parseRow(r as Record<string, unknown>);
-    if (row) rows.push(row);
+    if (row) internal.push(row);
   }
+
+  const guestContexts = await buildGuestOrderContexts(
+    slug,
+    internal.map((r) => ({
+      id: r.id,
+      guest_session_id: r.guest_session_id,
+      status: r.status,
+    })),
+  );
+
+  const rows: MerchantOrderRow[] = internal.map(({ guest_session_id: _sid, ...rest }) => ({
+    ...rest,
+    guestContext: guestContexts.get(rest.id) ?? null,
+  }));
 
   return { ok: true, rows };
 }

@@ -21,6 +21,11 @@ import {
 import { merchantLoginUsesSms } from "@/lib/merchant/merchant-login-mode";
 import type { MerchantSettingsSheetSnapshot } from "@/lib/merchant/merchant-settings-sheet-types";
 
+type Props = MerchantSettingsSheetSnapshot & {
+  /** 오버레이에서 하위 화면으로 이동할 때 닫기 */
+  onNavigate?: () => void;
+};
+
 /** `/more` 허브 — Claude 목업 (영업 설정만 펼치기) */
 export function MerchantMoreHubContent({
   tenant,
@@ -30,7 +35,8 @@ export function MerchantMoreHubContent({
   tableCount,
   canManageTables,
   canManageHours,
-}: MerchantSettingsSheetSnapshot) {
+  onNavigate,
+}: Props) {
   const base = `/m/${encodeURIComponent(tenant)}`;
   const useSms = merchantLoginUsesSms();
 
@@ -39,6 +45,7 @@ export function MerchantMoreHubContent({
       <MerchantSettingsSection label="매장 운영">
         <MerchantSettingsRow
           href={`${base}/more/store`}
+          onClick={onNavigate}
           icon={<MerchantSettingsIconBox icon={Pencil} accent="orange" />}
           title="매장 정보"
           sub="매장명 · 로고"
@@ -57,6 +64,7 @@ export function MerchantMoreHubContent({
             <MerchantSettingsRowDivider />
             <MerchantSettingsRow
               href={`${base}/tables`}
+              onClick={onNavigate}
               icon={<MerchantSettingsIconBox icon={Armchair} accent="blue" />}
               title="테이블 · QR"
               sub="추가 · 삭제 · QR 보기"
@@ -76,6 +84,7 @@ export function MerchantMoreHubContent({
       <MerchantSettingsSection label="알림">
         <MerchantSettingsRow
           href={`${base}/more/notifications`}
+          onClick={onNavigate}
           icon={<MerchantSettingsIconBox icon={Bell} accent="orange" />}
           title="주문 알림"
           sub="알림음 · 진동 · 푸시"
@@ -88,6 +97,7 @@ export function MerchantMoreHubContent({
           <>
             <MerchantSettingsRow
               href={`${base}/more/account`}
+              onClick={onNavigate}
               icon={<MerchantSettingsIconBox icon={KeyRound} accent="gray" />}
               title="비밀번호 변경"
               trailing={<MerchantSettingsChevron />}
@@ -97,6 +107,7 @@ export function MerchantMoreHubContent({
         ) : null}
         <MerchantSettingsRow
           href={`${base}/more/staff`}
+          onClick={onNavigate}
           icon={<MerchantSettingsIconBox icon={Smartphone} accent="gray" />}
           title="로그인 기기"
           sub="이 기기 · 로그아웃"
@@ -107,6 +118,7 @@ export function MerchantMoreHubContent({
       <MerchantSettingsSection label="고객센터">
         <MerchantSettingsRow
           href={`${base}/more/support`}
+          onClick={onNavigate}
           icon={<MerchantSettingsIconBox icon={Headphones} accent="gray" />}
           title="고객센터"
           sub="이메일 문의"

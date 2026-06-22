@@ -4,12 +4,19 @@ type Props = {
   /** 접근성·화면 표시용 (예: 불러오는 중…) */
   label: string;
   easyMode?: boolean;
+  screenReaderMode?: boolean;
   /** 기본: 탭 콘텐츠 영역 세로 중앙 */
   className?: string;
 };
 
 /** 손님 탭·페이지 전환 시 가운데 스피너 + 문구 */
-export function ConsumerLoadingCenter({ label, easyMode = false, className }: Props) {
+export function ConsumerLoadingCenter({
+  label,
+  easyMode = false,
+  screenReaderMode = false,
+  className,
+}: Props) {
+  const large = easyMode || screenReaderMode;
   const baseClass =
     "flex min-h-[calc(100dvh-11rem)] w-full flex-col items-center justify-center px-4 text-center";
 
@@ -24,7 +31,7 @@ export function ConsumerLoadingCenter({ label, easyMode = false, className }: Pr
       <ConsumerLoadingSpinner size="lg" />
       <p
         className={`mt-4 text-zinc-600 dark:text-zinc-400 ${
-          easyMode ? "text-base font-semibold" : "text-sm font-medium"
+          large ? "text-base font-semibold" : "text-sm font-medium"
         }`}
       >
         {label}

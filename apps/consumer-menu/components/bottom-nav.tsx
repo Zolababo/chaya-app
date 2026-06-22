@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 
-import { useConsumerEasyMode } from "@/lib/consumer/consumer-easy-mode-context";
+import { useConsumerScreenReaderMode } from "@/lib/consumer/consumer-screen-reader-mode-context";
 import { useConsumerLocale } from "@/lib/i18n/consumer-locale-context";
 import { useConsumerNavHref } from "@/lib/i18n/use-consumer-nav-href";
 import { CHAYA_CART_CHANGED_EVENT, cartTotalQty } from "@/lib/cart/local-cart";
@@ -21,21 +21,21 @@ function NavItem({
   label,
   ariaLabel,
   icon,
-  easyMode,
+  screenReaderMode,
 }: {
   href: string;
   active: boolean;
   label: string;
   ariaLabel: string;
   icon: ReactNode;
-  easyMode: boolean;
+  screenReaderMode: boolean;
 }) {
   return (
     <Link
       href={href}
       className={[
         "relative flex flex-1 flex-col items-center gap-0.5 px-4 py-1 font-medium transition-colors",
-        easyMode ? "min-h-[44px] text-xs sm:text-sm" : "min-h-[40px] text-[11px]",
+        screenReaderMode ? "min-h-[48px] text-xs sm:text-sm" : "min-h-[40px] text-[11px]",
         active
           ? "text-chaya-primary"
           : "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200",
@@ -56,13 +56,13 @@ function NavItem({
 
 export function BottomNav({ tenant }: Props) {
   const { m } = useConsumerLocale();
-  const { easyMode } = useConsumerEasyMode();
+  const { screenReaderMode } = useConsumerScreenReaderMode();
   const pathname = usePathname();
   const slug = tenant.trim();
   const [cartCount, setCartCount] = useState(0);
   const basePath = `/t/${tenant}`;
   const navHref = useConsumerNavHref(tenant);
-  const menuPath = easyMode ? `${basePath}/barrier-free` : basePath;
+  const menuPath = screenReaderMode ? `${basePath}/barrier-free` : basePath;
   const base = navHref(menuPath);
   const cartHref = navHref(`${basePath}/cart`);
   const ordersHref = navHref(`${basePath}/orders`);
@@ -124,7 +124,7 @@ export function BottomNav({ tenant }: Props) {
           active={onMenu}
           label={m.nav.menu}
           ariaLabel={m.menu.boardTitle}
-          easyMode={easyMode}
+          screenReaderMode={screenReaderMode}
           icon={<Menu className={iconSize} strokeWidth={2} />}
         />
         <NavItem
@@ -132,7 +132,7 @@ export function BottomNav({ tenant }: Props) {
           active={onCart}
           label={m.nav.cart}
           ariaLabel={cartCount > 0 ? `${m.nav.cart}, ${cartCount}` : m.nav.cart}
-          easyMode={easyMode}
+          screenReaderMode={screenReaderMode}
           icon={cartIcon}
         />
         <NavItem
@@ -140,7 +140,7 @@ export function BottomNav({ tenant }: Props) {
           active={onOrders}
           label={m.nav.orders}
           ariaLabel={m.nav.orders}
-          easyMode={easyMode}
+          screenReaderMode={screenReaderMode}
           icon={<ClipboardList className={iconSize} strokeWidth={2} />}
         />
       </div>

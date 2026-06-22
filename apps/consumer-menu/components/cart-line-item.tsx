@@ -24,7 +24,8 @@ type Props = {
   lineKey: string;
   locale: AppLocale;
   m: CartLineMessages;
-  easyMode: boolean;
+  easyMode?: boolean;
+  screenReaderMode?: boolean;
   onChangeQty: (key: string, delta: number) => void;
   onRemove: (key: string) => void;
 };
@@ -34,17 +35,19 @@ export function CartLineItem({
   lineKey,
   locale,
   m,
-  easyMode,
+  easyMode = false,
+  screenReaderMode = false,
   onChangeQty,
   onRemove,
 }: Props) {
+  const sr = easyMode || screenReaderMode;
   const optNote = formatSelectedOptionsForNotes(line.selectedOptions);
   const lineTotal = line.unitPrice * line.quantity;
-  const qtyMinusClass = easyMode ? cartQtyMinusEasyClass : cartQtyMinusClass;
-  const qtyPlusClass = easyMode ? cartQtyPlusEasyClass : cartQtyPlusClass;
-  const iconSize = easyMode ? "size-5" : "size-3.5";
+  const qtyMinusClass = sr ? cartQtyMinusEasyClass : cartQtyMinusClass;
+  const qtyPlusClass = sr ? cartQtyPlusEasyClass : cartQtyPlusClass;
+  const iconSize = sr ? "size-5" : "size-3.5";
 
-  if (easyMode) {
+  if (sr) {
     return (
       <li className={cartCardItemEasyClass}>
         <div className="flex flex-col gap-4 px-3 py-4 sm:px-4 sm:py-5">

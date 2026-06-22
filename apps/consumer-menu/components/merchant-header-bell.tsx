@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { Bell } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -14,6 +13,7 @@ import {
   readMerchantCache,
   writeMerchantCache,
 } from "@/lib/merchant/merchant-client-cache";
+import { useMerchantHeaderOverlay } from "@/lib/merchant/merchant-header-overlay-context";
 import type { PlatformAnnouncement } from "@/lib/merchant/platform-announcement";
 
 type AnnouncementsPayload = { ok: true; items: PlatformAnnouncement[] };
@@ -30,6 +30,7 @@ function parseAnnouncements(json: unknown): AnnouncementsPayload | null {
 }
 
 export function MerchantHeaderBell({ tenant }: Props) {
+  const overlay = useMerchantHeaderOverlay();
   const t = encodeURIComponent(tenant);
   const cacheKey = merchantCacheKey(tenant, "announcements");
   const [items, setItems] = useState<PlatformAnnouncement[]>(() => {
@@ -91,8 +92,9 @@ export function MerchantHeaderBell({ tenant }: Props) {
   const showDot = unreadCount > 0;
 
   return (
-    <Link
-      href={`/m/${t}/notifications`}
+    <button
+      type="button"
+      onClick={() => overlay?.openOverlay("announcements")}
       className="relative inline-flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[10px] bg-[#F2F3F5] text-zinc-700 active:opacity-75 dark:bg-zinc-900 dark:text-zinc-200"
       aria-label={showDot ? `공지사항, 읽지 않음 ${unreadCount}건` : "공지사항"}
     >
@@ -107,6 +109,6 @@ export function MerchantHeaderBell({ tenant }: Props) {
           aria-hidden
         />
       ) : null}
-    </Link>
+    </button>
   );
 }

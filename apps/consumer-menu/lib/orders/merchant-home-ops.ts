@@ -48,7 +48,8 @@ export const getMerchantHomeOpsCounts = cache(async function getMerchantHomeOpsC
   // 10분 전 기준: 이보다 먼저 접수된 조리중 주문 = 지연
   const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
 
-  const [pendingRes, cookingRes, readyRes, todayRes, delayedRes] = await Promise.all([
+  const [pendingRes, cookingRes, readyRes, todayPaidRes, todayCancelledRes, delayedRes] =
+    await Promise.all([
     withSupabaseReadRetryResult(() =>
       client
         .from("orders")
@@ -70,14 +71,23 @@ export const getMerchantHomeOpsCounts = cache(async function getMerchantHomeOpsC
         .eq("tenant_slug", slug)
         .eq("status", "ready"),
     ),
-    withSupabaseReadRetry(() =>
+    withSupabaseReadRetryResult(() =>
       client
         .from("orders")
-        .select("status")
+        .select("*", { count: "exact", head: true })
         .eq("tenant_slug", slug)
+        .eq("status", "completed")
+        .gte("completed_at", sinceIso)
+        .lt("completed_at", untilIso),
+    ),
+    withSupabaseReadRetryResult(() =>
+      client
+        .from("orders")
+        .select("*", { count: "exact", head: true })
+        .eq("tenant_slug", slug)
+        .eq("status", "cancelled")
         .gte("created_at", sinceIso)
-        .lt("created_at", untilIso)
-        .in("status", ["completed", "cancelled"]),
+        .lt("created_at", untilIso),
     ),
     // 10분 초과 조리중 주문 — 테이블 번호 포함해서 조회
     withSupabaseReadRetry(() =>
@@ -103,17 +113,33 @@ export const getMerchantHomeOpsCounts = cache(async function getMerchantHomeOpsC
     };
   }
 
-  if (todayRes.error) {
-    return { ok: false, message: todayRes.error.message ?? "오늘 결제·취소를 불러오지 못했습니다." };
+  let todayPaid = todayPaidRes.count ?? 0;
+  if (
+    todayPaidRes.error &&
+    /completed_at|column.*does not exist/i.test(todayPaidRes.error.message ?? "")
+  ) {
+    const fallback = await withSupabaseReadRetryResult(() =>
+      client
+        .from("orders")
+        .select("*", { count: "exact", head: true })
+        .eq("tenant_slug", slug)
+        .eq("status", "completed")
+        .gte("created_at", sinceIso)
+        .lt("created_at", untilIso),
+    );
+    if (fallback.error) {
+      return { ok: false, message: fallback.error.message ?? "오늘 결제완료를 불러오지 못했습니다." };
+    }
+    todayPaid = fallback.count ?? 0;
+  } else if (todayPaidRes.error) {
+    return { ok: false, message: todayPaidRes.error.message ?? "오늘 결제완료를 불러오지 못했습니다." };
   }
 
-  let todayPaid = 0;
-  let todayCancelled = 0;
-  for (const row of todayRes.data ?? []) {
-    const st = typeof row.status === "string" ? row.status : "";
-    if (st === "completed") todayPaid += 1;
-    else if (st === "cancelled") todayCancelled += 1;
+  if (todayCancelledRes.error) {
+    return { ok: false, message: todayCancelledRes.error.message ?? "오늘 취소를 불러오지 못했습니다." };
   }
+
+  const todayCancelled = todayCancelledRes.count ?? 0;
 
   const delayedOrders: MerchantDelayedOrder[] = delayedRes.error
     ? []

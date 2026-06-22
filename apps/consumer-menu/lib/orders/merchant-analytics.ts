@@ -1,5 +1,11 @@
 import "server-only";
 
+import {
+  fetchMerchantAnalyticsBundleRpc,
+  fetchMerchantAnalyticsCoreRpc,
+  fetchMerchantAnalyticsTopMenusRpc,
+  fetchMerchantTodayMetricsRpc,
+} from "@/lib/orders/merchant-analytics-rpc";
 import { createServiceSupabase } from "@/lib/supabase/create-service-client";
 import { withSupabaseReadRetry } from "@/lib/supabase/transient-retry";
 
@@ -135,15 +141,46 @@ export async function getMerchantTodayKstMetrics(tenantSlug: string): Promise<Me
     Date.now() - 24 * 60 * 60 * 1000,
   );
 
-  // 오늘 + 어제 병렬 fetch
-  const [{ data, error }, { data: yData }] = await Promise.all([
+  const rpc = await fetchMerchantTodayMetricsRpc(
+    client,
+    slug,
+    sinceIso,
+    untilIso,
+    ySinceIso,
+    yUntilIso,
+  );
+
+  if (rpc) {
+    return {
+      ok: true,
+      dateKey,
+      dateLabel,
+      orderCount: rpc.today.order_count,
+      totalSales: rpc.today.total_sales,
+      cancelledCount: rpc.today.cancelled_count,
+      yesterdaySales: rpc.yesterday.total_sales,
+      yesterdayOrderCount: rpc.yesterday.order_count,
+    };
+  }
+
+  // RPC 미적용 DB — 행 스캔 fallback (매출은 completed_at 우선)
+  const [{ data, error }, { data: ySalesData }, { data: yDataLegacy }] = await Promise.all([
     withSupabaseReadRetry(() =>
       client
         .from("orders")
-        .select("total_price, status")
+        .select("total_price, status, completed_at")
         .eq("tenant_slug", slug)
         .gte("created_at", sinceIso)
         .lt("created_at", untilIso),
+    ),
+    withSupabaseReadRetry(() =>
+      client
+        .from("orders")
+        .select("total_price, status, completed_at")
+        .eq("tenant_slug", slug)
+        .eq("status", "completed")
+        .gte("completed_at", ySinceIso)
+        .lt("completed_at", yUntilIso),
     ),
     withSupabaseReadRetry(() =>
       client
@@ -167,21 +204,36 @@ export async function getMerchantTodayKstMetrics(tenantSlug: string): Promise<Me
     const status = typeof row.status === "string" ? row.status : "";
     if (status === "cancelled") {
       cancelledCount += 1;
-    } else {
+    }
+    const completedAt =
+      typeof row.completed_at === "string" ? row.completed_at : null;
+    if (
+      status === "completed" &&
+      completedAt &&
+      completedAt >= sinceIso &&
+      completedAt < untilIso
+    ) {
       totalSales += parsePrice(row.total_price);
     }
   }
 
-  // 어제 집계
   let yesterdaySales: number | null = null;
   let yesterdayOrderCount: number | null = null;
-  if (yData) {
+  if (ySalesData && ySalesData.length > 0) {
     yesterdaySales = 0;
     yesterdayOrderCount = 0;
-    for (const row of yData) {
+    for (const row of ySalesData) {
       yesterdayOrderCount += 1;
+      yesterdaySales += parsePrice(row.total_price);
+    }
+  } else if (yDataLegacy) {
+    yesterdaySales = 0;
+    yesterdayOrderCount = 0;
+    for (const row of yDataLegacy) {
       const status = typeof row.status === "string" ? row.status : "";
-      if (status !== "cancelled") yesterdaySales += parsePrice(row.total_price);
+      if (status !== "completed") continue;
+      yesterdayOrderCount += 1;
+      yesterdaySales += parsePrice(row.total_price);
     }
   }
 
@@ -231,6 +283,55 @@ export type MerchantAnalyticsRequest =
   | { kind: "period"; days: MerchantAnalyticsPeriod }
   | { kind: "range"; from: string; to: string } // YYYY-MM-DD KST
   | { kind: "month" }; // 이번 달 (KST 1일~오늘)
+
+export type MerchantAnalyticsTimeBounds =
+  | { ok: true; sinceIso: string; untilIso: string; periodLabel: string }
+  | { ok: false; message: string };
+
+/** 매출·손님 분석 공통 KST 기간 (결제완료 집계용 `untilIso` 포함). */
+export function resolveMerchantAnalyticsTimeBounds(
+  req: MerchantAnalyticsRequest,
+): MerchantAnalyticsTimeBounds {
+  let sinceMs: number;
+  let untilMs: number;
+  let periodLabel: string;
+
+  if (req.kind === "month") {
+    const nowMs = Date.now();
+    const todayKey = new Date(nowMs).toLocaleDateString("en-CA", { timeZone: KST });
+    const [y, mo] = todayKey.split("-").map(Number) as [number, number];
+    sinceMs = new Date(`${y}-${String(mo).padStart(2, "0")}-01T00:00:00+09:00`).getTime();
+    untilMs = new Date(`${todayKey}T23:59:59.999+09:00`).getTime();
+    periodLabel = "이번 달";
+  } else if (req.kind === "range") {
+    const fromMs = new Date(`${req.from}T00:00:00+09:00`).getTime();
+    const toMs = new Date(`${req.to}T23:59:59.999+09:00`).getTime();
+    if (!Number.isFinite(fromMs) || !Number.isFinite(toMs) || fromMs > toMs) {
+      return { ok: false, message: "기간 설정이 올바르지 않습니다." };
+    }
+    sinceMs = fromMs;
+    untilMs = toMs;
+    periodLabel = `${req.from.slice(5)} ~ ${req.to.slice(5)}`;
+  } else {
+    const nowMs = Date.now();
+    const todayKey = new Date(nowMs).toLocaleDateString("en-CA", { timeZone: KST });
+    untilMs = new Date(`${todayKey}T23:59:59.999+09:00`).getTime();
+    const startKey = new Date(nowMs - (req.days - 1) * 24 * 60 * 60 * 1000).toLocaleDateString(
+      "en-CA",
+      { timeZone: KST },
+    );
+    sinceMs = new Date(`${startKey}T00:00:00+09:00`).getTime();
+    periodLabel =
+      req.days === 1 ? "오늘" : req.days === 7 ? "최근 7일" : req.days === 30 ? "최근 30일" : `최근 ${req.days}일`;
+  }
+
+  return {
+    ok: true,
+    sinceIso: new Date(sinceMs).toISOString(),
+    untilIso: new Date(untilMs).toISOString(),
+    periodLabel,
+  };
+}
 
 /** 점주 분석 보드 — 일별·시간대·요일·인기 메뉴 (주문 스캔 기반). */
 export async function getMerchantAnalytics(
@@ -288,10 +389,99 @@ export async function getMerchantAnalytics(
   const prevUntilMs = sinceMs - 1;
 
   const sinceIso = new Date(sinceMs).toISOString();
+  const untilIso = new Date(untilMs).toISOString();
   const prevSinceIso = new Date(prevSinceMs).toISOString();
   const prevUntilIso = new Date(prevUntilMs).toISOString();
 
-  // 현재 기간 + 이전 기간 병렬 fetch
+  const bundle = await fetchMerchantAnalyticsBundleRpc(
+    client,
+    slug,
+    sinceIso,
+    untilIso,
+    prevSinceIso,
+    prevUntilIso,
+    MAX_ORDERS,
+  );
+
+  let core = bundle?.current ?? null;
+  let prevCore = bundle?.previous ?? null;
+  let topMenusRpc: { menuId: string; name: string; qty: number }[] | null = null;
+
+  if (bundle) {
+    topMenusRpc = await resolveTopMenuNames(client, slug, bundle.top_menus);
+  } else {
+    const [coreRpc, prevCoreRpc, topMenusFallback] = await Promise.all([
+      fetchMerchantAnalyticsCoreRpc(client, slug, sinceIso, untilIso, MAX_ORDERS),
+      fetchMerchantAnalyticsCoreRpc(client, slug, prevSinceIso, prevUntilIso, MAX_ORDERS),
+      fetchTopMenusForAnalytics(client, slug, sinceIso, untilIso),
+    ]);
+    core = coreRpc;
+    prevCore = prevCoreRpc;
+    topMenusRpc = topMenusFallback;
+  }
+
+  if (core) {
+    const dailyKeys = buildDailyKeys(sinceMs, untilMs);
+    const dailyMap = new Map(core.daily.map((d) => [d.day_key, d]));
+    const daily = dailyKeys.map(({ key, label, fullLabel }) => {
+      const b = dailyMap.get(key);
+      return { key, label, fullLabel, orders: b?.orders ?? 0, sales: b?.sales ?? 0 };
+    });
+
+    const hourly = Array.from({ length: 24 }, (_, hour) => ({
+      hour,
+      label: `${hour}시`,
+      orders: 0,
+      sales: 0,
+    }));
+    for (const h of core.hourly) {
+      if (h.hour >= 0 && h.hour < 24) {
+        hourly[h.hour]!.orders = h.orders;
+        hourly[h.hour]!.sales = h.sales;
+      }
+    }
+
+    const dowMap = new Map(core.by_dow.map((w) => [w.dow, w]));
+    const byWeekday = [1, 2, 3, 4, 5, 6, 0].map((dow) => {
+      const b = dowMap.get(dow);
+      return {
+        dow,
+        label: `${WEEKDAY_KO[dow]}요일`,
+        orders: b?.orders ?? 0,
+        sales: b?.sales ?? 0,
+      };
+    });
+
+    const prevDailyKeys = buildDailyKeys(prevSinceMs, prevUntilMs);
+    const prevDailyMap = new Map((prevCore?.daily ?? []).map((d) => [d.day_key, d]));
+    const prevDaily = prevDailyKeys.map(({ key }) => {
+      const b = prevDailyMap.get(key);
+      return { key, orders: b?.orders ?? 0, sales: b?.sales ?? 0 };
+    });
+
+    const cancelReasons = core.cancel_reasons.map(({ reason, cnt }) => ({
+      reason,
+      label: CANCEL_REASON_LABEL[reason] ?? reason,
+      count: cnt,
+    }));
+
+    return {
+      ok: true,
+      days,
+      orderCount: core.totals.order_count,
+      totalSales: core.totals.total_sales,
+      completedCount: core.totals.completed_count,
+      cancelledCount: core.totals.cancelled_count,
+      daily,
+      prevDaily,
+      hourly,
+      byWeekday,
+      topMenus: topMenusRpc,
+      cancelReasons,
+    };
+  }
+
+  // RPC 미적용 DB — Node 스캔 폴백
   // cancel_reason 컬럼이 없는 환경을 위해 폴백 재시도
   const buildMainQuery = (withCancelReason: boolean) =>
     client
@@ -303,6 +493,7 @@ export async function getMerchantAnalytics(
       )
       .eq("tenant_slug", slug)
       .gte("created_at", sinceIso)
+      .lte("created_at", untilIso)
       .order("created_at", { ascending: false })
       .limit(MAX_ORDERS);
 
@@ -480,4 +671,74 @@ export async function getMerchantAnalytics(
     topMenus,
     cancelReasons,
   };
+}
+
+async function fetchTopMenusForAnalytics(
+  client: NonNullable<ReturnType<typeof createServiceSupabase>>,
+  slug: string,
+  sinceIso: string,
+  untilIso: string,
+): Promise<{ menuId: string; name: string; qty: number }[]> {
+  const rpcRows = await fetchMerchantAnalyticsTopMenusRpc(client, slug, sinceIso, untilIso);
+  if (rpcRows !== null) {
+    return resolveTopMenuNames(client, slug, rpcRows);
+  }
+
+  const { data } = await withSupabaseReadRetry(() =>
+    client
+      .from("orders")
+      .select("items")
+      .eq("tenant_slug", slug)
+      .gte("created_at", sinceIso)
+      .lte("created_at", untilIso)
+      .neq("status", "cancelled")
+      .order("created_at", { ascending: false })
+      .limit(600),
+  );
+
+  const menuQty = new Map<string, number>();
+  for (const row of (data as { items?: unknown }[]) ?? []) {
+    if (!Array.isArray(row.items)) continue;
+    for (const elem of row.items) {
+      const line = parseOrderLine(elem);
+      if (!line) continue;
+      menuQty.set(line.id, (menuQty.get(line.id) ?? 0) + line.qty);
+    }
+  }
+
+  const rankedIds = [...menuQty.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .slice(0, 12)
+    .map(([id, qty]) => ({ menu_id: id, qty }));
+
+  return resolveTopMenuNames(client, slug, rankedIds);
+}
+
+async function resolveTopMenuNames(
+  client: NonNullable<ReturnType<typeof createServiceSupabase>>,
+  slug: string,
+  ranked: { menu_id: string; qty: number }[],
+): Promise<{ menuId: string; name: string; qty: number }[]> {
+  const rankedIds = ranked.map((r) => r.menu_id);
+  const menuQty = new Map(ranked.map((r) => [r.menu_id, r.qty]));
+
+  const nameById = new Map<string, string>();
+  if (rankedIds.length > 0) {
+    const { data: menus } = await client
+      .from("ChayaMenus")
+      .select("id, name")
+      .eq("tenant_slug", slug)
+      .in("id", rankedIds);
+    for (const m of menus ?? []) {
+      const id = typeof m.id === "string" ? m.id : String(m.id ?? "");
+      const name = typeof m.name === "string" ? m.name : "메뉴";
+      if (id) nameById.set(id, name);
+    }
+  }
+
+  return rankedIds.map((menuId) => ({
+    menuId,
+    name: nameById.get(menuId) ?? "삭제된 메뉴",
+    qty: menuQty.get(menuId) ?? 0,
+  }));
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { MerchantOrderCancelPanel } from "@/components/merchant-order-cancel-panel";
+import { MerchantGuestVisitStrip } from "@/components/merchant-guest-visit-strip";
 import { updateOrderStatusFromForm } from "@/app/m/[tenant]/orders/actions";
 import { formatConsumerOrderNo } from "@/lib/orders/format-order-no";
 import { merchantCancelReasonLabel } from "@/lib/orders/merchant-cancel-reasons";
@@ -181,6 +182,8 @@ export function MerchantOrderQueueCard({
 
       {/* 구분선 */}
       <div className="mx-4 border-t border-zinc-100 dark:border-zinc-800" />
+
+      {row.guestContext ? <MerchantGuestVisitStrip guest={row.guestContext} /> : null}
 
       {/* 메뉴 목록 */}
       <div className="space-y-1.5 px-4 py-3">

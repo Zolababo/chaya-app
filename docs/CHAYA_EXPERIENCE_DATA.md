@@ -2,51 +2,46 @@
 
 **우선순위:** 파일럿 단계에서 P0(점주 계정) 다음 축으로 **방문 데이터 설계·확장**이 P2(셀프 가입)보다 앞선다 — `docs/CHAYA_PRODUCT_PRIORITY_PILOT.md` 순서 3.
 
-**마이그레이션:** `supabase/migrations/20260604120000_consumer_experience_events.sql`
+**마이그레이션:** `20260604120000_consumer_experience_events.sql` · **`20260606120000_merchant_guest_visits.sql`**
 
-## 이벤트
+## 방문 1사이클 (점주·분석 정본)
+
+**현장 QR 주문:** 손님 주문 접수 → 점주 **`status=completed`(결제완료)** = **방문 1건**.
+
+| 개념 | 근거 |
+|------|------|
+| 방문 사이클 | `orders.status = completed` 1행 (`store_visits` 1:1) |
+| N번째 방문 | 동일 `guest_session_id` 누적 결제완료 횟수 |
+| 재방문 손님 | 결제완료 2회 이상 |
+| 단골 (UI) | 3회 이상 (`priorCompleted >= 2`) |
+
+**같은 날** 점심·저녁 각각 결제완료 → **방문 2회**.
+
+점주 주문 큐는 **접수(`pending`) 시점부터** 과거 결제완료만 보고 「N번째 방문·단골·지난 주문」 표시 (서비스·결제 시 감사 인사용).
+
+## 이벤트 (보조)
 
 | event_type | 시점 |
 |------------|------|
-| `qr_scan` | `/t/{tenant}` 메뉴판 홈 (브라우저 **탭당 1회**) |
-| `menu_view` | **기본 OFF** (`CONSUMER_EXPERIENCE_TRACK_MENU_VIEW`) — 로그 과다 방지 |
-| `order_placed` | **주문 건마다 1행** (`submitGuestOrder` 성공). 같은 방문에서 음료만 추가 주문해도 2건이면 2행 — 재방문이 아님 |
-| `revisit` | **탭을 새로 연 뒤** 홈 첫 `qr_scan` 시, DB에 과거 `qr_scan`이 있을 때만 (같은 탭에서 홈만 왔다 갔다 한 것은 아님) |
+| `qr_scan` | 메뉴판 홈 (탭당 1회) — **점주 KPI 아님** |
+| `order_placed` | 주문 접수 성공 |
+| `revisit` | 새 탭 재진입 (스캔 이벤트 보조) |
 
-## 분석할 때
+분석·점주 UI는 **`orders` / `store_visits` / `tenant_guest_rollups`** 가 정본.
 
-| 질문 | 보면 되는 것 |
-|------|----------------|
-| 몇 번 왔나 / 재방문 | `qr_scan`, `revisit`, `guest_session_id` distinct |
-| 몇 번 주문했나 / 매출 | `order_placed` 또는 **`orders`** (주문 원장은 `orders`가 정확) |
-| 한 방문에서 주문했나 | 그 `guest_session_id`에 `order_placed` 또는 `orders` 1건 이상 |
+## DB
 
-`order_placed`를 방문당 1회로 줄이면 추가 주문(2차 주문)이 경험 로그에서 빠져 분석이 틀어집니다.
+| 테이블 | 용도 |
+|--------|------|
+| `orders.completed_at` | 결제완료 시각 |
+| `store_visits` | 결제완료 1건당 1행, `visit_number` |
+| `tenant_guest_rollups` | 매장×세션 누적 (서버 upsert) |
+
+INSERT는 **service role**만. 점주 UI에는 **가명 `#ABC`** 만 노출.
 
 ## guest_session
 
-- `/t/{tenant}/layout` — `GuestSessionInit` (진입 시 UUID)
+- `/t/{tenant}/layout` — `GuestSessionInit`
 - `chaya_guest_session` localStorage + 쿠키
 
-## 검증 SQL
-
-```sql
-SELECT event_type, count(*), tenant_slug
-FROM consumer_experience_events
-GROUP BY event_type, tenant_slug
-ORDER BY count DESC;
-```
-
-## 로드맵 — `store_visit` (설계 예정)
-
-현재는 이벤트 스트림(`qr_scan`, `revisit`, `order_placed`)과 **`orders` 원장**으로 방문·재방문·주문을 분석한다.  
-다음 단계(제품 우선순위 **순서 3**)에서 검토할 항목:
-
-| 목표 | 메모 |
-|------|------|
-| 방문 단위 행 | 예: `store_visit` — `tenant_slug`, `guest_session_id`, 시작 시각, (선택) 테이블·UTM |
-| 재방문 | 기존 `revisit` 이벤트와 통합·중복 정의 정리 |
-| 방문 이력 | 세션·테넌트별 타임라인 (Ops/점주 리포트는 후속) |
-| 체류 | `dwell_seconds` — 스펙 확정 후, 로그 과다 방지 패턴은 `menu_view` OFF와 동일 원칙 |
-
-**유지:** `guest_session_id` 조기 발급(`GuestSessionInit`), 주문 URL에 세션 미노출(C6 전).
+**유지:** 주문 URL에 세션 미노출(C6 전).

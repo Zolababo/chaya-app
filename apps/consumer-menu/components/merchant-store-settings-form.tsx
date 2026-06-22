@@ -15,6 +15,7 @@ import {
 } from "@/lib/merchant/merchant-more-sub-styles";
 import type { MerchantStoreFocus } from "@/lib/merchant/merchant-store-settings-focus";
 import { uploadMerchantLogoFile } from "@/lib/merchant/upload-merchant-logo-client";
+import { rethrowNextNavigation } from "@/lib/navigation/rethrow-next-navigation";
 import type { TenantStoreSettings } from "@/lib/tenant/tenant-store-settings";
 import { getTenantBranding } from "@/lib/tenant/tenant-branding";
 
@@ -74,7 +75,8 @@ export function MerchantStoreSettingsForm({ tenant, settings, canEdit, focus }: 
     startTransition(async () => {
       try {
         await updateMerchantStoreProfileFromForm(fd);
-      } catch {
+      } catch (err) {
+        rethrowNextNavigation(err);
         setSaveError("저장하지 못했어요. 잠시 후 다시 시도해 주세요.");
       }
     });
@@ -103,14 +105,37 @@ export function MerchantStoreSettingsForm({ tenant, settings, canEdit, focus }: 
           </div>
 
           <div>
-            <label className={merchantFieldLabelClass}>로고</label>
-            <div className="flex items-center gap-3.5">
-              <ConsumerStoreLogo
-                displayName={previewName.trim() || displayNameDefault}
-                logoUrl={effectiveLogo}
-                sizeClass="h-14 w-14"
-                shape="rounded"
-              />
+            <label className={merchantFieldLabelClass}>로고 (선택)</label>
+            <p className={`${merchantFieldHintClass} mb-2`}>
+              없으면 손님·점주 화면에 아래처럼 매장명이 강조 표시돼요
+            </p>
+            <div className="mb-3 rounded-xl border border-dashed border-[#E5E7EB] bg-[#FAFAFA] p-3 dark:border-zinc-700 dark:bg-zinc-900/50">
+              <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-[#9CA3AF]">손님 화면 미리보기</p>
+              <div className="flex items-center gap-2.5">
+                <ConsumerStoreLogo
+                  displayName={previewName.trim() || displayNameDefault}
+                  logoUrl={effectiveLogo}
+                  sizeClass="h-10 w-10"
+                  shape="circle"
+                  fallback="initial"
+                />
+                <span className="min-w-0 flex-1 truncate text-lg font-extrabold text-[#111827] dark:text-zinc-50">
+                  {previewName.trim() || displayNameDefault}
+                </span>
+                <span className="shrink-0 rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-bold text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
+                  테이블 01
+                </span>
+              </div>
+            </div>
+            <div className="flex items-start gap-3.5">
+              {effectiveLogo ? (
+                <ConsumerStoreLogo
+                  displayName={previewName.trim() || displayNameDefault}
+                  logoUrl={effectiveLogo}
+                  sizeClass="h-14 w-14"
+                  shape="rounded"
+                />
+              ) : null}
               {canEdit ? (
                 <div className="flex min-w-0 flex-1 flex-col gap-2">
                   <input

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Check } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -13,7 +13,6 @@ import { SplitBillPanel } from "@/components/split-bill-panel";
 import { chayaSurfaceCardPaddedClass } from "@/components/menu-list-styles";
 import { CONSUMER_SPLIT_BILL_UI_VISIBLE } from "@/lib/consumer/future-features";
 import { consumeFreshOrderView } from "@/lib/consumer/fresh-order-view";
-import { useConsumerVoiceAnnounce } from "@/lib/consumer/use-consumer-voice-announce";
 import { syncGuestSessionCookieFromBrowser } from "@/lib/guest-session/sync-guest-session-cookie";
 import type { GuestOrderView } from "@/lib/orders/fetch-guest-order";
 import { chayaConsumerContentClass } from "@/lib/responsive/chaya-app-shell";
@@ -27,20 +26,14 @@ type Props = {
 export function OrderDetailClient({ tenant, order }: Props) {
   const router = useRouter();
   const { locale, m } = useConsumerLocale();
-  const { speak } = useConsumerVoiceAnnounce();
   const [isFreshView, setIsFreshView] = useState(false);
   const [freshOrderNo, setFreshOrderNo] = useState<number | null>(null);
-  const spokeFreshRef = useRef(false);
 
   useEffect(() => {
     const { fresh, orderNo } = consumeFreshOrderView(tenant, order.id);
     setIsFreshView(fresh);
     setFreshOrderNo(orderNo);
-    if (fresh && !spokeFreshRef.current) {
-      spokeFreshRef.current = true;
-      speak(m.barrierFree.voiceOrderPlaced);
-    }
-  }, [tenant, order.id, m.barrierFree.voiceOrderPlaced, speak]);
+  }, [tenant, order.id]);
 
   const displayOrder = useMemo(() => {
     const no =

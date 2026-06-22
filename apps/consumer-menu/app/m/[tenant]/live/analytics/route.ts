@@ -8,6 +8,7 @@ import {
   MERCHANT_LIVE_JSON_HEADERS,
   requireMerchantLiveJsonAccess,
 } from "@/lib/merchant/merchant-live-api-auth";
+import { getMerchantGuestInsights } from "@/lib/merchant/merchant-guest-insights";
 import { getMerchantAnalytics } from "@/lib/orders/merchant-analytics";
 
 export const dynamic = "force-dynamic";
@@ -30,11 +31,23 @@ export async function GET(request: Request, { params }: RouteParams) {
   };
 
   const { req } = buildMerchantAnalyticsRequest(query);
-  const snapshot = await getMerchantAnalytics(auth.slug, req);
+  const [snapshot, guestSnapshot] = await Promise.all([
+    getMerchantAnalytics(auth.slug, req),
+    getMerchantGuestInsights(auth.slug, req),
+  ]);
 
   if (!snapshot.ok) {
     return NextResponse.json({ ok: false, message: snapshot.message }, MERCHANT_LIVE_JSON_HEADERS);
   }
+  if (!guestSnapshot.ok) {
+    return NextResponse.json(
+      { ok: false, message: guestSnapshot.message },
+      MERCHANT_LIVE_JSON_HEADERS,
+    );
+  }
 
-  return NextResponse.json({ ok: true, snapshot }, MERCHANT_LIVE_JSON_HEADERS);
+  return NextResponse.json(
+    { ok: true, snapshot, guestSnapshot },
+    MERCHANT_LIVE_JSON_HEADERS,
+  );
 }

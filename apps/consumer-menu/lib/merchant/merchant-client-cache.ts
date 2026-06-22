@@ -46,7 +46,7 @@ export function invalidateMerchantCache(prefix: string): void {
   }
 }
 
-export type MerchantCacheScope = "menus" | "orders" | "dashboard" | "analytics" | "all";
+export type MerchantCacheScope = "menus" | "orders" | "dashboard" | "analytics" | "more" | "all";
 
 export const MERCHANT_CACHE_INVALIDATE_EVENT = "chaya-merchant-cache-invalidate";
 
@@ -67,6 +67,9 @@ export function invalidateMerchantCacheForTenant(tenant: string, scope: Merchant
   }
   if (scope === "all" || scope === "analytics") {
     invalidateMerchantCache(merchantCacheKey(t, "analytics"));
+  }
+  if (scope === "all" || scope === "more" || scope === "dashboard") {
+    invalidateMerchantCache(merchantCacheKey(t, "more"));
   }
   if (scope === "all" || scope === "menus" || scope === "orders" || scope === "dashboard") {
     invalidateMerchantCache(merchantCacheKey(t, "dashboard"));

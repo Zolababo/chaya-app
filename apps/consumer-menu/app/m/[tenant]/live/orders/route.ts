@@ -8,7 +8,7 @@ import {
   resolveMerchantOrdersTab,
   tabToListQuery,
 } from "@/lib/merchant/merchant-orders-tab";
-import { listOrdersForMerchant } from "@/lib/orders/list-orders-for-merchant";
+import { listOrdersForMerchant, type MerchantOrderRow } from "@/lib/orders/list-orders-for-merchant";
 import { getMerchantHomeOpsCounts } from "@/lib/orders/merchant-home-ops";
 
 export const dynamic = "force-dynamic";
@@ -27,7 +27,17 @@ export async function GET(request: Request, { params }: RouteParams) {
   const bucketParam = url.searchParams.get("bucket") ?? undefined;
   const todayParam = url.searchParams.get("today") ?? undefined;
 
-  const opsCounts = await getMerchantHomeOpsCounts(auth.slug);
+  const preliminaryTab = resolveMerchantOrdersTab(
+    tabParam,
+    { status: statusParam, bucket: bucketParam, today: todayParam },
+    null,
+  );
+
+  const [opsCounts, listResult] = await Promise.all([
+    getMerchantHomeOpsCounts(auth.slug),
+    listOrdersForMerchant(auth.slug, tabToListQuery(preliminaryTab)),
+  ]);
+
   const pendingCount = opsCounts.ok ? opsCounts.pending : null;
   const activeTab = resolveMerchantOrdersTab(
     tabParam,
@@ -35,20 +45,28 @@ export async function GET(request: Request, { params }: RouteParams) {
     pendingCount,
   );
 
-  const listResult = await listOrdersForMerchant(auth.slug, tabToListQuery(activeTab));
+  let rows: MerchantOrderRow[] = [];
+  if (activeTab !== preliminaryTab) {
+    const refetched = await listOrdersForMerchant(auth.slug, tabToListQuery(activeTab));
+    if (!refetched.ok) {
+      return NextResponse.json({ ok: false, message: refetched.message }, MERCHANT_LIVE_JSON_HEADERS);
+    }
+    rows = refetched.rows;
+  } else if (!listResult.ok) {
+    return NextResponse.json({ ok: false, message: listResult.message }, MERCHANT_LIVE_JSON_HEADERS);
+  } else {
+    rows = listResult.rows;
+  }
 
   if (!opsCounts.ok) {
     return NextResponse.json({ ok: false, message: opsCounts.message }, MERCHANT_LIVE_JSON_HEADERS);
-  }
-  if (!listResult.ok) {
-    return NextResponse.json({ ok: false, message: listResult.message }, MERCHANT_LIVE_JSON_HEADERS);
   }
 
   return NextResponse.json(
     {
       ok: true,
       tab: activeTab,
-      rows: listResult.rows,
+      rows,
       ops: {
         pending: opsCounts.pending,
         cooking: opsCounts.cooking,

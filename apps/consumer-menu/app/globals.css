@@ -41,6 +41,7 @@ html[data-chaya-consumer] {
   color-scheme: only light !important;
   background-color: #fafaf9 !important;
   touch-action: manipulation;
+  --font-sans: var(--font-chaya-sans-consumer), ui-sans-serif, system-ui, sans-serif;
 }
 
 html[data-chaya-consumer] body {

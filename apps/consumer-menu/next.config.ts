@@ -39,6 +39,8 @@ const nextConfig: NextConfig = {
     serverActions: {
       bodySizeLimit: "6mb",
     },
+    /** App Router streaming과 비호환 — Critters/beasties는 Pages Router용. 손님은 `ConsumerCriticalCss` 인라인 사용. */
+    // optimizeCss: true,
     /** 탭 왕복 시 RSC 재요청 완화 — Next 15 기본 dynamic=0초라 매 클릭마다 서버 왕복 */
     staleTimes: {
       dynamic: 60,

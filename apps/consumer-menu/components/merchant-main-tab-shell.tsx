@@ -16,8 +16,6 @@ import {
 import { type MerchantMenusTab } from "@/lib/merchant/merchant-menus-href";
 import { merchantDashboardAlertMessage } from "@/lib/merchant/merchant-owner-copy";
 import {
-  firstMerchantSearchParam,
-  merchantOrdersTabHref,
   resolveOrdersTabFromSearchParams,
   type MerchantOrdersTab,
 } from "@/lib/merchant/merchant-orders-tab";
@@ -40,14 +38,15 @@ function resolveMenusTab(tabParam: string | null, soldOutParam: string | null): 
 function TabPanel({
   tab,
   activeTab,
-  mounted,
+  visited,
   children,
 }: {
   tab: MerchantMainTab;
   activeTab: MerchantMainTab;
-  mounted: boolean;
+  visited: Set<MerchantMainTab>;
   children: ReactNode;
 }) {
+  const mounted = visited.has(tab) || activeTab === tab;
   if (!mounted) return null;
   const visible = tab === activeTab;
   return (
@@ -137,12 +136,6 @@ export function MerchantMainTabShell({
   );
 
   useEffect(() => {
-    if (activeTab !== "orders") return;
-    if (sp.tab?.trim()) return;
-    router.replace(merchantOrdersTabHref(tenant, "all"));
-  }, [activeTab, sp.tab, tenant, router]);
-
-  useEffect(() => {
     if (activeTab !== "menus" || canManageMenus) return;
     router.replace(`/m/${encodeURIComponent(tenant)}/dashboard?e=no_menus_access`);
   }, [activeTab, canManageMenus, tenant, router]);
@@ -153,11 +146,11 @@ export function MerchantMainTabShell({
 
   return (
     <>
-      <TabPanel tab="dashboard" activeTab={activeTab} mounted={visited.has("dashboard")}>
+      <TabPanel tab="dashboard" activeTab={activeTab} visited={visited}>
         <MerchantDashboardPageClient tenant={tenant} dashAlert={dashAlert} />
       </TabPanel>
 
-      <TabPanel tab="orders" activeTab={activeTab} mounted={visited.has("orders")}>
+      <TabPanel tab="orders" activeTab={activeTab} visited={visited}>
         <MerchantOrdersPageClient
           tenant={tenant}
           canMutateOrders={canMutateOrders}
@@ -170,7 +163,7 @@ export function MerchantMainTabShell({
         />
       </TabPanel>
 
-      <TabPanel tab="menus" activeTab={activeTab} mounted={visited.has("menus")}>
+      <TabPanel tab="menus" activeTab={activeTab} visited={visited}>
         {menusSubRoute ? (
           children
         ) : (
@@ -185,7 +178,7 @@ export function MerchantMainTabShell({
         )}
       </TabPanel>
 
-      <TabPanel tab="analytics" activeTab={activeTab} mounted={visited.has("analytics")}>
+      <TabPanel tab="analytics" activeTab={activeTab} visited={visited}>
         <MerchantAnalyticsPageClient
           tenant={tenant}
           role={role}

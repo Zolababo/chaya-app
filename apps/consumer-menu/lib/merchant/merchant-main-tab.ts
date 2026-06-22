@@ -8,7 +8,9 @@ export function merchantTenantBase(tenant: string): string {
 }
 
 export function merchantMainTabHref(tenant: string, tab: MerchantMainTab): string {
-  return `${merchantTenantBase(tenant)}/${tab}`;
+  const base = `${merchantTenantBase(tenant)}/${tab}`;
+  if (tab === "orders") return `${base}?tab=all`;
+  return base;
 }
 
 export function merchantMainTabFromPathname(

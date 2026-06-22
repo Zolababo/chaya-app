@@ -4,7 +4,7 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
 
 type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
   active?: boolean;
-  /** a11y: 원형 테두리만 강조, 내부 사각 하이라이트 없음 */
+  /** a11y: 활성 시 원형 버튼을 primary 색으로 채움 */
   variant?: "default" | "a11y";
   children: ReactNode;
 };
@@ -26,8 +26,8 @@ export function ConsumerHeaderIconButton({
   const tone =
     variant === "a11y"
       ? active
-        ? "border-chaya-primary bg-white text-chaya-primary ring-2 ring-chaya-primary/35 ring-offset-2 ring-offset-chaya-bg"
-        : "border-zinc-300/90 bg-white text-zinc-800 hover:border-zinc-400 hover:bg-zinc-50"
+        ? "border-chaya-primary bg-chaya-primary text-chaya-on-primary shadow-md hover:bg-chaya-primary-hover"
+        : "border-zinc-300/90 bg-white text-zinc-800 hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-zinc-500 dark:hover:bg-zinc-800"
       : active
         ? "border-chaya-primary/40 bg-chaya-primary/15 text-chaya-primary dark:border-orange-700/55 dark:bg-orange-950/60 dark:text-orange-200"
         : "border-zinc-300/90 bg-white text-zinc-800 hover:border-zinc-400 hover:bg-zinc-50 hover:text-zinc-950 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-white";

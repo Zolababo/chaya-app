@@ -1,20 +1,21 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { Suspense } from "react";
 
-import { BottomNav } from "@/components/bottom-nav";
-import { MenuCartStickyBar } from "@/components/menu-cart-sticky-bar";
-import { GuestSessionCookieSync } from "@/components/guest-session-cookie-sync";
-import { GuestSessionInit } from "@/components/guest-session-init";
+import { ConsumerBottomChromeIdle } from "@/components/consumer-bottom-chrome-idle";
+import { ConsumerTenantShellDeferred } from "@/components/consumer-tenant-shell-deferred";
+import { MenuHomeEarlySsr } from "@/components/menu-home-early-ssr";
 import { SessionHeaderFallback } from "@/components/header-fallback";
 import { TenantSessionHeader } from "@/components/tenant-session-header";
 import { SkipToMainLink } from "@/components/skip-to-main-link";
 import { InvalidTableQueryBanner } from "@/components/invalid-table-query-banner";
 import { TenantTableQuerySync } from "@/components/tenant-table-query-sync";
-import { ConsumerEasyModeProvider } from "@/lib/consumer/consumer-easy-mode-context";
+import { ConsumerScreenReaderRouteSync } from "@/components/consumer-screen-reader-route-sync";
+import { ConsumerScreenReaderModeProvider } from "@/lib/consumer/consumer-screen-reader-mode-context";
 import { TenantTablesProvider } from "@/lib/consumer/tenant-tables-context";
-import { listActiveTenantTablesForConsumer } from "@/lib/tables/list-tenant-tables";
 import { ConsumerLocaleProvider } from "@/lib/i18n/consumer-locale-context";
 import { getConsumerLocale } from "@/lib/i18n/get-consumer-locale";
+import { isConsumerMenuHomeRequest } from "@/lib/consumer/consumer-route";
 import { tenantBrandingFromSettings } from "@/lib/tenant/tenant-branding";
 import { chayaConsumerShellClass } from "@/lib/responsive/chaya-app-shell";
 import { fetchTenantStoreSettings } from "@/lib/tenant/tenant-store-settings";
@@ -48,17 +49,17 @@ export default async function TenantLayout({
 }>) {
   const { tenant } = await params;
   const locale = await getConsumerLocale();
-  const activeTables = await listActiveTenantTablesForConsumer(tenant);
+  const isMenuHome = isConsumerMenuHomeRequest(await headers());
 
   return (
     <Suspense>
       <ConsumerLocaleProvider locale={locale}>
-        <TenantTablesProvider tenant={tenant} tables={activeTables}>
-        <ConsumerEasyModeProvider tenant={tenant}>
+        <TenantTablesProvider tenant={tenant} tables={[]} deferLoad>
+        <ConsumerScreenReaderModeProvider tenant={tenant}>
+        <ConsumerScreenReaderRouteSync tenant={tenant} />
         <div className="flex min-h-dvh flex-col bg-chaya-bg pb-[var(--chaya-consumer-nav-clearance)] text-zinc-900">
           <SkipToMainLink />
-          <GuestSessionInit />
-          <GuestSessionCookieSync />
+          <ConsumerTenantShellDeferred />
           <Suspense fallback={<SessionHeaderFallback />}>
             <TenantSessionHeader tenant={tenant} />
             <InvalidTableQueryBanner tenant={tenant} />
@@ -69,12 +70,16 @@ export default async function TenantLayout({
             tabIndex={-1}
             className={`${chayaConsumerShellClass} flex-1 py-2 outline-none`}
           >
+            {isMenuHome ? (
+              <div className="space-y-2">
+                <MenuHomeEarlySsr tenant={tenant} />
+              </div>
+            ) : null}
             {children}
           </main>
-          <MenuCartStickyBar tenant={tenant} />
-          <BottomNav tenant={tenant} />
+          <ConsumerBottomChromeIdle tenant={tenant} />
         </div>
-        </ConsumerEasyModeProvider>
+        </ConsumerScreenReaderModeProvider>
         </TenantTablesProvider>
       </ConsumerLocaleProvider>
     </Suspense>

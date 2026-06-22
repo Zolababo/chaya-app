@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
+import { isConsumerMenuHomePath, CONSUMER_ROUTE_HEADER } from "@/lib/consumer/consumer-route";
 import { getLocaleCookieName } from "@/lib/i18n/consumer-locale-cookie";
 import { isAppLocale } from "@/lib/i18n/locales";
 import { updateSupabaseAuthSession } from "@/lib/supabase/supabase-middleware";
@@ -29,6 +30,9 @@ export async function middleware(request: NextRequest) {
   if (pathname.startsWith("/t/")) {
     const requestHeaders = new Headers(request.headers);
     requestHeaders.set("x-chaya-consumer", "1");
+    if (isConsumerMenuHomePath(pathname)) {
+      requestHeaders.set(CONSUMER_ROUTE_HEADER, "home");
+    }
     return applyLocaleCookie(
       request,
       NextResponse.next({ request: { headers: requestHeaders } }),

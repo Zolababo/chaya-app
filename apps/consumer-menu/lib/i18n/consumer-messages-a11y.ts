@@ -5,6 +5,8 @@ export type A11yMessageTree = {
     title: string;
     intro: string;
     openAria: string;
+    screenReaderOn: string;
+    screenReaderOff: string;
     fontSizeLabel: string;
     fontNormal: string;
     fontLarge: string;
@@ -66,9 +68,11 @@ export type A11yMessageTree = {
 
 const KO: A11yMessageTree = {
   settings: {
-    title: "베리어프리 설정",
-    intro: "글자·화면·음성 보조 설정이에요. 이 브라우저를 쓰는 동안 유지됩니다.",
-    openAria: "베리어프리·접근성 설정 열기",
+    title: "베리어프리 모드",
+    intro: "TalkBack·VoiceOver에 맞춘 목록형 화면으로 바뀝니다. 이 브라우저를 쓰는 동안 유지됩니다.",
+    openAria: "베리어프리 모드",
+    screenReaderOn: "베리어프리 모드 켜짐. TalkBack·VoiceOver용 화면입니다. 끄려면 다시 누르세요.",
+    screenReaderOff: "베리어프리 모드 켜기. TalkBack·VoiceOver용 목록 화면으로 전환합니다.",
     fontSizeLabel: "글자 크기",
     fontNormal: "기본",
     fontLarge: "크게",
@@ -86,9 +90,9 @@ const KO: A11yMessageTree = {
     listMenuLink: "목록형 메뉴 열기",
   },
   barrierFree: {
-    pageTitle: "큰글씨·목록 메뉴",
+    pageTitle: "베리어프리 메뉴",
     pageIntro:
-      "글자와 버튼을 크게 보여 주는 시각 보조 화면입니다. TalkBack·VoiceOver로도 읽을 수 있으며, 담기·장바구니·주문은 기본 메뉴와 같은 저장소를 씁니다.",
+      "TalkBack·VoiceOver에 맞춘 목록형 메뉴입니다. 담기·장바구니·주문은 일반 메뉴와 같은 저장소를 씁니다.",
     categoryNav: "카테고리 선택",
     categoryEmpty: "선택한 카테고리에 메뉴가 없습니다.",
     categoryChanged: "카테고리가 {category}(으)로 바뀌었습니다.",
@@ -132,9 +136,11 @@ const KO: A11yMessageTree = {
 
 const EN: A11yMessageTree = {
   settings: {
-    title: "Accessibility",
-    intro: "Text, display, and voice settings stay on for this browser session.",
-    openAria: "Open accessibility settings",
+    title: "Barrier-free mode",
+    intro: "Switches to a list layout optimized for TalkBack and VoiceOver. Stays on for this browser session.",
+    openAria: "Barrier-free mode",
+    screenReaderOn: "Barrier-free mode on. Screen reader layout. Press again to turn off.",
+    screenReaderOff: "Turn on barrier-free mode. Switch to TalkBack and VoiceOver layout.",
     fontSizeLabel: "Text size",
     fontNormal: "Default",
     fontLarge: "Large",
@@ -152,9 +158,9 @@ const EN: A11yMessageTree = {
     listMenuLink: "Open list menu",
   },
   barrierFree: {
-    pageTitle: "Large text · List",
+    pageTitle: "Accessible menu",
     pageIntro:
-      "Visual assist mode with larger text and buttons. Works with TalkBack and VoiceOver; cart and orders share the same storage as the main menu.",
+      "List menu layout for TalkBack and VoiceOver. Cart and orders share the same storage as the main menu.",
     categoryNav: "Categories",
     categoryEmpty: "No items in this category.",
     categoryChanged: "Category changed to {category}.",
@@ -200,7 +206,9 @@ const JA: A11yMessageTree = {
   settings: {
     title: "バリアフリー設定",
     intro: "文字・画面・音声の補助設定です。このブラウザを使う間は保持されます。",
-    openAria: "バリアフリー・アクセシビリティ設定を開く",
+    openAria: "バリアフリー・モード",
+    screenReaderOn: "バリアフリーモードオン。TalkBack・VoiceOver向け画面です。もう一度押すとオフになります。",
+    screenReaderOff: "バリアフリーモードをオン。TalkBack・VoiceOver向けリスト画面に切り替えます。",
     fontSizeLabel: "文字サイズ",
     fontNormal: "標準",
     fontLarge: "大きく",
@@ -238,7 +246,9 @@ const ZH_HANS: A11yMessageTree = {
   settings: {
     title: "无障碍设置",
     intro: "文字、显示与语音辅助设置，在本浏览器会话期间会保持。",
-    openAria: "打开无障碍设置",
+    openAria: "无障碍模式",
+    screenReaderOn: "无障碍模式已开启。TalkBack/VoiceOver 专用界面。再次点按可关闭。",
+    screenReaderOff: "开启无障碍模式。切换到 TalkBack/VoiceOver 列表界面。",
     fontSizeLabel: "文字大小",
     fontNormal: "默认",
     fontLarge: "较大",
@@ -272,7 +282,9 @@ const ZH_HANT: A11yMessageTree = {
   settings: {
     title: "無障礙設定",
     intro: "文字、顯示與語音輔助設定，在本瀏覽器工作階段期間會保持。",
-    openAria: "開啟無障礙設定",
+    openAria: "開啟無障礙模式",
+    screenReaderOn: "無障礙模式已開啟。TalkBack/VoiceOver 專用介面。再按一次可關閉。",
+    screenReaderOff: "開啟無障礙模式。切換至 TalkBack/VoiceOver 列表介面。",
     fontSizeLabel: "文字大小",
     fontNormal: "預設",
     fontLarge: "較大",

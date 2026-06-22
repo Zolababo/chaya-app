@@ -4,7 +4,7 @@ import {
   filterTodaysPickMenus,
   resolveSecondPopularMenuItem,
 } from "@/lib/menus/menu-merchandising";
-import type { ChayaMenuRow } from "@/lib/menus/types";
+import type { MenuBoardClientRow } from "@/lib/menus/menu-board-client-row";
 
 type Labels = {
   todaysMenuLabel: string;
@@ -14,14 +14,14 @@ type Labels = {
 
 /** 상단 프로모 카드 한 덩어리 — 오늘의 메뉴 → 최근 인기 → 사장님 추천 순, 중복 메뉴는 앞 섹션만 */
 export function buildMenuPromoSlides(
-  items: ChayaMenuRow[],
+  items: MenuBoardClientRow[],
   labels: Labels,
   options: { showRecentPopular: boolean; popularMenuIds: string[] },
 ): MenuPromoSlide[] {
   const seen = new Set<string>();
   const slides: MenuPromoSlide[] = [];
 
-  const push = (list: ChayaMenuRow[], badge: string) => {
+  const push = (list: MenuBoardClientRow[], badge: string) => {
     for (const item of list) {
       if (seen.has(item.id)) continue;
       seen.add(item.id);
@@ -29,14 +29,16 @@ export function buildMenuPromoSlides(
     }
   };
 
-  push(filterTodaysPickMenus(items), labels.todaysMenuLabel);
+  const rows = items as unknown as import("@/lib/menus/types").ChayaMenuRow[];
+
+  push(filterTodaysPickMenus(rows) as unknown as MenuBoardClientRow[], labels.todaysMenuLabel);
 
   if (options.showRecentPopular) {
-    const second = resolveSecondPopularMenuItem(items, options.popularMenuIds);
-    if (second) push([second], labels.recentPopularLabel);
+    const second = resolveSecondPopularMenuItem(rows, options.popularMenuIds);
+    if (second) push([second as unknown as MenuBoardClientRow], labels.recentPopularLabel);
   }
 
-  push(filterStoreRecommendedMenus(items), labels.storeRecommendedLabel);
+  push(filterStoreRecommendedMenus(rows) as unknown as MenuBoardClientRow[], labels.storeRecommendedLabel);
 
   return slides;
 }

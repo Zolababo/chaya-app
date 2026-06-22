@@ -29,6 +29,9 @@ import {
 
 type Props = {
   tenant: string;
+  /** 4탭 셸 오버레이 — 풀 페이지 SSR 없이 표시 */
+  embedded?: boolean;
+  onClose?: () => void;
 };
 
 const FILTER_ORDER: AnnouncementFilter[] = ["all", "urgent", "notice", "update", "event"];
@@ -40,7 +43,7 @@ function parseAnnouncements(json: unknown): PlatformAnnouncement[] | null {
   return o.items as PlatformAnnouncement[];
 }
 
-export function MerchantAnnouncementsPageClient({ tenant }: Props) {
+export function MerchantAnnouncementsPageClient({ tenant, embedded = false, onClose: _onClose }: Props) {
   const t = encodeURIComponent(tenant);
   const [items, setItems] = useState<PlatformAnnouncement[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -172,37 +175,59 @@ export function MerchantAnnouncementsPageClient({ tenant }: Props) {
     filter === "all" ? "공지가 없어요" : `${ANNOUNCEMENT_TYPE_META[filter as AnnouncementType]?.filterLabel ?? "해당"} 없음`;
 
   return (
-    <div className="-mt-3">
-      {/* 탑바 */}
-      <div
-        className={`${chayaAppShellBleedClass} mb-0 flex min-h-[52px] items-center justify-between border-b border-[#E5E7EB] bg-white px-[18px] dark:border-zinc-800 dark:bg-zinc-950`}
-      >
-        <div className="flex items-center gap-1">
-          <Link
-            href={`/m/${t}/dashboard`}
-            className="inline-flex items-center pr-1 text-[22px] font-bold leading-none text-chaya-primary active:opacity-70"
-            aria-label="홈으로 돌아가기"
+    <div className={embedded ? "" : "-mt-3"}>
+      {!embedded ? (
+        <>
+          {/* 탑바 */}
+          <div
+            className={`${chayaAppShellBleedClass} mb-0 flex min-h-[52px] items-center justify-between border-b border-[#E5E7EB] bg-white px-[18px] dark:border-zinc-800 dark:bg-zinc-950`}
           >
-            <ChevronLeft className="h-6 w-6 shrink-0" strokeWidth={2.5} aria-hidden />
-          </Link>
-          <span className="text-[17px] font-extrabold text-[#111827] dark:text-zinc-50">
-            공지사항
-          </span>
+            <div className="flex items-center gap-1">
+              <Link
+                href={`/m/${t}/dashboard`}
+                className="inline-flex items-center pr-1 text-[22px] font-bold leading-none text-chaya-primary active:opacity-70"
+                aria-label="홈으로 돌아가기"
+              >
+                <ChevronLeft className="h-6 w-6 shrink-0" strokeWidth={2.5} aria-hidden />
+              </Link>
+              <span className="text-[17px] font-extrabold text-[#111827] dark:text-zinc-50">
+                공지사항
+              </span>
+              {unreadCount > 0 ? (
+                <span className="ml-1 rounded-full bg-[#DC2626] px-2 py-0.5 text-[11px] font-extrabold text-white">
+                  {unreadCount}
+                </span>
+              ) : null}
+            </div>
+            <button
+              type="button"
+              onClick={handleReadAll}
+              disabled={items.length === 0 || unreadCount === 0}
+              className="text-[13px] font-bold text-[#9CA3AF] transition active:text-chaya-primary disabled:opacity-40"
+            >
+              전체 읽음
+            </button>
+          </div>
+        </>
+      ) : (
+        <div className="flex items-center justify-end border-b border-[#E5E7EB] bg-white px-4 py-2 dark:border-zinc-800 dark:bg-zinc-950">
           {unreadCount > 0 ? (
-            <span className="ml-1 rounded-full bg-[#DC2626] px-2 py-0.5 text-[11px] font-extrabold text-white">
-              {unreadCount}
+            <span className="mr-auto rounded-full bg-[#DC2626] px-2 py-0.5 text-[11px] font-extrabold text-white">
+              읽지 않음 {unreadCount}
             </span>
-          ) : null}
+          ) : (
+            <span className="mr-auto text-xs text-zinc-400">CHAYA 운영 안내</span>
+          )}
+          <button
+            type="button"
+            onClick={handleReadAll}
+            disabled={items.length === 0 || unreadCount === 0}
+            className="text-[13px] font-bold text-[#9CA3AF] transition active:text-chaya-primary disabled:opacity-40"
+          >
+            전체 읽음
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={handleReadAll}
-          disabled={items.length === 0 || unreadCount === 0}
-          className="text-[13px] font-bold text-[#9CA3AF] transition active:text-chaya-primary disabled:opacity-40"
-        >
-          전체 읽음
-        </button>
-      </div>
+      )}
 
       {/* 필터 탭 — 점주 홈·주문·메뉴 탭과 동일 Lucide·텍스트 톤 */}
       <div
@@ -347,7 +372,9 @@ export function MerchantAnnouncementsPageClient({ tenant }: Props) {
       {toast ? (
         <div
           role="status"
-          className="fixed bottom-[78px] left-4 right-4 z-[90] rounded-xl bg-[rgba(17,24,39,0.9)] px-4 py-3.5 text-sm font-semibold text-white shadow-lg"
+          className={`fixed left-4 right-4 z-[90] rounded-xl bg-[rgba(17,24,39,0.9)] px-4 py-3.5 text-sm font-semibold text-white shadow-lg ${
+            embedded ? "bottom-6" : "bottom-[78px]"
+          }`}
         >
           {toast}
         </div>

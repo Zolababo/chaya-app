@@ -20,7 +20,7 @@ export type LocaleMeta = {
 };
 
 export const LOCALE_META: Record<AppLocale, LocaleMeta> = {
-  ko: { code: "ko", shortLabel: "KO", nativeLabel: "한국어" },
+  ko: { code: "ko", shortLabel: "KR", nativeLabel: "한국어" },
   en: { code: "en", shortLabel: "EN", nativeLabel: "English" },
   ja: { code: "ja", shortLabel: "JP", nativeLabel: "日本語" },
   "zh-Hans": { code: "zh-Hans", shortLabel: "CN", nativeLabel: "简体中文" },

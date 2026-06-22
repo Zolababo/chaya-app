@@ -6,6 +6,7 @@ import { ChevronDown, Plus, X } from "lucide-react";
 
 import { createMenuFromForm } from "@/app/m/[tenant]/menus/actions";
 import type { MenuOptionGroup } from "@/lib/menus/menu-options";
+import { uploadMerchantMenuImageStaging } from "@/lib/merchant/upload-merchant-menu-image-client";
 
 type Props = {
   tenant: string;
@@ -55,6 +56,9 @@ export function MerchantMenuAddForm({ tenant, categoryFilter, existingCategories
 
   // ── 모달 ──
   const [showPriceModal, setShowPriceModal] = useState(false);
+  const [saveBusy, setSaveBusy] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [stagedImageUrl, setStagedImageUrl] = useState("");
 
   const formRef = useRef<HTMLFormElement>(null);
   const priceDisplay = fmtPrice(priceRaw);
@@ -154,7 +158,34 @@ export function MerchantMenuAddForm({ tenant, categoryFilter, existingCategories
 
   const handleConfirmSave = () => {
     setShowPriceModal(false);
-    formRef.current?.requestSubmit();
+    const form = formRef.current;
+    if (!form) return;
+
+    setSaveError(null);
+    setSaveBusy(true);
+
+    void (async () => {
+      try {
+        const fileInput = form.elements.namedItem("file") as HTMLInputElement | null;
+        const picked = fileInput?.files?.[0];
+
+        if (picked && picked.size > 0) {
+          const uploaded = await uploadMerchantMenuImageStaging(tenant, picked);
+          if (!uploaded.ok) {
+            setSaveError(uploaded.message);
+            return;
+          }
+          setStagedImageUrl(uploaded.url);
+          const imageHidden = form.elements.namedItem("imageUrl") as HTMLInputElement | null;
+          if (imageHidden) imageHidden.value = uploaded.url;
+          if (fileInput) fileInput.value = "";
+        }
+
+        form.requestSubmit();
+      } finally {
+        setSaveBusy(false);
+      }
+    })();
   };
 
   // 저장 버튼 (모든 탭에서 공통)
@@ -168,10 +199,11 @@ export function MerchantMenuAddForm({ tenant, categoryFilter, existingCategories
       </Link>
       <button
         type="button"
+        disabled={saveBusy}
         onClick={handleSaveClick}
-        className="flex h-12 flex-[2] items-center justify-center rounded-xl bg-chaya-primary text-[15px] font-extrabold text-white"
+        className="flex h-12 flex-[2] items-center justify-center rounded-xl bg-chaya-primary text-[15px] font-extrabold text-white disabled:opacity-60"
       >
-        메뉴 추가
+        {saveBusy ? "저장 중…" : "메뉴 추가"}
       </button>
     </div>
   );
@@ -200,9 +232,16 @@ export function MerchantMenuAddForm({ tenant, categoryFilter, existingCategories
         })}
       </div>
 
+      {saveError ? (
+        <p role="alert" className="text-sm font-semibold text-[#DC2626]">
+          {saveError}
+        </p>
+      ) : null}
+
       {/* 단일 form — 탭마다 다른 영역을 show/hide */}
       <form ref={formRef} action={createMenuFromForm} encType="multipart/form-data" className="flex flex-col gap-3">
         <input type="hidden" name="tenant_slug" value={tenant} />
+        <input type="hidden" name="imageUrl" value={stagedImageUrl} />
         {categoryFilter ? <input type="hidden" name="preserve_category" value={categoryFilter} /> : null}
         <input type="hidden" name="is_sold_out" value={statusMode === "soldout" ? "on" : ""} />
         <input type="hidden" name="is_todays_pick" value={todaysPick ? "on" : ""} />
@@ -387,7 +426,7 @@ export function MerchantMenuAddForm({ tenant, categoryFilter, existingCategories
           <div className="rounded-2xl bg-white p-4 shadow-sm dark:bg-zinc-900">
             <p className="mb-1 text-[14px] font-extrabold text-zinc-900 dark:text-zinc-50">메뉴 사진</p>
             <p className="mb-4 text-[11px] text-zinc-400">
-              갤러리에서 선택한 사진만 저장돼요 · 최대 5MB · JPEG·PNG·HEIC
+              갤러리·카메라 사진 OK · 큰 사진은 자동으로 줄여서 저장해요
             </p>
 
             <div className="mb-4 flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-zinc-200 py-8 dark:border-zinc-700">

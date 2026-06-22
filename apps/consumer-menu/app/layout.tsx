@@ -1,9 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import { Be_Vietnam_Pro } from "next/font/google";
-import Script from "next/script";
 import "./globals.css";
-
+import { ConsumerCriticalCss } from "@/components/consumer-critical-css";
 import { consumerLightBootScript } from "@/lib/consumer/consumer-light-boot-script";
 
 /** OG·메타데이터 canonical. 로컬은 localhost, Vercel은 호스트 자동 반영 가능 */
@@ -17,7 +16,17 @@ function metadataSiteUrl(): string {
 const chayaSans = Be_Vietnam_Pro({
   subsets: ["latin"],
   weight: ["400", "600", "700"],
+  display: "swap",
   variable: "--font-chaya-sans",
+});
+
+/** 손님 `/t/*` — weight·preload 축소, optional로 첫 paint 경쟁 완화 */
+const chayaSansConsumer = Be_Vietnam_Pro({
+  subsets: ["latin"],
+  weight: ["400", "600"],
+  display: "optional",
+  preload: false,
+  variable: "--font-chaya-sans-consumer",
 });
 
 export const metadata: Metadata = {
@@ -63,12 +72,18 @@ export default async function RootLayout({
     >
       <head>
         {isConsumerMenu ? <meta name="color-scheme" content="only light" /> : null}
+        {isConsumerMenu ? <ConsumerCriticalCss /> : null}
       </head>
-      <body className={`${chayaSans.variable} touch-manipulation font-sans antialiased`}>
-        <Script id="chaya-consumer-light-boot" strategy="beforeInteractive">
-          {consumerLightBootScript}
-        </Script>
+      <body
+        className={`${isConsumerMenu ? chayaSansConsumer.variable : chayaSans.variable} touch-manipulation font-sans antialiased`}
+      >
         {children}
+        {isConsumerMenu ? (
+          <script
+            id="chaya-consumer-light-boot"
+            dangerouslySetInnerHTML={{ __html: consumerLightBootScript }}
+          />
+        ) : null}
       </body>
     </html>
   );

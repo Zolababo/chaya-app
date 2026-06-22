@@ -17,9 +17,11 @@ export async function buildMerchantMoreSnapshot(
   tenant: string,
   role: MerchantRole,
 ): Promise<MerchantSettingsSheetSnapshot> {
-  const settings = await fetchTenantStoreSettings(tenant);
+  const [settings, tables] = await Promise.all([
+    fetchTenantStoreSettings(tenant),
+    listTenantTablesForMerchant(tenant),
+  ]);
   const branding = tenantBrandingFromSettings(tenant, settings);
-  const tables = await listTenantTablesForMerchant(tenant);
   const tableCount = tables.ok ? tables.items.filter((row) => row.is_active).length : null;
   return {
     tenant,
