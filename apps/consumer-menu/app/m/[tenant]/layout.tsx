@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Suspense } from "react";
 
+import { MerchantAppBadgeSync } from "@/components/merchant-app-badge-sync";
 import { MerchantLoadingCenter } from "@/components/merchant-loading-center";
 import { MerchantMainTabShell } from "@/components/merchant-main-tab-shell";
 import { MerchantBottomNav } from "@/components/merchant-bottom-nav";
@@ -8,6 +9,8 @@ import { MerchantHeaderOverlayHost } from "@/components/merchant-header-overlay-
 import { MerchantHomeHeader } from "@/components/merchant-home-header";
 import { MerchantLiveSync } from "@/components/merchant-live-sync";
 import { MerchantNewOrderAlertListener } from "@/components/merchant-new-order-alert-listener";
+import { MerchantPendingAttentionStrip } from "@/components/merchant-pending-attention-strip";
+import { MerchantPendingReAlert } from "@/components/merchant-pending-realert";
 import { MerchantPreviewBanner } from "@/components/merchant-preview-banner";
 import { MerchantSubnav } from "@/components/merchant-subnav";
 import { requireMerchantForTenant } from "@/lib/merchant/merchant-access";
@@ -45,12 +48,15 @@ export default async function MerchantTenantLayout({
       <MerchantPendingCountProvider initialCount={null}>
         <MerchantLiveSync tenant={tenant} />
         <MerchantNewOrderAlertListener tenant={tenant} />
+        <MerchantPendingReAlert tenant={tenant} />
+        <MerchantAppBadgeSync />
         <div className="min-h-dvh bg-[#F2F3F5] dark:bg-zinc-950">
           <MerchantHomeHeader
             tenant={tenant}
             storeName={branding.displayName}
             logoUrl={branding.logoUrl}
           />
+          <MerchantPendingAttentionStrip tenant={tenant} />
           <div className={`${chayaMerchantShellClass} ${merchantShellWithCompactNavClass}`}>
             <MerchantPreviewBanner tenantSlug={tenant} />
             <MerchantSubnav tenant={tenant} canManageMenus={canManageMenus} />

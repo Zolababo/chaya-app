@@ -5,7 +5,7 @@ import { createServiceSupabase } from "@/lib/supabase/create-service-client";
 
 import { tryPostMerchantOrderNotifyWebhook, isMerchantOrderNotifyWebhookConfigured } from "./merchant-order-notify-webhook";
 import { loadPushSubscriptionsForApprovedMembers, sendGuestOrderWebPush } from "./merchant-push-send";
-import { consumeGuestOrderResendCooldown } from "./resend-guest-order-email-cooldown";
+import { consumeGuestOrderPushCooldown, consumeGuestOrderResendCooldown } from "./resend-guest-order-email-cooldown";
 import { getServerSiteBaseUrl } from "./site-base-url";
 
 export type MerchantNotificationKind = "guest_order_created" | "order_status_changed";
@@ -170,30 +170,41 @@ export async function runMerchantGuestOrderCreatedNotification(input: {
   const text = `새 주문이 접수되었습니다.\n주문 ID: ${input.orderId}\n합계: ${input.totalPrice.toLocaleString("ko-KR")}원${tablePart}\n\n주문 큐: ${ordersLink}`;
   const html = `<p>새 주문이 접수되었습니다.</p><p>주문 ID: <code>${input.orderId}</code></p><p>합계: ${input.totalPrice.toLocaleString("ko-KR")}원${tablePart ? `<br/>${tablePart}` : ""}</p><p><a href="${ordersLink}">주문 큐 열기</a></p>`;
 
-  const hasOutbound = recipients.length > 0 || pushSubs.length > 0 || webhookOn;
-  if (hasOutbound && !consumeGuestOrderResendCooldown(input.tenantSlug)) {
+  const hasEmail = recipients.length > 0;
+  const hasPush = pushSubs.length > 0;
+  const hasWebhook = webhookOn;
+
+  if (!hasEmail && !hasPush && !hasWebhook) {
     return;
   }
 
-  await trySendResendForEvent(eventId, subject, text, html, recipients);
+  const outboundBundle = hasEmail || hasWebhook;
+  if (outboundBundle && consumeGuestOrderResendCooldown(input.tenantSlug)) {
+    if (hasEmail) {
+      await trySendResendForEvent(eventId, subject, text, html, recipients);
+    }
+    if (hasWebhook) {
+      void tryPostMerchantOrderNotifyWebhook({
+        tenantSlug: input.tenantSlug,
+        orderId: input.orderId,
+        kind: "guest_order_created",
+        totalPrice: input.totalPrice,
+        tableNo: input.tableNo,
+      });
+    }
+  }
 
-  await sendGuestOrderWebPush({
-    svc,
-    tenantSlug: input.tenantSlug,
-    orderId: input.orderId,
-    title: `[CHAYA] ${input.tenantSlug}`,
-    body: `${input.totalPrice.toLocaleString("ko-KR")}원${tablePart} · 탭하여 주문 큐`,
-    openUrl: ordersLink,
-    subscriptions: pushSubs,
-  });
-
-  void tryPostMerchantOrderNotifyWebhook({
-    tenantSlug: input.tenantSlug,
-    orderId: input.orderId,
-    kind: "guest_order_created",
-    totalPrice: input.totalPrice,
-    tableNo: input.tableNo,
-  });
+  if (hasPush && consumeGuestOrderPushCooldown(input.tenantSlug)) {
+    await sendGuestOrderWebPush({
+      svc,
+      tenantSlug: input.tenantSlug,
+      orderId: input.orderId,
+      title: `[CHAYA] ${input.tenantSlug}`,
+      body: `${input.totalPrice.toLocaleString("ko-KR")}원${tablePart} · 탭하여 주문 큐`,
+      openUrl: ordersLink,
+      subscriptions: pushSubs,
+    });
+  }
 }
 
 export function fireMerchantGuestOrderCreatedNotification(input: {

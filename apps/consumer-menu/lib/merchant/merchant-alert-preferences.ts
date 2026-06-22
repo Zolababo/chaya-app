@@ -1,9 +1,12 @@
 "use client";
 
 import {
+  DEFAULT_MERCHANT_RE_ALERT_INTERVAL_SEC,
   parseMerchantAlertSoundProfile,
+  parseMerchantReAlertIntervalSec,
   soundProfileEnablesAudio,
   type MerchantAlertSoundProfile,
+  type MerchantReAlertIntervalSec,
 } from "@/lib/merchant/merchant-alert-sound-profile";
 
 const KEY_PREFIX = "chaya_merchant_alert_prefs:";
@@ -12,12 +15,15 @@ export type MerchantAlertPreferences = {
   sound: boolean;
   vibration: boolean;
   soundProfile: MerchantAlertSoundProfile;
+  /** 대기 주문이 남아 있을 때 재알림 간격(초). 0 = 끄기 */
+  reAlertIntervalSec: MerchantReAlertIntervalSec;
 };
 
 const DEFAULT_PREFS: MerchantAlertPreferences = {
   sound: true,
   vibration: true,
   soundProfile: "default",
+  reAlertIntervalSec: DEFAULT_MERCHANT_RE_ALERT_INTERVAL_SEC,
 };
 
 function normalizePrefs(parsed: Partial<MerchantAlertPreferences>): MerchantAlertPreferences {
@@ -30,6 +36,7 @@ function normalizePrefs(parsed: Partial<MerchantAlertPreferences>): MerchantAler
     sound,
     vibration: parsed.vibration !== false,
     soundProfile,
+    reAlertIntervalSec: parseMerchantReAlertIntervalSec(parsed.reAlertIntervalSec),
   };
 }
 

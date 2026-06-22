@@ -98,10 +98,11 @@ export function MerchantReadinessOwnerChecklist({
     {
       id: "alerts",
       title: "새 주문 알림",
-      detail: "이 폰·브라우저에서 새 주문 알림을 켜 두면 놓치기 어렵습니다.",
+      detail:
+        "알림 설정에서 주방 알람·재알림·브라우저 푸시를 켜 두세요. 화면에 안 뜨면 손님이 카운터에서 불러 달라고 안내하는 것도 백업입니다.",
       status: "info",
-      href: `/m/${t}/dashboard`,
-      hrefLabel: "대시보드에서 설정",
+      href: `/m/${t}/more/notifications`,
+      hrefLabel: "알림 설정",
     },
   ];
 

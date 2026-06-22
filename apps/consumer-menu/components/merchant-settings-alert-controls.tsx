@@ -15,6 +15,7 @@ import {
 import {
   readMerchantAlertPreferences,
   writeMerchantAlertPreferences,
+  type MerchantAlertPreferences,
 } from "@/lib/merchant/merchant-alert-preferences";
 import {
   previewMerchantAlertSound,
@@ -35,11 +36,17 @@ export function MerchantSettingsAlertControls({ tenant }: Props) {
     setVibrationOn(prefs.vibration);
   }, [tenant]);
 
-  const persist = (profile: MerchantAlertSoundProfile, vibration: boolean) => {
+  const persist = (
+    profile: MerchantAlertSoundProfile,
+    vibration: boolean,
+    reAlertIntervalSec?: MerchantAlertPreferences["reAlertIntervalSec"],
+  ) => {
+    const prefs = readMerchantAlertPreferences(tenant);
     writeMerchantAlertPreferences(tenant, {
       soundProfile: profile,
       sound: profile !== "mute",
       vibration,
+      reAlertIntervalSec: reAlertIntervalSec ?? prefs.reAlertIntervalSec,
     });
   };
 
