@@ -253,6 +253,28 @@ html[data-chaya-consumer][data-consumer-screen-reader-mode] #menu-board-ssr {
   }
 }
 
+/* 베리어프리 헤더 버튼 — 켜짐 상태 링 펄스 */
+@keyframes consumer-a11y-ring-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+@keyframes consumer-a11y-ring-breathe {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
 html[data-consumer-font-scale="xl"] .menu-add-target {
   min-height: 2.75rem;
   min-width: 2.75rem;
