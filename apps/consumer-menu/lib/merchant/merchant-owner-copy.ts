@@ -92,6 +92,14 @@ export function merchantOrdersActionErrorMessage(code: string | undefined): stri
       return "취소 사유를 선택해 주세요.";
     case "batch_limit":
       return `한 번에 접수는 ${80}건까지입니다. 나눠서 접수해 주세요.`;
+    case "use_table_pay":
+      return "이 주문은 테이블 결제로 처리해 주세요. 상단 테이블 결제 버튼을 사용하세요.";
+    case "table_session_not_found":
+      return "결제할 테이블 세션을 찾지 못했습니다. 목록을 새로고침해 주세요.";
+    case "table_session_empty":
+      return "이 테이블에 결제할 주문이 없습니다.";
+    case "table_session_not_ready":
+      return "테이블의 모든 주문이 서빙완료된 뒤에 결제할 수 있습니다.";
     default:
       return "처리 중 오류가 났습니다. 다시 시도해 주세요.";
   }
@@ -101,12 +109,16 @@ export function merchantOrdersActionSuccessMessage(code: string | undefined): st
   switch (code) {
     case "status_saved":
       return "주문 상태를 저장했습니다.";
+    case "order_paid":
+      return "결제를 완료했습니다.";
     case "no_change":
       return "이미 같은 상태입니다.";
     case "batch_accept":
       return "대기 중인 주문을 모두 접수했습니다. 조리중 탭에서 확인하세요.";
     case "batch_none":
       return "접수할 대기 주문이 없습니다.";
+    case "table_session_paid":
+      return "테이블 결제를 완료했습니다.";
     default:
       return null;
   }

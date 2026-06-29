@@ -12,11 +12,18 @@ import { normalizeTableCode } from "@/lib/tables/tenant-table-code";
 const MAX_LABEL = 80;
 const MAX_BULK = 50;
 
-function redirectTables(tenant: string, err?: string, ok?: string, focus?: string): never {
+function redirectTables(
+  tenant: string,
+  err?: string,
+  ok?: string,
+  focus?: string,
+  detail?: string,
+): never {
   const q = new URLSearchParams();
   if (err) q.set("e", err);
   if (ok) q.set("ok", ok);
   if (focus?.trim()) q.set("focus", focus.trim());
+  if (detail?.trim()) q.set("d", detail.trim().slice(0, 120));
   const suffix = q.toString() ? `?${q}` : "";
   redirect(`/m/${encodeURIComponent(tenant)}/tables${suffix}`);
 }
@@ -61,7 +68,7 @@ export async function addTenantTableAction(formData: FormData): Promise<void> {
   });
 
   if (error) {
-    if (error.code === "23505") redirectTables(tenant, "table_duplicate");
+    if (error.code === "23505") redirectTables(tenant, "table_duplicate", undefined, undefined, norm.code);
     console.error("[addTenantTable]", error.code, error.message);
     redirectTables(tenant, "save_failed");
   }
@@ -93,9 +100,27 @@ export async function bulkAddTenantTablesAction(formData: FormData): Promise<voi
     rows.push({ tenant_slug: tenant, table_code: norm.code, sort_order: n, is_active: true });
   }
 
+  const codes = rows.map((r) => r.table_code);
+  const { data: existingRows } = await client
+    .from("tenant_tables")
+    .select("table_code")
+    .eq("tenant_slug", tenant)
+    .in("table_code", codes);
+
+  const dupes = (existingRows ?? [])
+    .map((r) => (r as { table_code?: string }).table_code?.trim())
+    .filter((c): c is string => Boolean(c));
+
+  if (dupes.length > 0) {
+    redirectTables(tenant, "bulk_duplicate", undefined, undefined, dupes.join(","));
+  }
+
   const { error } = await client.from("tenant_tables").insert(rows);
 
   if (error) {
+    if (error.code === "23505") {
+      redirectTables(tenant, "bulk_duplicate", undefined, undefined, codes.join(","));
+    }
     console.error("[bulkAddTenantTables]", error.code, error.message);
     redirectTables(tenant, "save_failed");
   }
@@ -106,6 +131,7 @@ export async function bulkAddTenantTablesAction(formData: FormData): Promise<voi
     action: "tenant_table.bulk_add",
     detail: { from, to, count: rows.length },
   });
+  revalidatePath(`/m/${tenant}/tables`);
   redirectTables(tenant, undefined, "bulk_added");
 }
 

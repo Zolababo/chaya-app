@@ -49,7 +49,8 @@ export default async function OrdersHubPage({ params, searchParams }: Props) {
 
   return (
     <div className={chayaConsumerContentClass} aria-label={m.orders.pageTitle}>
-      <p className="sr-only">{m.orders.pageTitle}</p>
+      <h1 className="sr-only">{m.orders.pageTitle}</h1>
+      <p className="sr-only">{m.orders.pageIntro}</p>
 
       <GuestOrdersHub
         tenant={tenant}

@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
 
+import {
+  chayaMerchantPwaBrand,
+  chayaPwaManifestIcons,
+} from "@/lib/pwa/chaya-pwa-brand";
+
 /**
  * 점주 로그인 전용 Web App Manifest.
  * 루트 `app/manifest.ts`는 손님·공통용이라 `start_url`을 `/m/login`으로 두기 어렵고,
@@ -13,8 +18,9 @@ export function GET() {
     start_url: "/m/login",
     scope: "/",
     display: "browser",
-    background_color: "#fcf9f8",
-    theme_color: "#a43700",
+    background_color: chayaMerchantPwaBrand.backgroundColor,
+    theme_color: chayaMerchantPwaBrand.themeColor,
+    icons: chayaPwaManifestIcons(chayaMerchantPwaBrand.icon),
     lang: "ko",
   };
 

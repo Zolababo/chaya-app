@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useLayoutEffect } from "react";
 
 import { MenuBoardIdleMount } from "@/components/menu-board-idle-mount";
 import { fetchMenuPopularityAction } from "@/lib/consumer/menu-popularity-action";
@@ -29,6 +30,11 @@ export function MenuHomeCatalogClient({
 }: Props) {
   const [popularMenuIds, setPopularMenuIds] = useState<string[]>([]);
   const [showRecentPopular, setShowRecentPopular] = useState(false);
+
+  // 클라이언트 메뉴판 마운트 전 layout SSR 목록과 중복 노출 방지 (idle 대기 2.5s 동안 겹침)
+  useLayoutEffect(() => {
+    document.getElementById("menu-board-ssr")?.remove();
+  }, []);
 
   useEffect(() => {
     let cancelled = false;

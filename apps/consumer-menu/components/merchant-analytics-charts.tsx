@@ -192,8 +192,8 @@ export function MerchantAnalyticsCharts({
             bar: h.sales,
             line: h.orders,
           }))}
-          barAxisLabel="매출"
-          lineAxisLabel="주문"
+          barAxisLabel="결제"
+          lineAxisLabel="접수"
           formatYAxis={fmtY}
           formatBar={fmtWon}
           formatLine={(n) => `${n}건`}
@@ -237,8 +237,8 @@ export function MerchantAnalyticsCharts({
             line: d.orders,
             prevBar: prevDaily[i]?.sales,
           }))}
-          barAxisLabel="매출"
-          lineAxisLabel="주문"
+          barAxisLabel="결제"
+          lineAxisLabel="접수"
           formatYAxis={fmtY}
           formatBar={fmtWon}
           formatLine={(n) => `${n}건`}
@@ -254,8 +254,8 @@ export function MerchantAnalyticsCharts({
             bar: d.sales,
             line: d.orders,
           }))}
-          barAxisLabel="매출"
-          lineAxisLabel="주문"
+          barAxisLabel="결제"
+          lineAxisLabel="접수"
           formatYAxis={fmtY}
           formatBar={fmtWon}
           formatLine={(n) => `${n}건`}
@@ -272,8 +272,8 @@ export function MerchantAnalyticsCharts({
             bar: h.sales,
             line: h.orders,
           }))}
-          barAxisLabel="매출"
-          lineAxisLabel="주문"
+          barAxisLabel="결제"
+          lineAxisLabel="접수"
           formatYAxis={fmtY}
           formatBar={fmtWon}
           formatLine={(n) => `${n}건`}
@@ -318,8 +318,8 @@ export function MerchantAnalyticsCharts({
             bar: w.sales,
             line: w.orders,
           }))}
-          barAxisLabel="매출"
-          lineAxisLabel="주문"
+          barAxisLabel="결제"
+          lineAxisLabel="접수"
           formatYAxis={fmtY}
           formatBar={fmtWon}
           formatLine={(n) => `${n}건`}
@@ -342,8 +342,8 @@ export function MerchantAnalyticsCharts({
             line: d.orders,
             prevBar: prevDaily[i]?.sales,
           }))}
-          barAxisLabel="매출"
-          lineAxisLabel="주문"
+          barAxisLabel="결제"
+          lineAxisLabel="접수"
           formatYAxis={fmtY}
           formatBar={fmtWon}
           formatLine={(n) => `${n}건`}
@@ -359,8 +359,8 @@ export function MerchantAnalyticsCharts({
           bar: w.sales,
           line: w.orders,
         }))}
-        barAxisLabel="매출"
-        lineAxisLabel="주문"
+        barAxisLabel="결제"
+        lineAxisLabel="접수"
         formatYAxis={fmtY}
         formatBar={fmtWon}
         formatLine={(n) => `${n}건`}
@@ -376,8 +376,8 @@ export function MerchantAnalyticsCharts({
           bar: h.sales,
           line: h.orders,
         }))}
-        barAxisLabel="매출"
-        lineAxisLabel="주문"
+        barAxisLabel="결제"
+        lineAxisLabel="접수"
         formatYAxis={fmtY}
         formatBar={fmtWon}
         formatLine={(n) => `${n}건`}

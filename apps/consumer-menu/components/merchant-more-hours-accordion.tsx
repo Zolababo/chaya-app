@@ -14,6 +14,9 @@ type Props = {
   ordersAccepting: boolean;
   breakStart: string | null;
   breakEnd: string | null;
+  businessOpen: string | null;
+  businessClose: string | null;
+  salesDayCutoff: string;
   canEdit: boolean;
 };
 
@@ -23,6 +26,9 @@ export function MerchantMoreHoursAccordion({
   ordersAccepting,
   breakStart,
   breakEnd,
+  businessOpen,
+  businessClose,
+  salesDayCutoff,
   canEdit,
 }: Props) {
   const [open, setOpen] = useState(false);
@@ -39,7 +45,7 @@ export function MerchantMoreHoursAccordion({
           <MerchantSettingsIconBox icon={CircleDot} accent={ordersAccepting ? "green" : "closed"} />
           <span className="min-w-0">
             <span className="block text-[15px] font-bold text-[#111827] dark:text-zinc-50">영업 설정</span>
-            <span className="mt-0.5 block text-xs font-medium text-[#9CA3AF]">영업 상태 · 브레이크타임</span>
+            <span className="mt-0.5 block text-xs font-medium text-[#9CA3AF]">영업 시간 · 브레이크타임</span>
           </span>
         </span>
         <span className="flex shrink-0 items-center gap-1.5">
@@ -68,6 +74,9 @@ export function MerchantMoreHoursAccordion({
               ordersAccepting,
               breakStart,
               breakEnd,
+              businessOpen,
+              businessClose,
+              salesDayCutoff,
               kakaoAlimtalkLinkedAt: null,
               billingPlan: "starter",
             }}

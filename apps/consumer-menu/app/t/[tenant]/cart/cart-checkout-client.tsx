@@ -39,8 +39,9 @@ import {
   readGuestSessionFromBrowser,
 } from "@/lib/guest-session/ensure-guest-session";
 
-import { useConsumerScreenReaderMode } from "@/lib/consumer/consumer-screen-reader-mode-context";
-import { useScreenReaderMenuHref } from "@/lib/consumer/use-screen-reader-menu-href";
+import { useConsumerEasyMode } from "@/lib/consumer/consumer-easy-mode-context";
+import { useEasyMenuHref } from "@/lib/consumer/use-easy-menu-href";
+import { useConsumerVoiceAnnounce } from "@/lib/consumer/use-consumer-voice-announce";
 import { useConsumerLocale } from "@/lib/i18n/consumer-locale-context";
 import { resolveGuestOrderError } from "@/lib/i18n/consumer-messages-errors";
 import { formatConsumerMoney } from "@/lib/i18n/format-consumer-money";
@@ -65,8 +66,9 @@ export function CartCheckoutClient({
 }: Props) {
   const router = useRouter();
   const { locale, m } = useConsumerLocale();
-  const { screenReaderMode } = useConsumerScreenReaderMode();
-  const menuHref = useScreenReaderMenuHref(tenant);
+  const { easyMode } = useConsumerEasyMode();
+  const { speak } = useConsumerVoiceAnnounce();
+  const menuHref = useEasyMenuHref(tenant);
   const navHref = useConsumerNavHref(tenant);
   const tableSelection = useTenantTableSelection(tenant);
   const showTableAlert = tableSelection.hasRegistry && !tableSelection.isLocked;
@@ -178,6 +180,7 @@ export function CartCheckoutClient({
     if (tableSelection.hasRegistry && tableSelection.needsPick) {
       const msg = m.cart.tableQrRequired;
       setError(msg);
+      speak(msg);
       return;
     }
     submitLock.current = true;
@@ -199,6 +202,7 @@ export function CartCheckoutClient({
         if (!res.ok) {
           const msg = resolveGuestOrderError(res.code, locale, res.params);
           setError(msg);
+          speak(msg);
           return;
         }
         orderSucceeded = true;
@@ -217,19 +221,19 @@ export function CartCheckoutClient({
   };
 
   if (!mounted) {
-    return <ConsumerLoadingCenter label={m.cart.loading} screenReaderMode={screenReaderMode} />;
+    return <ConsumerLoadingCenter label={m.cart.loading} easyMode={easyMode} />;
   }
 
   if (lines.length === 0) {
     return (
       <ConsumerEmptyState
-        screenReaderMode={screenReaderMode}
+        easyMode={easyMode}
         icon={<ShoppingCart className="size-7 text-zinc-400 dark:text-zinc-500" strokeWidth={1.75} />}
         message={m.cart.empty}
         action={
           <a
             href={menuHref}
-            className={`${chayaPrimaryButtonClass} px-8 ${screenReaderMode ? "min-h-[48px]" : "min-h-[44px]"}`}
+            className={`${chayaPrimaryButtonClass} px-8 ${easyMode ? "min-h-[48px]" : "min-h-[44px]"}`}
             aria-label={m.cart.emptyCtaAria}
           >
             {m.cart.emptyCta}
@@ -240,15 +244,15 @@ export function CartCheckoutClient({
   }
 
   const selectedParts = m.cart.selectedMenuLabel.split("{count}");
-  const listClass = screenReaderMode ? "space-y-3" : "space-y-2";
-  const scrollClearance = screenReaderMode ? "pb-[12.5rem]" : "pb-[11.5rem]";
+  const listClass = easyMode ? "space-y-3 px-4 sm:px-6" : "space-y-2 px-4 sm:px-6";
+  const scrollClearance = easyMode ? "pb-[12.5rem]" : "pb-[11.5rem]";
 
   return (
     <>
       <div className={`${chayaConsumerContentClass} ${scrollClearance}`}>
         <p
           className={
-            screenReaderMode
+            easyMode
               ? "mb-3 text-lg font-bold text-zinc-800 dark:text-zinc-100"
               : "mb-2 px-0 font-semibold text-zinc-800 dark:text-zinc-100 text-sm"
           }
@@ -256,7 +260,7 @@ export function CartCheckoutClient({
           {selectedParts[0]}
           <span
             className={
-              screenReaderMode
+              easyMode
                 ? "text-2xl font-bold tabular-nums text-chaya-primary dark:text-orange-400"
                 : "text-lg font-bold tabular-nums text-chaya-primary dark:text-orange-400"
             }
@@ -270,14 +274,14 @@ export function CartCheckoutClient({
             <li key={group.category} className="list-none space-y-2">
               <p
                 className={
-                  screenReaderMode
+                  easyMode
                     ? cartCategoryLabelEasyClass
                     : "text-xs font-semibold tracking-wide text-zinc-500 dark:text-zinc-400"
                 }
               >
                 {group.category}
               </p>
-              <ul className={`list-none ${screenReaderMode ? "space-y-3" : "space-y-2"}`}>
+              <ul className={`list-none ${easyMode ? "space-y-3" : "space-y-2"}`}>
                 {group.lines.map((line) => {
                   const key = cartLineKey(line.id, line.selectedOptions);
                   return (
@@ -287,7 +291,7 @@ export function CartCheckoutClient({
                       lineKey={key}
                       locale={locale}
                       m={m}
-                      screenReaderMode={screenReaderMode}
+                      easyMode={easyMode}
                       onChangeQty={changeQty}
                       onRemove={removeLine}
                     />
@@ -300,7 +304,7 @@ export function CartCheckoutClient({
             <Link
               href={menuHref}
               className={
-                screenReaderMode
+                easyMode
                   ? `${menuCardItemClass} flex min-h-[52px] items-center justify-center px-4 text-base font-bold text-chaya-primary dark:text-orange-400`
                   : "flex min-h-[44px] items-center justify-center rounded-xl border border-dashed border-zinc-300/80 bg-zinc-50 text-xs font-semibold text-chaya-primary dark:border-zinc-600/80 dark:bg-zinc-900/60 dark:text-orange-400"
               }
@@ -313,7 +317,7 @@ export function CartCheckoutClient({
 
         {showTableAlert ? (
           <section className="mt-4 space-y-3" aria-label={m.cart.tableLabel}>
-            <ConsumerTableField tenant={tenant} screenReaderMode={screenReaderMode} />
+            <ConsumerTableField tenant={tenant} easyMode={easyMode} />
           </section>
         ) : null}
 
@@ -332,13 +336,13 @@ export function CartCheckoutClient({
         {m.cart.submitHint}
       </p>
 
-      <div className={screenReaderMode ? cartSheetFooterEasyClass : cartSheetFooterClass}>
+      <div className={easyMode ? cartSheetFooterEasyClass : cartSheetFooterClass}>
         <div className={`${chayaConsumerContentClass} space-y-2.5`}>
           <ConsumerOfflinePaymentCallout variant="prominent" />
-          <div className={`flex items-center justify-between ${screenReaderMode ? "gap-3" : ""}`}>
+          <div className={`flex items-center justify-between ${easyMode ? "gap-3" : ""}`}>
             <span
               className={
-                screenReaderMode
+                easyMode
                   ? "text-base font-semibold text-zinc-600 dark:text-zinc-400"
                   : "text-sm font-semibold text-zinc-600 dark:text-zinc-400"
               }
@@ -347,7 +351,7 @@ export function CartCheckoutClient({
             </span>
             <span
               className={
-                screenReaderMode
+                easyMode
                   ? "text-2xl font-bold tabular-nums text-chaya-primary dark:text-orange-400"
                   : "text-xl font-extrabold tabular-nums text-chaya-primary dark:text-orange-400"
               }
@@ -357,7 +361,7 @@ export function CartCheckoutClient({
           </div>
           <button
             type="button"
-            className={screenReaderMode ? cartSubmitButtonEasyClass : cartSubmitButtonClass}
+            className={easyMode ? cartSubmitButtonEasyClass : cartSubmitButtonClass}
             disabled={pending}
             aria-busy={pending}
             aria-describedby="checkout-guest-order-hint"

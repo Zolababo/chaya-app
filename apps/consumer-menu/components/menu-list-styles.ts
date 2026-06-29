@@ -97,4 +97,4 @@ export const menuAddButtonEasyClass =
 
 /** TalkBack/VoiceOver 목록 메뉴 — 텍스트 담기 버튼 */
 export const srMenuAddButtonClass =
-  "touch-manipulation min-h-[48px] min-w-[4.5rem] shrink-0 rounded-xl bg-chaya-primary px-4 text-base font-bold text-chaya-on-primary shadow-sm transition hover:bg-chaya-primary-hover active:scale-[0.98]";
+  "touch-manipulation min-h-[52px] min-w-[5rem] shrink-0 rounded-xl bg-chaya-primary px-4 text-lg font-bold text-chaya-on-primary shadow-sm transition hover:bg-chaya-primary-hover active:scale-[0.98]";

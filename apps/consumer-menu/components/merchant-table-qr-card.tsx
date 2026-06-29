@@ -5,6 +5,7 @@ import { useCallback, useState } from "react";
 import { Copy, Download, Printer } from "lucide-react";
 
 import { merchantSaveBtnClass, merchantSecondaryBtnClass, merchantSubCardClass } from "@/lib/merchant/merchant-more-sub-styles";
+import { merchantTablesPrintHref } from "@/lib/merchant/merchant-table-qr-batch";
 import { merchantTableQrImagePath } from "@/lib/tables/consumer-table-url";
 
 type Props = {
@@ -17,7 +18,7 @@ type Props = {
 export function MerchantTableQrCard({ tenant, tableCode, consumerUrl, compact = false }: Props) {
   const [live, setLive] = useState<string | null>(null);
   const qrSrc = merchantTableQrImagePath(tenant, tableCode);
-  const printHref = `/m/${encodeURIComponent(tenant)}/tables/print?only=${encodeURIComponent(tableCode)}`;
+  const printHref = merchantTablesPrintHref(tenant, [tableCode]);
   const imgSize = compact ? 120 : 160;
 
   const copy = useCallback(async (text: string, okMsg: string) => {

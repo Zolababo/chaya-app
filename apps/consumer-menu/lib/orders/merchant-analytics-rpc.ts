@@ -45,6 +45,7 @@ export async function fetchMerchantAnalyticsCoreRpc(
   sinceIso: string,
   untilIso: string,
   limit = 2500,
+  cutoff = "04:00",
 ): Promise<MerchantAnalyticsRpcCore | null> {
   const { data, error } = await withSupabaseReadRetry(() =>
     client.rpc("merchant_analytics_core", {
@@ -52,6 +53,7 @@ export async function fetchMerchantAnalyticsCoreRpc(
       p_since: sinceIso,
       p_until: untilIso,
       p_limit: limit,
+      p_cutoff: cutoff,
     }),
   );
 
@@ -89,6 +91,7 @@ export async function fetchMerchantAnalyticsBundleRpc(
   coreLimit = 2500,
   topOrderLimit = 600,
   topN = 12,
+  cutoff = "04:00",
 ): Promise<MerchantAnalyticsBundleRpc | null> {
   const { data, error } = await withSupabaseReadRetry(() =>
     client.rpc("merchant_analytics_bundle", {
@@ -100,6 +103,7 @@ export async function fetchMerchantAnalyticsBundleRpc(
       p_core_limit: coreLimit,
       p_top_order_limit: topOrderLimit,
       p_top_n: topN,
+      p_cutoff: cutoff,
     }),
   );
 
@@ -169,8 +173,13 @@ function parseCancelReasons(v: unknown): MerchantAnalyticsRpcCore["cancel_reason
 }
 
 export type MerchantTodayMetricsRpc = {
-  today: { order_count: number; total_sales: number; cancelled_count: number };
-  yesterday: { order_count: number; total_sales: number };
+  today: {
+    order_count: number;
+    total_sales: number;
+    cancelled_count: number;
+    completed_count: number;
+  };
+  yesterday: { order_count: number; total_sales: number; completed_count: number };
 };
 
 export async function fetchMerchantTodayMetricsRpc(
@@ -202,15 +211,20 @@ export async function fetchMerchantTodayMetricsRpc(
   const t = todayRaw as Record<string, unknown>;
   const y = yesterdayRaw as Record<string, unknown>;
 
+  // 구 RPC(결제건수 미포함) — Node 폴백으로 분석탭과 동일 집계
+  if (!Object.prototype.hasOwnProperty.call(t, "completed_count")) return null;
+
   return {
     today: {
       order_count: Number(t.order_count) || 0,
       total_sales: Number(t.total_sales) || 0,
       cancelled_count: Number(t.cancelled_count) || 0,
+      completed_count: Number(t.completed_count) || 0,
     },
     yesterday: {
       order_count: Number(y.order_count) || 0,
       total_sales: Number(y.total_sales) || 0,
+      completed_count: Number(y.completed_count) || 0,
     },
   };
 }

@@ -5,7 +5,9 @@ import { MerchantGuestVisitStrip } from "@/components/merchant-guest-visit-strip
 import { updateOrderStatusFromForm } from "@/app/m/[tenant]/orders/actions";
 import { formatConsumerOrderNo } from "@/lib/orders/format-order-no";
 import { merchantCancelReasonLabel } from "@/lib/orders/merchant-cancel-reasons";
+import { MerchantOrderActionSubmit } from "@/components/merchant-order-action-submit";
 import { merchantOrderQuickActions } from "@/lib/orders/merchant-order-quick-actions";
+import { orderUsesTableSessionPay } from "@/lib/orders/order-table-session-pay";
 import { isMerchantOrdersTerminalTab } from "@/lib/orders/merchant-order-stage";
 import type { MerchantOrderRow } from "@/lib/orders/list-orders-for-merchant";
 import type { MerchantOrdersTab } from "@/lib/merchant/merchant-orders-tab";
@@ -127,7 +129,9 @@ export function MerchantOrderQueueCard({
   delayedIds,
 }: Props) {
   const label = formatConsumerOrderNo(row.order_no, row.id);
-  const quick = merchantOrderQuickActions(row.status);
+  const quick = merchantOrderQuickActions(row.status, {
+    tableSessionPay: orderUsesTableSessionPay(row.table_session_id, row.table_no),
+  });
   const minutes = minutesSince(row.created_at);
   const terminal = isMerchantOrdersTerminalTab(ordersTab);
   const cancelLabel = merchantCancelReasonLabel(row.cancel_reason);
@@ -255,15 +259,13 @@ export function MerchantOrderQueueCard({
               <input type="hidden" name="current_status" value={row.status} />
               <input type="hidden" name="status" value={action.status} />
               <input type="hidden" name="orders_tab" value={ordersTab} />
-              <button
-                type="submit"
+              <MerchantOrderActionSubmit
+                label={actionBtnLabel(action.status, row.table_no)}
                 className={[
-                  "w-full rounded-xl py-3.5 text-[15px] font-extrabold transition",
+                  "w-full rounded-xl py-3.5 text-[15px] font-extrabold",
                   ACTION_BTN_CLASS[action.status] ?? "bg-zinc-200 text-zinc-700",
                 ].join(" ")}
-              >
-                {actionBtnLabel(action.status, row.table_no)}
-              </button>
+              />
             </form>
           ))}
           {hasCancel && (row.status === "pending" || row.status === "accepted" || row.status === "preparing") ? (

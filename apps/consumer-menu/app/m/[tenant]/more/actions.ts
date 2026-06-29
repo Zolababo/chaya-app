@@ -120,6 +120,10 @@ export async function updateMerchantHoursFromForm(formData: FormData): Promise<v
   const orders_accepting = formData.get("orders_accepting") === "on";
   const break_start = parseHm(trim(formData.get("break_start"), 5));
   const break_end = parseHm(trim(formData.get("break_end"), 5));
+  const business_open = parseHm(trim(formData.get("business_open"), 5));
+  const business_close = parseHm(trim(formData.get("business_close"), 5));
+  const sales_day_cutoff =
+    parseHm(trim(formData.get("sales_day_cutoff"), 5)) ?? "04:00";
 
   const result = await upsertSettings(
     access.tenant,
@@ -127,6 +131,9 @@ export async function updateMerchantHoursFromForm(formData: FormData): Promise<v
       orders_accepting,
       break_start,
       break_end,
+      business_open,
+      business_close,
+      sales_day_cutoff,
     },
     access.userId,
     "store_hours_update",
@@ -195,6 +202,50 @@ export async function updateMerchantBreakTimeInline(
 
   revalidatePath(`/m/${encodeURIComponent(access.tenant)}`, "layout");
   return { ok: true, breakStart: break_start, breakEnd: break_end };
+}
+
+/** 설정 바텀시트 — 영업 시간·영업일 마감만 저장 */
+export async function updateMerchantBusinessHoursInline(
+  formData: FormData,
+): Promise<
+  | {
+      ok: true;
+      businessOpen: string | null;
+      businessClose: string | null;
+      salesDayCutoff: string;
+    }
+  | { ok: false; code: string }
+> {
+  const access = await getMerchantTenantActionAccess(formData);
+  if (!access || !canManageMerchantHours(access.role)) {
+    return { ok: false, code: "forbidden" };
+  }
+
+  const business_open = parseHm(trim(formData.get("business_open"), 5));
+  const business_close = parseHm(trim(formData.get("business_close"), 5));
+  const sales_day_cutoff = parseHm(trim(formData.get("sales_day_cutoff"), 5));
+  if (!sales_day_cutoff) {
+    return { ok: false, code: "invalid_hours" };
+  }
+
+  const result = await upsertSettings(
+    access.tenant,
+    { business_open, business_close, sales_day_cutoff },
+    access.userId,
+    "store_business_hours_update",
+  );
+
+  if (!result.ok) {
+    return { ok: false, code: result.code };
+  }
+
+  revalidatePath(`/m/${encodeURIComponent(access.tenant)}`, "layout");
+  return {
+    ok: true,
+    businessOpen: business_open,
+    businessClose: business_close,
+    salesDayCutoff: sales_day_cutoff,
+  };
 }
 
 export async function toggleMerchantOrdersAcceptingFromForm(formData: FormData): Promise<void> {

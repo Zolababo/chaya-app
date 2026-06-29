@@ -56,7 +56,7 @@ export function MerchantDashboardPageClient({ tenant, dashAlert }: Props) {
         </p>
       ) : null}
 
-      {!data && isRefreshing ? <MerchantLoadingCenter context="dashboard" /> : null}
+      {!data && !loadError ? <MerchantLoadingCenter context="dashboard" /> : null}
 
       {loadError ? (
         <p
@@ -77,17 +77,6 @@ export function MerchantDashboardPageClient({ tenant, dashAlert }: Props) {
             />
           ) : null}
 
-          {todayMetrics?.ok ? (
-            <MerchantHomeSalesCard tenant={tenant} metrics={todayMetrics} />
-          ) : todayMetrics && !todayMetrics.ok ? (
-            <p
-              role="status"
-              className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400"
-            >
-              {merchantOwnerLoadErrorMessage("metrics", todayMetrics.message)}
-            </p>
-          ) : null}
-
           {opsCounts && !opsCounts.ok ? (
             <p
               role="alert"
@@ -97,6 +86,17 @@ export function MerchantDashboardPageClient({ tenant, dashAlert }: Props) {
             </p>
           ) : opsCounts?.ok ? (
             <MerchantHomeOpsCard tenant={tenant} counts={opsCounts} />
+          ) : null}
+
+          {todayMetrics?.ok ? (
+            <MerchantHomeSalesCard tenant={tenant} metrics={todayMetrics} />
+          ) : todayMetrics && !todayMetrics.ok ? (
+            <p
+              role="status"
+              className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400"
+            >
+              {merchantOwnerLoadErrorMessage("metrics", todayMetrics.message)}
+            </p>
           ) : null}
 
           {data.canManageMenus && menuItems.length > 0 ? (

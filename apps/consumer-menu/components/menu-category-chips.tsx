@@ -7,26 +7,16 @@ type Props = {
   active: string;
   onSelect: (key: string) => void;
   ariaLabel: string;
-  /** TalkBack/VoiceOver — 칩 터치·글자 확대 */
+  /** 큰글씨·목록 — 칩만 키우고 레이아웃은 동일 */
   easyMode?: boolean;
-  screenReaderMode?: boolean;
 };
 
 /** a0 필터 바 스타일 — 배민·쿠팡이츠형 */
-export function MenuCategoryChips({
-  tabs,
-  active,
-  onSelect,
-  ariaLabel,
-  easyMode = false,
-  screenReaderMode = false,
-}: Props) {
+export function MenuCategoryChips({ tabs, active, onSelect, ariaLabel, easyMode = false }: Props) {
   if (tabs.length <= 1) return null;
 
-  const large = easyMode || screenReaderMode;
-
   const chipClass = (selected: boolean) => {
-    const base = large
+    const base = easyMode
       ? "min-h-[44px] shrink-0 rounded-full px-5 py-2 text-base font-medium leading-none transition-all"
       : "min-h-[32px] shrink-0 rounded-full px-4 py-1.5 text-sm font-medium leading-none transition-all";
     if (selected) {

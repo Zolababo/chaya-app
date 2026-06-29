@@ -1,7 +1,12 @@
 "use client";
 
+import { useMemo, useState } from "react";
+
 import { MerchantTableAddForm } from "@/components/merchant-table-add-form";
+import { MerchantTableBulkAddForm } from "@/components/merchant-table-bulk-add-form";
+import { MerchantTableQrCard } from "@/components/merchant-table-qr-card";
 import { MerchantTableRowActions } from "@/components/merchant-table-row-actions";
+import { MerchantTablesQrToolbar } from "@/components/merchant-tables-qr-toolbar";
 import { setTenantTableActiveAction } from "@/app/m/[tenant]/tables/actions";
 import { merchantSubCardClass } from "@/lib/merchant/merchant-more-sub-styles";
 import { buildConsumerTableUrl } from "@/lib/tables/consumer-table-url";
@@ -13,6 +18,7 @@ type Props = {
   listError: string | null;
   siteBase: string | null;
   canManage: boolean;
+  focusCode?: string | null;
 };
 
 export function MerchantTablesManager({
@@ -21,9 +27,26 @@ export function MerchantTablesManager({
   listError,
   siteBase,
   canManage,
+  focusCode,
 }: Props) {
   const active = items.filter((t) => t.is_active);
   const inactive = items.filter((t) => !t.is_active);
+  const activeCodes = useMemo(() => active.map((t) => t.table_code), [active]);
+  const [selectedCodes, setSelectedCodes] = useState<string[]>([]);
+
+  const focusRow = focusCode
+    ? active.find((t) => t.table_code === focusCode) ?? null
+    : null;
+
+  const toggleCode = (code: string) => {
+    setSelectedCodes((prev) =>
+      prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code],
+    );
+  };
+
+  const toggleAll = (on: boolean) => {
+    setSelectedCodes(on ? [...activeCodes] : []);
+  };
 
   return (
     <div className="space-y-3">
@@ -31,17 +54,45 @@ export function MerchantTablesManager({
         등록된 테이블 <span className="tabular-nums">{active.length}개</span>
       </p>
 
+      {focusRow ? (
+        <MerchantTableQrCard
+          tenant={tenant}
+          tableCode={focusRow.table_code}
+          consumerUrl={buildConsumerTableUrl(tenant, focusRow.table_code, siteBase)}
+        />
+      ) : null}
+
+      {active.length > 0 ? (
+        <MerchantTablesQrToolbar
+          tenant={tenant}
+          tableCodes={activeCodes}
+          selectedCodes={selectedCodes}
+          onToggle={toggleCode}
+          onToggleAll={toggleAll}
+        />
+      ) : null}
+
       <section className={merchantSubCardClass}>
         {active.length > 0 ? (
           <ul>
             {active.map((row) => {
               const url = buildConsumerTableUrl(tenant, row.table_code, siteBase);
+              const selected = selectedCodes.includes(row.table_code);
               return (
                 <li
                   key={row.id}
-                  className="flex min-h-[52px] items-center gap-3 border-t border-[#F3F4F6] px-4 first:border-t-0 dark:border-zinc-800"
+                  className="flex min-h-[52px] items-center gap-2 border-t border-[#F3F4F6] px-3 first:border-t-0 dark:border-zinc-800 sm:gap-3 sm:px-4"
                 >
-                  <p className="flex-1 text-[15px] font-extrabold tabular-nums text-[#111827] dark:text-zinc-50">
+                  {canManage ? (
+                    <input
+                      type="checkbox"
+                      checked={selected}
+                      onChange={() => toggleCode(row.table_code)}
+                      aria-label={`테이블 ${row.table_code} 선택`}
+                      className="size-4 shrink-0 rounded border-[#D1D5DB]"
+                    />
+                  ) : null}
+                  <p className="min-w-0 flex-1 text-[15px] font-extrabold tabular-nums text-[#111827] dark:text-zinc-50">
                     테이블 {row.table_code}
                   </p>
                   <MerchantTableRowActions
@@ -61,7 +112,12 @@ export function MerchantTablesManager({
           </p>
         )}
 
-        {canManage ? <MerchantTableAddForm tenant={tenant} /> : null}
+        {canManage ? (
+          <>
+            <MerchantTableAddForm tenant={tenant} />
+            <MerchantTableBulkAddForm tenant={tenant} />
+          </>
+        ) : null}
       </section>
 
       {listError ? (

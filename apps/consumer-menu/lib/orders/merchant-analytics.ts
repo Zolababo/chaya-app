@@ -6,11 +6,21 @@ import {
   fetchMerchantAnalyticsTopMenusRpc,
   fetchMerchantTodayMetricsRpc,
 } from "@/lib/orders/merchant-analytics-rpc";
+import { countPaymentEventsFromOrderRows } from "@/lib/merchant/payment-event-count";
+import {
+  getTenantCurrentBusinessDayBounds,
+  getTenantPreviousBusinessDayBounds,
+  resolveTenantAnalyticsTimeBounds,
+} from "@/lib/merchant/resolve-tenant-analytics-bounds";
 import { createServiceSupabase } from "@/lib/supabase/create-service-client";
 import { withSupabaseReadRetry } from "@/lib/supabase/transient-retry";
+import {
+  buildBusinessDayChartKeys,
+  businessDayKeyFromIso,
+  KST,
+} from "@/lib/tenant/merchant-business-day";
 
 const MAX_ORDERS = 2500;
-const KST = "Asia/Seoul";
 
 const WEEKDAY_KO = ["일", "월", "화", "수", "목", "금", "토"] as const;
 
@@ -94,16 +104,21 @@ export type MerchantTodayKstMetrics =
       ok: true;
       dateKey: string;
       dateLabel: string;
+      /** 영업일 구간 안내 (예: 6/27 04:00 ~ 6/28 04:00) */
+      rangeLabel: string;
+      /** 당일 접수 주문 수 (created_at · 영업일) */
       orderCount: number;
+      /** 결제완료(completed_at) 매출 합계 · 영업일 */
       totalSales: number;
+      /** 결제 이벤트 수 — 테이블 세션당 1 */
+      completedCount: number;
       cancelledCount: number;
-      /** 어제 매출 (비교용, 데이터 없으면 null) */
       yesterdaySales: number | null;
       yesterdayOrderCount: number | null;
     }
   | { ok: false; message: string };
 
-/** KST 기준 당일 00:00~익일 00:00 (UTC ISO). */
+/** @deprecated 플랫폼·레거시 — 점주 UI는 영업일(`getTenantCurrentBusinessDayBounds`) 사용 */
 export function getKstCalendarDayBounds(nowMs = Date.now()): {
   dateKey: string;
   dateLabel: string;
@@ -122,7 +137,7 @@ export function getKstCalendarDayBounds(nowMs = Date.now()): {
   return { dateKey, dateLabel, sinceIso: since.toISOString(), untilIso: until.toISOString() };
 }
 
-/** 점주 홈 — **오늘(영업일)** 매출·주문. 롤링 24시간 아님. */
+/** 점주 홈 — **이번 영업일** 매출·주문 (결제·접수 이원). */
 export async function getMerchantTodayKstMetrics(tenantSlug: string): Promise<MerchantTodayKstMetrics> {
   const slug = tenantSlug.trim();
   if (!slug) return { ok: false, message: "테넌트가 없습니다." };
@@ -136,10 +151,12 @@ export async function getMerchantTodayKstMetrics(tenantSlug: string): Promise<Me
     };
   }
 
-  const { dateKey, dateLabel, sinceIso, untilIso } = getKstCalendarDayBounds();
-  const { sinceIso: ySinceIso, untilIso: yUntilIso } = getKstCalendarDayBounds(
-    Date.now() - 24 * 60 * 60 * 1000,
-  );
+  const [todayBounds, yesterdayBounds] = await Promise.all([
+    getTenantCurrentBusinessDayBounds(slug),
+    getTenantPreviousBusinessDayBounds(slug),
+  ]);
+  const { businessDayKey: dateKey, dateLabel, rangeLabel, sinceIso, untilIso, cutoff } = todayBounds;
+  const { sinceIso: ySinceIso, untilIso: yUntilIso } = yesterdayBounds;
 
   const rpc = await fetchMerchantTodayMetricsRpc(
     client,
@@ -155,20 +172,22 @@ export async function getMerchantTodayKstMetrics(tenantSlug: string): Promise<Me
       ok: true,
       dateKey,
       dateLabel,
+      rangeLabel,
       orderCount: rpc.today.order_count,
       totalSales: rpc.today.total_sales,
+      completedCount: rpc.today.completed_count,
       cancelledCount: rpc.today.cancelled_count,
       yesterdaySales: rpc.yesterday.total_sales,
       yesterdayOrderCount: rpc.yesterday.order_count,
     };
   }
 
-  // RPC 미적용 DB — 행 스캔 fallback (매출은 completed_at 우선)
-  const [{ data, error }, { data: ySalesData }, { data: yDataLegacy }] = await Promise.all([
+  // RPC 미적용 DB — 행 스캔 fallback (매출·결제건수는 completed_at 우선, 분석탭과 동일)
+  const [{ data, error }, { data: todayPaidRows }, { data: yPaidRows }] = await Promise.all([
     withSupabaseReadRetry(() =>
       client
         .from("orders")
-        .select("total_price, status, completed_at")
+        .select("status")
         .eq("tenant_slug", slug)
         .gte("created_at", sinceIso)
         .lt("created_at", untilIso),
@@ -176,19 +195,24 @@ export async function getMerchantTodayKstMetrics(tenantSlug: string): Promise<Me
     withSupabaseReadRetry(() =>
       client
         .from("orders")
-        .select("total_price, status, completed_at")
+        .select("id, total_price, table_session_id, completed_at, created_at")
         .eq("tenant_slug", slug)
         .eq("status", "completed")
-        .gte("completed_at", ySinceIso)
-        .lt("completed_at", yUntilIso),
+        .or(
+          `and(completed_at.gte.${sinceIso},completed_at.lt.${untilIso}),` +
+            `and(completed_at.is.null,created_at.gte.${sinceIso},created_at.lt.${untilIso})`,
+        ),
     ),
     withSupabaseReadRetry(() =>
       client
         .from("orders")
-        .select("total_price, status")
+        .select("id, total_price, table_session_id, completed_at, created_at, status")
         .eq("tenant_slug", slug)
-        .gte("created_at", ySinceIso)
-        .lt("created_at", yUntilIso),
+        .eq("status", "completed")
+        .or(
+          `and(completed_at.gte.${ySinceIso},completed_at.lt.${yUntilIso}),` +
+            `and(completed_at.is.null,created_at.gte.${ySinceIso},created_at.lt.${yUntilIso})`,
+        ),
     ),
   ]);
 
@@ -196,87 +220,63 @@ export async function getMerchantTodayKstMetrics(tenantSlug: string): Promise<Me
     return { ok: false, message: error.message ?? "오늘 주문 집계를 불러오지 못했습니다." };
   }
 
-  let totalSales = 0;
   let orderCount = 0;
   let cancelledCount = 0;
   for (const row of data ?? []) {
     orderCount += 1;
     const status = typeof row.status === "string" ? row.status : "";
-    if (status === "cancelled") {
-      cancelledCount += 1;
-    }
-    const completedAt =
-      typeof row.completed_at === "string" ? row.completed_at : null;
-    if (
-      status === "completed" &&
-      completedAt &&
-      completedAt >= sinceIso &&
-      completedAt < untilIso
-    ) {
-      totalSales += parsePrice(row.total_price);
-    }
+    if (status === "cancelled") cancelledCount += 1;
   }
+
+  let totalSales = 0;
+  const paidRows = (todayPaidRows as Record<string, unknown>[] | null) ?? [];
+  for (const row of paidRows) {
+    totalSales += parsePrice(row.total_price);
+  }
+  const completedCount = countPaymentEventsFromOrderRows(paidRows);
 
   let yesterdaySales: number | null = null;
   let yesterdayOrderCount: number | null = null;
-  if (ySalesData && ySalesData.length > 0) {
+  const yPaid = (yPaidRows as Record<string, unknown>[] | null) ?? [];
+  if (yPaid.length > 0) {
     yesterdaySales = 0;
-    yesterdayOrderCount = 0;
-    for (const row of ySalesData) {
-      yesterdayOrderCount += 1;
+    for (const row of yPaid) {
       yesterdaySales += parsePrice(row.total_price);
     }
-  } else if (yDataLegacy) {
-    yesterdaySales = 0;
-    yesterdayOrderCount = 0;
-    for (const row of yDataLegacy) {
-      const status = typeof row.status === "string" ? row.status : "";
-      if (status !== "completed") continue;
-      yesterdayOrderCount += 1;
-      yesterdaySales += parsePrice(row.total_price);
-    }
+  }
+
+  const { data: yCreatedRows } = await withSupabaseReadRetry(() =>
+    client
+      .from("orders")
+      .select("status")
+      .eq("tenant_slug", slug)
+      .gte("created_at", ySinceIso)
+      .lt("created_at", yUntilIso),
+  );
+  if (yCreatedRows && yCreatedRows.length > 0) {
+    yesterdayOrderCount = yCreatedRows.length;
   }
 
   return {
     ok: true,
     dateKey,
     dateLabel,
+    rangeLabel,
     orderCount,
     totalSales,
+    completedCount,
     cancelledCount,
     yesterdaySales,
     yesterdayOrderCount,
   };
 }
 
-function buildDailyKeys(
-  sinceMs: number,
-  untilMs: number,
+function buildDailyKeysFromBounds(
+  sinceIso: string,
+  untilIso: string,
+  cutoff: string,
 ): { key: string; label: string; fullLabel: string }[] {
-  // untilMs의 KST 날짜 키를 기준으로 루프 종료 → "내일" 포함 버그 방지
-  const untilKey = new Date(untilMs).toLocaleDateString("en-CA", { timeZone: KST });
-  const out: { key: string; label: string; fullLabel: string }[] = [];
-  let cur = sinceMs;
-  for (let guard = 0; guard < 400; guard++) {
-    const d = new Date(cur);
-    const key = d.toLocaleDateString("en-CA", { timeZone: KST });
-    if (key > untilKey) break;
-    // X축 레이블: "5/21" 형식
-    const parts = new Intl.DateTimeFormat("en-US", {
-      timeZone: KST,
-      month: "numeric",
-      day: "numeric",
-    }).formatToParts(d);
-    const m = parts.find((p) => p.type === "month")?.value ?? "";
-    const day = parts.find((p) => p.type === "day")?.value ?? "";
-    const label = `${m}/${day}`;
-    // 툴팁용 fullLabel: "5/21(목)"
-    const wd = WEEKDAY_KO[d.getDay() as 0 | 1 | 2 | 3 | 4 | 5 | 6];
-    const fullLabel = `${label}(${wd})`;
-    if (out.length === 0 || out[out.length - 1]!.key !== key) out.push({ key, label, fullLabel });
-    cur += 24 * 60 * 60 * 1000;
-  }
-  return out;
+  return buildBusinessDayChartKeys(sinceIso, untilIso, cutoff);
 }
 
 export type MerchantAnalyticsRequest =
@@ -287,51 +287,6 @@ export type MerchantAnalyticsRequest =
 export type MerchantAnalyticsTimeBounds =
   | { ok: true; sinceIso: string; untilIso: string; periodLabel: string }
   | { ok: false; message: string };
-
-/** 매출·손님 분석 공통 KST 기간 (결제완료 집계용 `untilIso` 포함). */
-export function resolveMerchantAnalyticsTimeBounds(
-  req: MerchantAnalyticsRequest,
-): MerchantAnalyticsTimeBounds {
-  let sinceMs: number;
-  let untilMs: number;
-  let periodLabel: string;
-
-  if (req.kind === "month") {
-    const nowMs = Date.now();
-    const todayKey = new Date(nowMs).toLocaleDateString("en-CA", { timeZone: KST });
-    const [y, mo] = todayKey.split("-").map(Number) as [number, number];
-    sinceMs = new Date(`${y}-${String(mo).padStart(2, "0")}-01T00:00:00+09:00`).getTime();
-    untilMs = new Date(`${todayKey}T23:59:59.999+09:00`).getTime();
-    periodLabel = "이번 달";
-  } else if (req.kind === "range") {
-    const fromMs = new Date(`${req.from}T00:00:00+09:00`).getTime();
-    const toMs = new Date(`${req.to}T23:59:59.999+09:00`).getTime();
-    if (!Number.isFinite(fromMs) || !Number.isFinite(toMs) || fromMs > toMs) {
-      return { ok: false, message: "기간 설정이 올바르지 않습니다." };
-    }
-    sinceMs = fromMs;
-    untilMs = toMs;
-    periodLabel = `${req.from.slice(5)} ~ ${req.to.slice(5)}`;
-  } else {
-    const nowMs = Date.now();
-    const todayKey = new Date(nowMs).toLocaleDateString("en-CA", { timeZone: KST });
-    untilMs = new Date(`${todayKey}T23:59:59.999+09:00`).getTime();
-    const startKey = new Date(nowMs - (req.days - 1) * 24 * 60 * 60 * 1000).toLocaleDateString(
-      "en-CA",
-      { timeZone: KST },
-    );
-    sinceMs = new Date(`${startKey}T00:00:00+09:00`).getTime();
-    periodLabel =
-      req.days === 1 ? "오늘" : req.days === 7 ? "최근 7일" : req.days === 30 ? "최근 30일" : `최근 ${req.days}일`;
-  }
-
-  return {
-    ok: true,
-    sinceIso: new Date(sinceMs).toISOString(),
-    untilIso: new Date(untilMs).toISOString(),
-    periodLabel,
-  };
-}
 
 /** 점주 분석 보드 — 일별·시간대·요일·인기 메뉴 (주문 스캔 기반). */
 export async function getMerchantAnalytics(
@@ -350,48 +305,20 @@ export async function getMerchantAnalytics(
     };
   }
 
-  let sinceMs: number;
-  let untilMs: number;
-  let days: number;
+  const bounds = await resolveTenantAnalyticsTimeBounds(slug, req);
+  if (!bounds.ok) return { ok: false, message: bounds.message };
 
-  if (req.kind === "month") {
-    const nowMs = Date.now();
-    const todayKey = new Date(nowMs).toLocaleDateString("en-CA", { timeZone: KST });
-    const [y, mo] = todayKey.split("-").map(Number) as [number, number];
-    sinceMs = new Date(`${y}-${String(mo).padStart(2, "0")}-01T00:00:00+09:00`).getTime();
-    untilMs = new Date(`${todayKey}T23:59:59+09:00`).getTime();
-    days = Math.round((untilMs - sinceMs) / (24 * 60 * 60 * 1000)) + 1;
-  } else if (req.kind === "range") {
-    const fromMs = new Date(`${req.from}T00:00:00+09:00`).getTime();
-    const toMs = new Date(`${req.to}T23:59:59+09:00`).getTime();
-    if (!Number.isFinite(fromMs) || !Number.isFinite(toMs) || fromMs > toMs) {
-      return { ok: false, message: "기간 설정이 올바르지 않습니다." };
-    }
-    sinceMs = fromMs;
-    untilMs = toMs;
-    days = Math.round((untilMs - sinceMs) / (24 * 60 * 60 * 1000)) + 1;
-  } else {
-    // period
-    const nowMs = Date.now();
-    const todayKey = new Date(nowMs).toLocaleDateString("en-CA", { timeZone: KST });
-    untilMs = new Date(`${todayKey}T23:59:59+09:00`).getTime();
-    const startKey = new Date(nowMs - (req.days - 1) * 24 * 60 * 60 * 1000).toLocaleDateString(
-      "en-CA",
-      { timeZone: KST },
-    );
-    sinceMs = new Date(`${startKey}T00:00:00+09:00`).getTime();
-    days = req.days;
-  }
-
-  // 이전 기간 범위 (비교용)
+  const { sinceIso, untilIso, cutoff } = bounds;
+  const sinceMs = Date.parse(sinceIso);
+  const untilMs = Date.parse(untilIso);
   const duration = untilMs - sinceMs;
-  const prevSinceMs = sinceMs - duration - 1;
-  const prevUntilMs = sinceMs - 1;
+  const prevUntilIso = sinceIso;
+  const prevSinceIso = new Date(sinceMs - duration).toISOString();
 
-  const sinceIso = new Date(sinceMs).toISOString();
-  const untilIso = new Date(untilMs).toISOString();
-  const prevSinceIso = new Date(prevSinceMs).toISOString();
-  const prevUntilIso = new Date(prevUntilMs).toISOString();
+  const days =
+    req.kind === "period"
+      ? req.days
+      : Math.max(1, buildBusinessDayChartKeys(sinceIso, untilIso, cutoff).length);
 
   const bundle = await fetchMerchantAnalyticsBundleRpc(
     client,
@@ -401,6 +328,9 @@ export async function getMerchantAnalytics(
     prevSinceIso,
     prevUntilIso,
     MAX_ORDERS,
+    600,
+    12,
+    cutoff,
   );
 
   let core = bundle?.current ?? null;
@@ -411,8 +341,8 @@ export async function getMerchantAnalytics(
     topMenusRpc = await resolveTopMenuNames(client, slug, bundle.top_menus);
   } else {
     const [coreRpc, prevCoreRpc, topMenusFallback] = await Promise.all([
-      fetchMerchantAnalyticsCoreRpc(client, slug, sinceIso, untilIso, MAX_ORDERS),
-      fetchMerchantAnalyticsCoreRpc(client, slug, prevSinceIso, prevUntilIso, MAX_ORDERS),
+      fetchMerchantAnalyticsCoreRpc(client, slug, sinceIso, untilIso, MAX_ORDERS, cutoff),
+      fetchMerchantAnalyticsCoreRpc(client, slug, prevSinceIso, prevUntilIso, MAX_ORDERS, cutoff),
       fetchTopMenusForAnalytics(client, slug, sinceIso, untilIso),
     ]);
     core = coreRpc;
@@ -421,7 +351,7 @@ export async function getMerchantAnalytics(
   }
 
   if (core) {
-    const dailyKeys = buildDailyKeys(sinceMs, untilMs);
+    const dailyKeys = buildDailyKeysFromBounds(sinceIso, untilIso, cutoff);
     const dailyMap = new Map(core.daily.map((d) => [d.day_key, d]));
     const daily = dailyKeys.map(({ key, label, fullLabel }) => {
       const b = dailyMap.get(key);
@@ -452,7 +382,7 @@ export async function getMerchantAnalytics(
       };
     });
 
-    const prevDailyKeys = buildDailyKeys(prevSinceMs, prevUntilMs);
+    const prevDailyKeys = buildDailyKeysFromBounds(prevSinceIso, prevUntilIso, cutoff);
     const prevDailyMap = new Map((prevCore?.daily ?? []).map((d) => [d.day_key, d]));
     const prevDaily = prevDailyKeys.map(({ key }) => {
       const b = prevDailyMap.get(key);
@@ -483,39 +413,91 @@ export async function getMerchantAnalytics(
 
   // RPC 미적용 DB — Node 스캔 폴백
   // cancel_reason 컬럼이 없는 환경을 위해 폴백 재시도
-  const buildMainQuery = (withCancelReason: boolean) =>
-    client
+  const buildMainQuery = (withCancelReason: boolean, withTableSession: boolean, withCompletedAt: boolean) => {
+    const base = withCancelReason
+      ? withTableSession
+        ? "created_at, total_price, status, items, cancel_reason, table_session_id, id"
+        : "created_at, total_price, status, items, cancel_reason, id"
+      : withTableSession
+        ? "created_at, total_price, status, items, table_session_id, id"
+        : "created_at, total_price, status, items, id";
+    const cols = withCompletedAt ? `${base}, completed_at` : base;
+    return client
       .from("orders")
-      .select(
-        withCancelReason
-          ? "created_at, total_price, status, items, cancel_reason"
-          : "created_at, total_price, status, items",
-      )
+      .select(cols)
       .eq("tenant_slug", slug)
       .gte("created_at", sinceIso)
-      .lte("created_at", untilIso)
+      .lt("created_at", untilIso)
       .order("created_at", { ascending: false })
       .limit(MAX_ORDERS);
+  };
 
-  let mainResult = await withSupabaseReadRetry(() => buildMainQuery(true));
+  let mainResult = await withSupabaseReadRetry(() => buildMainQuery(true, true, true));
+  if (
+    mainResult.error &&
+    /table_session_id|column.*does not exist/i.test(mainResult.error.message ?? "")
+  ) {
+    mainResult = await withSupabaseReadRetry(() => buildMainQuery(true, false, true));
+  }
   if (
     mainResult.error &&
     /cancel_reason|column.*does not exist/i.test(mainResult.error.message ?? "")
   ) {
-    mainResult = await withSupabaseReadRetry(() => buildMainQuery(false));
+    mainResult = await withSupabaseReadRetry(() => buildMainQuery(false, true, true));
+    if (
+      mainResult.error &&
+      /table_session_id|column.*does not exist/i.test(mainResult.error.message ?? "")
+    ) {
+      mainResult = await withSupabaseReadRetry(() => buildMainQuery(false, false, true));
+    }
   }
+  if (
+    mainResult.error &&
+    /completed_at|column.*does not exist/i.test(mainResult.error.message ?? "")
+  ) {
+    mainResult = await withSupabaseReadRetry(() => buildMainQuery(true, true, false));
+    if (
+      mainResult.error &&
+      /table_session_id|column.*does not exist/i.test(mainResult.error.message ?? "")
+    ) {
+      mainResult = await withSupabaseReadRetry(() => buildMainQuery(true, false, false));
+    }
+  }
+
+  const { data: paidRowsRaw } = await withSupabaseReadRetry(() =>
+    client
+      .from("orders")
+      .select("id, total_price, table_session_id, completed_at, created_at, items, status")
+      .eq("tenant_slug", slug)
+      .eq("status", "completed")
+      .or(
+        `and(completed_at.gte.${sinceIso},completed_at.lt.${untilIso}),` +
+          `and(completed_at.is.null,created_at.gte.${sinceIso},created_at.lt.${untilIso})`,
+      ),
+  );
 
   const { data: rawData, error } = mainResult;
 
-  const [{ data: prevData }] = await Promise.all([
+  const [{ data: prevData }, { data: prevPaidRowsRaw }] = await Promise.all([
     withSupabaseReadRetry(() =>
       client
         .from("orders")
         .select("created_at, total_price, status")
         .eq("tenant_slug", slug)
         .gte("created_at", prevSinceIso)
-        .lte("created_at", prevUntilIso)
+        .lt("created_at", prevUntilIso)
         .limit(MAX_ORDERS),
+    ),
+    withSupabaseReadRetry(() =>
+      client
+        .from("orders")
+        .select("total_price, completed_at, created_at")
+        .eq("tenant_slug", slug)
+        .eq("status", "completed")
+        .or(
+          `and(completed_at.gte.${prevSinceIso},completed_at.lt.${prevUntilIso}),` +
+            `and(completed_at.is.null,created_at.gte.${prevSinceIso},created_at.lt.${prevUntilIso})`,
+        ),
     ),
   ]);
 
@@ -526,7 +508,7 @@ export async function getMerchantAnalytics(
     return { ok: false, message: error.message ?? "주문 데이터를 불러오지 못했습니다." };
   }
 
-  const dailyKeys = buildDailyKeys(sinceMs, untilMs);
+  const dailyKeys = buildDailyKeysFromBounds(sinceIso, untilIso, cutoff);
   const dailyMap = new Map(dailyKeys.map((d) => [d.key, { orders: 0, sales: 0 }]));
   const hourly = Array.from({ length: 24 }, (_, hour) => ({
     hour,
@@ -539,53 +521,55 @@ export async function getMerchantAnalytics(
 
   const menuQty = new Map<string, number>();
   const reasonQty = new Map<string, number>();
-  let totalSales = 0;
-  let completedCount = 0;
   let cancelledCount = 0;
+  const paidRows = (paidRowsRaw as Record<string, unknown>[] | null) ?? [];
 
   for (const rawRow of data) {
     const row = rawRow as Record<string, unknown>;
     const created = typeof row.created_at === "string" ? row.created_at : "";
     const status = typeof row.status === "string" ? row.status : "";
-    const price = parsePrice(row.total_price);
-    const countsForSales = status !== "cancelled";
 
     if (status === "cancelled") {
       cancelledCount += 1;
-      // cancel_reason 집계 — created_at 시각 기준 (취소 시각 근사치)
-      const rawReason = (row as Record<string, unknown>).cancel_reason;
+      const rawReason = row.cancel_reason;
       const reason =
-        typeof rawReason === "string" && rawReason.trim()
-          ? rawReason.trim()
-          : "other";
+        typeof rawReason === "string" && rawReason.trim() ? rawReason.trim() : "other";
       reasonQty.set(reason, (reasonQty.get(reason) ?? 0) + 1);
     }
-    if (status === "completed") completedCount += 1;
 
-    if (countsForSales) totalSales += price;
-
-    const dateKey = created ? kstDateKey(created) : null;
-    if (dateKey && dailyMap.has(dateKey)) {
-      const bucket = dailyMap.get(dateKey)!;
-      bucket.orders += 1;
-      if (countsForSales) bucket.sales += price;
+    const bizKey = created ? businessDayKeyFromIso(created, cutoff) : null;
+    if (bizKey && dailyMap.has(bizKey)) {
+      dailyMap.get(bizKey)!.orders += 1;
     }
 
     const hour = created ? kstHour(created) : null;
-    if (hour != null) {
-      hourly[hour]!.orders += 1;
-      if (countsForSales) hourly[hour]!.sales += price;
-    }
+    if (hour != null) hourly[hour]!.orders += 1;
 
     const dow = created ? kstWeekday(created) : null;
-    if (dow != null) {
-      const w = dowMap.get(dow)!;
-      w.orders += 1;
-      if (countsForSales) w.sales += price;
+    if (dow != null) dowMap.get(dow)!.orders += 1;
+  }
+
+  let totalSales = 0;
+  for (const row of paidRows) {
+    const price = parsePrice(row.total_price);
+    totalSales += price;
+    const paidIso =
+      typeof row.completed_at === "string" && row.completed_at
+        ? row.completed_at
+        : typeof row.created_at === "string"
+          ? row.created_at
+          : "";
+    const bizKey = paidIso ? businessDayKeyFromIso(paidIso, cutoff) : null;
+    if (bizKey && dailyMap.has(bizKey)) {
+      dailyMap.get(bizKey)!.sales += price;
     }
+    const hour = paidIso ? kstHour(paidIso) : null;
+    if (hour != null) hourly[hour]!.sales += price;
+    const dow = paidIso ? kstWeekday(paidIso) : null;
+    if (dow != null) dowMap.get(dow)!.sales += price;
 
     const itemsRaw = row.items;
-    if (Array.isArray(itemsRaw) && countsForSales) {
+    if (Array.isArray(itemsRaw)) {
       for (const elem of itemsRaw) {
         const line = parseOrderLine(elem);
         if (!line) continue;
@@ -593,6 +577,8 @@ export async function getMerchantAnalytics(
       }
     }
   }
+
+  const completedCount = countPaymentEventsFromOrderRows(paidRows);
 
   const rankedIds = [...menuQty.entries()]
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
@@ -620,18 +606,26 @@ export async function getMerchantAnalytics(
   }));
 
   // 이전 기간 집계 (비교용)
-  const prevDailyKeys = buildDailyKeys(prevSinceMs, prevUntilMs);
+  const prevDailyKeys = buildDailyKeysFromBounds(prevSinceIso, prevUntilIso, cutoff);
   const prevDailyMap = new Map(prevDailyKeys.map((d) => [d.key, { orders: 0, sales: 0 }]));
   for (const row of prevData ?? []) {
     const created = typeof row.created_at === "string" ? row.created_at : "";
-    const status = typeof row.status === "string" ? row.status : "";
-    const price = parsePrice((row as Record<string, unknown>).total_price);
-    const countsForSales = status !== "cancelled";
-    const dateKey = created ? kstDateKey(created) : null;
-    if (dateKey && prevDailyMap.has(dateKey)) {
-      const bucket = prevDailyMap.get(dateKey)!;
-      bucket.orders += 1;
-      if (countsForSales) bucket.sales += price;
+    const bizKey = created ? businessDayKeyFromIso(created, cutoff) : null;
+    if (bizKey && prevDailyMap.has(bizKey)) {
+      prevDailyMap.get(bizKey)!.orders += 1;
+    }
+  }
+  for (const row of (prevPaidRowsRaw as Record<string, unknown>[] | null) ?? []) {
+    const price = parsePrice(row.total_price);
+    const paidIso =
+      typeof row.completed_at === "string" && row.completed_at
+        ? row.completed_at
+        : typeof row.created_at === "string"
+          ? row.created_at
+          : "";
+    const bizKey = paidIso ? businessDayKeyFromIso(paidIso, cutoff) : null;
+    if (bizKey && prevDailyMap.has(bizKey)) {
+      prevDailyMap.get(bizKey)!.sales += price;
     }
   }
   const prevDaily = prevDailyKeys.map(({ key }) => {
@@ -687,12 +681,14 @@ async function fetchTopMenusForAnalytics(
   const { data } = await withSupabaseReadRetry(() =>
     client
       .from("orders")
-      .select("items")
+      .select("items, completed_at, created_at")
       .eq("tenant_slug", slug)
-      .gte("created_at", sinceIso)
-      .lte("created_at", untilIso)
-      .neq("status", "cancelled")
-      .order("created_at", { ascending: false })
+      .eq("status", "completed")
+      .or(
+        `and(completed_at.gte.${sinceIso},completed_at.lt.${untilIso}),` +
+          `and(completed_at.is.null,created_at.gte.${sinceIso},created_at.lt.${untilIso})`,
+      )
+      .order("completed_at", { ascending: false })
       .limit(600),
   );
 

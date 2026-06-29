@@ -10,6 +10,7 @@ import {
 } from "@/lib/merchant/merchant-orders-tab";
 import { listOrdersForMerchant, type MerchantOrderRow } from "@/lib/orders/list-orders-for-merchant";
 import { getMerchantHomeOpsCounts } from "@/lib/orders/merchant-home-ops";
+import { listOpenTableSessionSummaries } from "@/lib/merchant/table-session";
 
 export const dynamic = "force-dynamic";
 
@@ -33,9 +34,10 @@ export async function GET(request: Request, { params }: RouteParams) {
     null,
   );
 
-  const [opsCounts, listResult] = await Promise.all([
+  const [opsCounts, listResult, openTableSessions] = await Promise.all([
     getMerchantHomeOpsCounts(auth.slug),
     listOrdersForMerchant(auth.slug, tabToListQuery(preliminaryTab)),
+    listOpenTableSessionSummaries(auth.slug),
   ]);
 
   const pendingCount = opsCounts.ok ? opsCounts.pending : null;
@@ -67,6 +69,7 @@ export async function GET(request: Request, { params }: RouteParams) {
       ok: true,
       tab: activeTab,
       rows,
+      openTableSessions,
       ops: {
         pending: opsCounts.pending,
         cooking: opsCounts.cooking,

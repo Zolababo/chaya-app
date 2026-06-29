@@ -5,6 +5,7 @@ import type { AppLocale } from "./locales";
 import { DEFAULT_LOCALE } from "./locales";
 
 type MessageTree = {
+  footer: { dataNotice: string };
   nav: { menu: string; cart: string; orders: string };
   menu: {
     boardTitle: string;
@@ -66,6 +67,9 @@ type CoreMessageTree = Omit<
 >;
 
 const KO: CoreMessageTree = {
+  footer: {
+    dataNotice: "서비스 이용 데이터는 매장 서비스 개선에 활용됩니다.",
+  },
   nav: { menu: "메뉴", cart: "장바구니", orders: "주문내역" },
   menu: {
     boardTitle: "메뉴판",
@@ -125,6 +129,9 @@ const KO: CoreMessageTree = {
 };
 
 const EN: CoreMessageTree = {
+  footer: {
+    dataNotice: "Usage data helps improve service at this store.",
+  },
   nav: { menu: "Menu", cart: "Cart", orders: "Orders" },
   menu: {
     boardTitle: "Menu",
@@ -184,6 +191,9 @@ const EN: CoreMessageTree = {
 };
 
 const JA: CoreMessageTree = {
+  footer: {
+    dataNotice: "サービス利用データは、店舗のサービス向上に活用されます。",
+  },
   nav: { menu: "メニュー", cart: "カート", orders: "注文" },
   menu: {
     boardTitle: "メニュー",
@@ -243,6 +253,9 @@ const JA: CoreMessageTree = {
 };
 
 const ZH_HANS: CoreMessageTree = {
+  footer: {
+    dataNotice: "服务使用数据将用于改善本店服务。",
+  },
   nav: { menu: "菜单", cart: "购物车", orders: "订单" },
   menu: {
     boardTitle: "菜单",
@@ -297,6 +310,9 @@ const ZH_HANS: CoreMessageTree = {
 };
 
 const ZH_HANT: CoreMessageTree = {
+  footer: {
+    dataNotice: "服務使用資料將用於改善本店服務。",
+  },
   nav: { menu: "菜單", cart: "購物車", orders: "訂單" },
   menu: {
     boardTitle: "菜單",
@@ -381,5 +397,16 @@ export function consumerMessages(locale: AppLocale): MessageTree {
     easyMenuOff: base.header.easyMenuOff ?? EN.header.easyMenuOff,
     easyMenuOffAria: base.header.easyMenuOffAria ?? EN.header.easyMenuOffAria,
   };
-  return { ...base, menu, header, ...flowMessages(locale), ...a11yMessages(locale), ...errorsMessages(locale) };
+  const footer = {
+    dataNotice: base.footer.dataNotice ?? EN.footer.dataNotice,
+  };
+  return {
+    ...base,
+    menu,
+    header,
+    footer,
+    ...flowMessages(locale),
+    ...a11yMessages(locale),
+    ...errorsMessages(locale),
+  };
 }

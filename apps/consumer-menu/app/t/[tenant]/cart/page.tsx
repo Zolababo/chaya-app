@@ -17,6 +17,9 @@ export default async function CartPage({ params, searchParams }: Props) {
 
   return (
     <div aria-label={m.cart.pageTitle}>
+      <h1 className="sr-only">{m.cart.pageTitle}</h1>
+      <p className="sr-only">{m.cart.listLabel}</p>
+      <p className="sr-only">{m.payment.offlineLead}</p>
       <CartCheckoutClient key={tenant} tenant={tenant} initialLines={[]} categoryOrder={[]} />
     </div>
   );

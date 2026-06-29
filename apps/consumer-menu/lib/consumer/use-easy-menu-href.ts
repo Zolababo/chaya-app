@@ -1,14 +1,16 @@
 "use client";
 
-import { useConsumerScreenReaderMode } from "@/lib/consumer/consumer-screen-reader-mode-context";
-import { menuPathForScreenReaderMode } from "@/lib/consumer/screen-reader-routes";
-import { useConsumerNavHref } from "@/lib/i18n/use-consumer-nav-href";
+import { useTenantTableSelection } from "@/lib/cart/use-tenant-table-selection";
+import { useConsumerEasyMode } from "@/lib/consumer/consumer-easy-mode-context";
+import { useConsumerLocale } from "@/lib/i18n/consumer-locale-context";
+import { withConsumerLang } from "@/lib/i18n/with-consumer-lang";
 
-/** @deprecated useScreenReaderMenuHref */
+/** 큰글씨 모드면 목록형 메뉴(`/barrier-free`), 아니면 기본 메뉴판 */
 export function useEasyMenuHref(tenant: string): string {
-  const { screenReaderMode } = useConsumerScreenReaderMode();
-  const navHref = useConsumerNavHref(tenant);
-  return navHref(menuPathForScreenReaderMode(tenant, screenReaderMode));
+  const { locale } = useConsumerLocale();
+  const { easyMode } = useConsumerEasyMode();
+  const { effectiveCode: table } = useTenantTableSelection(tenant);
+  const slug = encodeURIComponent(tenant.trim());
+  const path = easyMode ? `/t/${slug}/barrier-free` : `/t/${slug}`;
+  return withConsumerLang(path, locale, table || undefined);
 }
-
-export { useScreenReaderMenuHref } from "@/lib/consumer/use-screen-reader-menu-href";

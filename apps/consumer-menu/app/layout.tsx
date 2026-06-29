@@ -73,17 +73,17 @@ export default async function RootLayout({
       <head>
         {isConsumerMenu ? <meta name="color-scheme" content="only light" /> : null}
         {isConsumerMenu ? <ConsumerCriticalCss /> : null}
-      </head>
-      <body
-        className={`${isConsumerMenu ? chayaSansConsumer.variable : chayaSans.variable} touch-manipulation font-sans antialiased`}
-      >
-        {children}
         {isConsumerMenu ? (
           <script
             id="chaya-consumer-light-boot"
             dangerouslySetInnerHTML={{ __html: consumerLightBootScript }}
           />
         ) : null}
+      </head>
+      <body
+        className={`${isConsumerMenu ? chayaSansConsumer.variable : chayaSans.variable} touch-manipulation font-sans antialiased`}
+      >
+        {children}
       </body>
     </html>
   );

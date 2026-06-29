@@ -138,7 +138,7 @@ export function MerchantAnalyticsPageClient({
 
     parse: parseMerchantLiveAnalytics,
 
-    staleTimeMs: 120_000,
+    staleTimeMs: 45_000,
 
   });
 

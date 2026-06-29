@@ -32,6 +32,9 @@ export function MerchantMoreHubContent({
   ordersAccepting,
   breakStart,
   breakEnd,
+  businessOpen,
+  businessClose,
+  salesDayCutoff,
   tableCount,
   canManageTables,
   canManageHours,
@@ -57,6 +60,9 @@ export function MerchantMoreHubContent({
           ordersAccepting={ordersAccepting}
           breakStart={breakStart}
           breakEnd={breakEnd}
+          businessOpen={businessOpen}
+          businessClose={businessClose}
+          salesDayCutoff={salesDayCutoff}
           canEdit={canManageHours}
         />
         {canManageTables ? (

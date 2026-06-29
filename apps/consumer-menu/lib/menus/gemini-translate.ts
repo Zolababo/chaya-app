@@ -4,6 +4,8 @@
  * Google AI Studio 키는 AQ…·AIza… 모두 generateContent 에서 지원됩니다.
  */
 
+import { sanitizeMenuDescriptionForDiner } from "./menu-description-sanitize";
+
 const GEMINI_MODELS = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-1.5-flash"] as const;
 
 export type GeminiMenuTranslation = {
@@ -43,14 +45,21 @@ function parseGeminiJson(text: string): GeminiMenuTranslation | null {
 
 function buildPrompt(name: string, koDescription?: string | null): string {
   const koDesc = koDescription?.trim();
+  const dinerRules =
+    `【중요】이 문구는 식당 메뉴판을 보는 외국인 손님용입니다. 주방·레시피·조리 팁이 아닙니다.\n` +
+    `- 조리법, 먹는 방법, 섭취 팁을 절대 넣지 마세요. (예: 기름 제거, 먹기 전에 ~, 데워서 드세요, 더 맛있게 먹으려면)\n` +
+    `- 손님이 직접 해야 할 행동·주방에 보낼 요청처럼 읽히는 문장을 쓰지 마세요.\n` +
+    `- 재료, 맛, 식감, 매운맛 특징, 한식 스타일만 1~2문장으로 간단히 쓰세요.\n` +
+    `- 레시피·조리 순서·만드는 법·먹는 방법은 절대 쓰지 마세요.\n\n`;
+
   const context = koDesc
-    ? `음식명: ${name}\n점주가 작성한 한국어 설명(참고용, 번역하지 말 것): ${koDesc}\n\n` +
-      `한국어 설명은 만들지 마세요. 영·일·중(간·번) 메뉴명과 1~2문장 설명만 작성하세요.`
+    ? `음식명: ${name}\n점주가 작성한 한국어 설명(맛·재료 참고만, 그대로 번역하지 말 것): ${koDesc}\n\n` +
+      `한국어 설명은 만들지 마세요. 영·일·중(간·번) 메뉴명과 손님용 1~2문장 설명만 작성하세요.`
     : `음식명: ${name}\n\n` +
-      `한국인 손님용 한국어 설명은 만들지 마세요. 외국인 손님용으로 영·일·중(간·번) 메뉴명과 1~2문장 설명(재료·맛·특징)만 작성하세요.`;
+      `한국어 설명은 만들지 마세요. 외국인 손님용으로 영·일·중(간·번) 메뉴명과 손님용 1~2문장 설명(재료·맛·특징)만 작성하세요.`;
 
   return (
-    `당신은 한국 음식 전문 번역 AI입니다.\n${context}\n\n` +
+    `당신은 한국 음식점 메뉴판 번역 AI입니다.\n${dinerRules}${context}\n\n` +
     `추가로 맵기(0~5 정수, 0=안 매움)를 추정하세요.\n\n` +
     `JSON만 출력:\n` +
     `{"en":"English name","enDesc":"English description",` +
@@ -100,6 +109,16 @@ async function postGemini(
   return data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? null;
 }
 
+function sanitizeGeminiResult(parsed: GeminiMenuTranslation): GeminiMenuTranslation {
+  return {
+    ...parsed,
+    enDesc: sanitizeMenuDescriptionForDiner(parsed.enDesc) ?? undefined,
+    jaDesc: sanitizeMenuDescriptionForDiner(parsed.jaDesc) ?? undefined,
+    zhCNDesc: sanitizeMenuDescriptionForDiner(parsed.zhCNDesc) ?? undefined,
+    zhTWDesc: sanitizeMenuDescriptionForDiner(parsed.zhTWDesc) ?? undefined,
+  };
+}
+
 async function callGeminiModel(
   model: (typeof GEMINI_MODELS)[number],
   apiKey: string,
@@ -118,7 +137,7 @@ async function callGeminiModel(
     const text = await postGemini(model, apiKey, prompt, useJsonMime, auth);
     if (!text) continue;
     const parsed = parseGeminiJson(text);
-    if (parsed?.en || parsed?.ja || parsed?.zhCN) return parsed;
+    if (parsed?.en || parsed?.ja || parsed?.zhCN) return sanitizeGeminiResult(parsed);
     console.error(`[gemini-translate] ${model} JSON parse failed:`, text.slice(0, 300));
   }
 

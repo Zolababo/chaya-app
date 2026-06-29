@@ -7,11 +7,18 @@ import { ChevronDown } from "lucide-react";
 import { MerchantMenuSoldOutToggle } from "@/components/merchant-menu-sold-out-toggle";
 import { MenuListThumb } from "@/components/menu-list-thumb";
 import { formatKrw } from "@/lib/menus/queries";
+import {
+  menuCategoryBlockClassForIndex,
+  menuCategoryCountBadgeClassForIndex,
+  menuCategoryListDividerClassForIndex,
+  menuCategoryTitleClassForIndex,
+} from "@/lib/menus/menu-category-tints";
 import type { ChayaMenuRow } from "@/lib/menus/types";
 
 type Props = {
   tenant: string;
   category: string;
+  categoryIndex: number;
   items: ChayaMenuRow[];
   defaultOpen?: boolean;
 };
@@ -19,26 +26,33 @@ type Props = {
 export function MerchantMenuCategoryBlock({
   tenant,
   category,
+  categoryIndex,
   items,
   defaultOpen = true,
 }: Props) {
   const [open, setOpen] = useState(defaultOpen);
   const tEnc = encodeURIComponent(tenant);
   const soldOutCount = items.filter((i) => i.isSoldOut).length;
+  const listDivider = menuCategoryListDividerClassForIndex(categoryIndex);
 
   return (
-    <div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-zinc-900">
+    <div className={menuCategoryBlockClassForIndex(categoryIndex)}>
       {/* 카테고리 헤더 */}
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between px-4 py-3.5 active:bg-zinc-50 dark:active:bg-zinc-800/60"
+        className="flex w-full items-center justify-between px-4 py-3.5 active:bg-black/[0.03] dark:active:bg-white/[0.04]"
       >
         <div className="flex items-center gap-2">
-          <span className="text-[14px] font-extrabold text-zinc-900 dark:text-zinc-50">
+          <span
+            className={[
+              "text-[14px] font-extrabold",
+              menuCategoryTitleClassForIndex(categoryIndex),
+            ].join(" ")}
+          >
             {category}
           </span>
-          <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-semibold text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
+          <span className={menuCategoryCountBadgeClassForIndex(categoryIndex)}>
             {items.length}개
           </span>
           {soldOutCount > 0 && (
@@ -58,11 +72,11 @@ export function MerchantMenuCategoryBlock({
 
       {/* 메뉴 목록 */}
       {open && (
-        <div className="border-t border-zinc-100 dark:border-zinc-800">
+        <div className={`border-t ${listDivider}`}>
           {items.map((item, i) => (
             <div
               key={item.id}
-              className={i > 0 ? "border-t border-zinc-100 dark:border-zinc-800" : ""}
+              className={i > 0 ? `border-t ${listDivider}` : ""}
             >
               <div
                 className={[

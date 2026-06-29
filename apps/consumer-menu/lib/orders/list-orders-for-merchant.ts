@@ -10,7 +10,7 @@ import {
   type OrderLineSummary,
 } from "@/lib/orders/format-order-line-summary";
 import { sanitizeGuestSessionId } from "@/lib/orders/guest-order-validation";
-import { getKstCalendarDayBounds } from "@/lib/orders/merchant-analytics";
+import { getTenantCurrentBusinessDayBounds } from "@/lib/merchant/resolve-tenant-analytics-bounds";
 import {
   isMerchantOrderListBucket,
   isMerchantOrderStatus,
@@ -24,7 +24,7 @@ import { withSupabaseReadRetry, withSupabaseReadRetryResult } from "@/lib/supaba
 export type ListMerchantOrdersQuery = {
   status?: MerchantOrderStatus | null;
   bucket?: "in_progress" | "cooking" | "all_active" | null;
-  /** `completed` — KST 당일 결제완료(`completed_at`). 그 외 — 당일 접수(`created_at`). */
+  /** `completed` — 이번 영업일 결제완료(`completed_at`). 그 외 — 영업일 접수(`created_at`). */
   todayKst?: boolean;
 };
 
@@ -34,6 +34,7 @@ export type MerchantOrderRow = {
   created_at: string;
   status: string;
   table_no: string | null;
+  table_session_id: string | null;
   guest_note: string | null;
   cancel_reason: string | null;
   total_price: number;
@@ -76,12 +77,17 @@ function parseRow(raw: Record<string, unknown>): MerchantOrderRowInternal | null
   const table_no = raw.table_no;
   const guest_note = raw.guest_note;
   const cancel_reason = raw.cancel_reason;
+  const table_session_id = raw.table_session_id;
   return {
     id,
     order_no: parseOrderNoField(raw.order_no),
     created_at: created,
     status,
     table_no: typeof table_no === "string" && table_no.trim() ? table_no : null,
+    table_session_id:
+      typeof table_session_id === "string" && table_session_id.trim()
+        ? table_session_id.trim()
+        : null,
     guest_note: typeof guest_note === "string" && guest_note.trim() ? guest_note : null,
     cancel_reason:
       typeof cancel_reason === "string" && cancel_reason.trim() ? cancel_reason.trim() : null,
@@ -126,10 +132,12 @@ export async function listOrdersForMerchant(
   const bucketFilter =
     bucket && isMerchantOrderListBucket(bucket) ? bucket : null;
 
+  const todayBounds = todayKst ? await getTenantCurrentBusinessDayBounds(slug) : null;
+
   const buildQuery = (withCancelReason: boolean, withCompletedAt: boolean) => {
     const baseCols = withCancelReason
-      ? "id, order_no, created_at, status, table_no, guest_note, cancel_reason, total_price, items, guest_session_id"
-      : "id, order_no, created_at, status, table_no, guest_note, total_price, items, guest_session_id";
+      ? "id, order_no, created_at, status, table_no, table_session_id, guest_note, cancel_reason, total_price, items, guest_session_id"
+      : "id, order_no, created_at, status, table_no, table_session_id, guest_note, total_price, items, guest_session_id";
     const cols = withCompletedAt ? `${baseCols}, completed_at` : baseCols;
     let q = client.from("orders").select(cols).eq("tenant_slug", slug);
     if (bucketFilter === "cooking") {
@@ -141,11 +149,15 @@ export async function listOrdersForMerchant(
     } else if (statusFilter) {
       q = q.eq("status", statusFilter);
     }
-    if (todayKst) {
-      const { sinceIso, untilIso } = getKstCalendarDayBounds();
-      const useCompletedAt = statusFilter === "completed" && withCompletedAt;
-      const dateCol = useCompletedAt ? "completed_at" : "created_at";
-      q = q.gte(dateCol, sinceIso).lt(dateCol, untilIso);
+    if (todayKst && todayBounds) {
+      const { sinceIso, untilIso } = todayBounds;
+      if (statusFilter === "completed" && withCompletedAt) {
+        q = q.or(
+          `and(completed_at.gte.${sinceIso},completed_at.lt.${untilIso}),and(completed_at.is.null,created_at.gte.${sinceIso},created_at.lt.${untilIso})`,
+        );
+      } else {
+        q = q.gte("created_at", sinceIso).lt("created_at", untilIso);
+      }
     }
     const activeQueue =
       bucketFilter === "cooking" ||
@@ -182,8 +194,8 @@ export async function listOrdersForMerchant(
     }
   }
 
-  // guest_session_id 컬럼 미적용 DB 폴백
-  if (error && /guest_session_id|column.*does not exist/i.test(error.message ?? "")) {
+  // guest_session_id / table_session_id 컬럼 미적용 DB 폴백
+  if (error && /guest_session_id|table_session_id|column.*does not exist/i.test(error.message ?? "")) {
     const buildWithoutGuest = (withCancel: boolean) => {
       const cols = withCancel
         ? "id, order_no, created_at, status, table_no, guest_note, cancel_reason, total_price, items"
@@ -198,8 +210,8 @@ export async function listOrdersForMerchant(
       } else if (statusFilter) {
         q = q.eq("status", statusFilter);
       }
-      if (todayKst) {
-        const { sinceIso, untilIso } = getKstCalendarDayBounds();
+      if (todayKst && todayBounds) {
+        const { sinceIso, untilIso } = todayBounds;
         q = q.gte("created_at", sinceIso).lt("created_at", untilIso);
       }
       const activeQueue =

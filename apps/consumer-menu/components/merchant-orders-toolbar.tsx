@@ -81,7 +81,7 @@ export function MerchantOrdersToolbar({ summary }: Props) {
           ) : null}
           {summary.ready > 0 ? (
             <SummaryChip
-              label={`서빙대기 ${summary.ready}건`}
+              label={`서빙완료 ${summary.ready}건`}
               colorClass="bg-sky-50 text-sky-600 dark:bg-sky-950/30 dark:text-sky-400"
               dotClass="bg-sky-500"
             />

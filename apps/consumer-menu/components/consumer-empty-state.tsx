@@ -5,17 +5,10 @@ type Props = {
   message: string;
   action?: ReactNode;
   easyMode?: boolean;
-  screenReaderMode?: boolean;
 };
 
-export function ConsumerEmptyState({
-  icon,
-  message,
-  action,
-  easyMode = false,
-  screenReaderMode = false,
-}: Props) {
-  const large = easyMode || screenReaderMode;
+/** 장바구니·주문 등 손님 탭 빈 화면 — 아이콘 + 문구 가운데 정렬 */
+export function ConsumerEmptyState({ icon, message, action, easyMode = false }: Props) {
   return (
     <div className="flex min-h-[calc(100dvh-11rem)] flex-col items-center justify-center px-4 text-center">
       <div
@@ -26,7 +19,7 @@ export function ConsumerEmptyState({
       </div>
       <p
         className={`text-zinc-600 dark:text-zinc-400 ${
-          large ? "text-lg font-semibold" : "text-sm font-medium"
+          easyMode ? "text-lg font-semibold" : "text-sm font-medium"
         }`}
       >
         {message}

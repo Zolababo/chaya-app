@@ -15,6 +15,7 @@ import {
   type MenuTranslationMeta,
 } from "./menu-translation-meta";
 import { readTranslationCache, writeTranslationCache } from "./translation-cache";
+import { sanitizeMenuDescriptionForDiner } from "./menu-description-sanitize";
 import type { MenuLocaleFields, MenuTranslationsMap } from "@/lib/i18n/menu-translations";
 import type { TranslationLocale } from "@/lib/i18n/locales";
 
@@ -34,15 +35,32 @@ type LocalePack = {
   spiceLevel?: number;
 };
 
+function cleanDescription(desc: string | undefined): string | undefined {
+  if (!desc?.trim()) return undefined;
+  return sanitizeMenuDescriptionForDiner(desc) ?? undefined;
+}
+
 function mergeLocalePack(
   t: LocalePack,
   existing: MenuTranslationsMap,
 ): { merged: MenuTranslationsMap; added: boolean } {
   const from: Partial<Record<string, MenuLocaleFields>> = {};
-  if (t.en) from["en"] = { name: t.en, ...(t.enDesc ? { description: t.enDesc } : {}) };
-  if (t.ja) from["ja"] = { name: t.ja, ...(t.jaDesc ? { description: t.jaDesc } : {}) };
-  if (t.zhCN) from["zh-Hans"] = { name: t.zhCN, ...(t.zhCNDesc ? { description: t.zhCNDesc } : {}) };
-  if (t.zhTW) from["zh-Hant"] = { name: t.zhTW, ...(t.zhTWDesc ? { description: t.zhTWDesc } : {}) };
+  if (t.en) {
+    const desc = cleanDescription(t.enDesc);
+    from["en"] = { name: t.en, ...(desc ? { description: desc } : {}) };
+  }
+  if (t.ja) {
+    const desc = cleanDescription(t.jaDesc);
+    from["ja"] = { name: t.ja, ...(desc ? { description: desc } : {}) };
+  }
+  if (t.zhCN) {
+    const desc = cleanDescription(t.zhCNDesc);
+    from["zh-Hans"] = { name: t.zhCN, ...(desc ? { description: desc } : {}) };
+  }
+  if (t.zhTW) {
+    const desc = cleanDescription(t.zhTWDesc);
+    from["zh-Hant"] = { name: t.zhTW, ...(desc ? { description: desc } : {}) };
+  }
 
   const merged: MenuTranslationsMap = { ...existing };
   let added = false;
@@ -94,6 +112,19 @@ export function mergeHansikTranslations(
 }
 
 export type TranslationSource = "none" | "hansik" | "gemini_cache" | "gemini_new";
+
+/** 저장 직전 — 이미 DB에 있던 조리 팁 문장도 정리 */
+function sanitizeTranslationsDescriptions(map: MenuTranslationsMap): MenuTranslationsMap {
+  const merged: MenuTranslationsMap = { ...map };
+  for (const loc of DESC_LOCALES) {
+    const prev = merged[loc];
+    if (!prev?.description?.trim()) continue;
+    const clean = sanitizeMenuDescriptionForDiner(prev.description);
+    if (clean === prev.description.trim()) continue;
+    merged[loc] = clean ? { ...prev, description: clean } : { ...prev, description: undefined };
+  }
+  return merged;
+}
 
 /** 이름 또는 설명이 비어 있는 locale 가 있는지. */
 function needsLocaleFill(merged: MenuTranslationsMap): boolean {
@@ -154,6 +185,8 @@ export async function mergeTranslationsWithFallback(
       aiWarning = geminiTranslationFailureHint(isGeminiConfigured());
     }
   }
+
+  merged = sanitizeTranslationsDescriptions(merged);
 
   return { merged, source, menuMeta, aiWarning };
 }

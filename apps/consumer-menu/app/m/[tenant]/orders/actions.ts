@@ -10,7 +10,10 @@ import { isMerchantOrdersTab, type MerchantOrdersTab } from "@/lib/merchant/merc
 import { ordersTabAfterStatusChange } from "@/lib/orders/merchant-order-stage";
 import { isMerchantCancelReason } from "@/lib/orders/merchant-cancel-reasons";
 import { isMerchantOrderStatus, type MerchantOrderStatus } from "@/lib/orders/merchant-status-constants";
+import { recordCompletedStoreVisit } from "@/lib/merchant/guest-order-context";
+import { completeTableSession } from "@/lib/merchant/table-session";
 import { createServiceSupabase } from "@/lib/supabase/create-service-client";
+import { orderUsesTableSessionPay } from "@/lib/orders/order-table-session-pay";
 
 const BATCH_ACCEPT_MAX = 80;
 
@@ -61,9 +64,33 @@ export async function updateOrderStatusFromForm(formData: FormData): Promise<voi
     redirectBack(tenant, { err: "cancel_reason", ordersTab });
   }
 
-  const patch: { status: string; cancel_reason?: string | null } = { status };
+  if (status === "completed") {
+    const { data: orderMeta } = await client
+      .from("orders")
+      .select("table_session_id, table_no")
+      .eq("id", orderId)
+      .eq("tenant_slug", tenant)
+      .maybeSingle();
+
+    const meta = orderMeta as { table_session_id?: unknown; table_no?: unknown } | null;
+    if (
+      orderUsesTableSessionPay(
+        typeof meta?.table_session_id === "string" ? meta.table_session_id : null,
+        typeof meta?.table_no === "string" ? meta.table_no : null,
+      )
+    ) {
+      redirectBack(tenant, { err: "use_table_pay", ordersTab });
+    }
+  }
+
+  const patch: { status: string; cancel_reason?: string | null; completed_at?: string } = {
+    status,
+  };
   if (status === "cancelled") {
     patch.cancel_reason = cancelReasonRaw;
+  }
+  if (status === "completed") {
+    patch.completed_at = new Date().toISOString();
   }
 
   let { error } = await client
@@ -71,6 +98,14 @@ export async function updateOrderStatusFromForm(formData: FormData): Promise<voi
     .update(patch)
     .eq("id", orderId)
     .eq("tenant_slug", tenant);
+
+  if (error && status === "completed" && /completed_at|column.*does not exist/i.test(error.message ?? "")) {
+    ({ error } = await client
+      .from("orders")
+      .update({ status })
+      .eq("id", orderId)
+      .eq("tenant_slug", tenant));
+  }
 
   if (error && status === "cancelled" && /cancel_reason|column.*does not exist/i.test(error.message ?? "")) {
     ({ error } = await client
@@ -82,6 +117,10 @@ export async function updateOrderStatusFromForm(formData: FormData): Promise<voi
 
   if (error) {
     redirectBack(tenant, { err: "db", ordersTab });
+  }
+
+  if (status === "completed") {
+    await recordCompletedStoreVisit(client, tenant, orderId);
   }
 
   void recordMerchantAuditEvent({
@@ -108,7 +147,10 @@ export async function updateOrderStatusFromForm(formData: FormData): Promise<voi
     ? "all"
     : (isMerchantOrderStatus(status) ? ordersTabAfterStatusChange(status) : ordersTab ?? "all");
 
-  redirectBack(tenant, { ok: "status_saved", ordersTab: nextTab });
+  redirectBack(tenant, {
+    ok: status === "completed" ? "order_paid" : "status_saved",
+    ordersTab: nextTab,
+  });
 }
 
 /** 새 주문(pending) 전건 접수 → preparing (준비중으로 바로 진입). */
@@ -187,4 +229,50 @@ export async function batchAcceptPendingOrdersFromForm(formData: FormData): Prom
   }
 
   redirectBack(tenant, { ok: "batch_accept", ordersTab: "cooking" });
+}
+
+/** 테이블 세션 일괄 결제 — 동일 테이블 미결제 주문 전부 completed. */
+export async function completeTableSessionFromForm(formData: FormData): Promise<void> {
+  const { userId, role } = await requireMerchantOrderMutation(formData);
+
+  const tenant = String(formData.get("tenant_slug") ?? "").trim();
+  const tableNo = String(formData.get("table_no") ?? "").trim();
+  const tabRaw = String(formData.get("orders_tab") ?? "").trim();
+  const ordersTab = isMerchantOrdersTab(tabRaw) ? tabRaw : null;
+
+  if (!canMutateMerchantOrders(role)) {
+    redirectBack(tenant || "invalid", { err: "no_order_mutate", ordersTab });
+  }
+
+  if (!tenant || !tableNo) {
+    redirectBack(tenant || "invalid", { err: "bad_input", ordersTab });
+  }
+
+  const result = await completeTableSession(tenant, tableNo);
+  if (!result.ok) {
+    const err =
+      result.code === "not_found"
+        ? "table_session_not_found"
+        : result.code === "no_orders"
+          ? "table_session_empty"
+          : result.code === "not_all_ready"
+            ? "table_session_not_ready"
+            : result.code === "no_service"
+              ? "no_service"
+              : "db";
+    redirectBack(tenant, { err, ordersTab });
+  }
+
+  void recordMerchantAuditEvent({
+    tenantSlug: tenant,
+    actorUserId: userId,
+    action: "table_session_pay",
+    detail: {
+      table_no: tableNo,
+      order_count: result.orderCount,
+      total_amount: result.totalAmount,
+    },
+  });
+
+  redirectBack(tenant, { ok: "table_session_paid", ordersTab: ordersTab ?? "paid" });
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { MerchantSettingsBreakInline } from "@/components/merchant-settings-break-inline";
+import { MerchantSettingsBusinessHoursInline } from "@/components/merchant-settings-business-hours-inline";
 import { MerchantSettingsOrdersToggle } from "@/components/merchant-settings-orders-toggle";
 import {
   merchantSubCardBodyClass,
@@ -35,6 +36,14 @@ export function MerchantHoursSettingsPanel({ tenant, settings, canEdit, embedded
             showBadge={false}
           />
         </div>
+
+        <MerchantSettingsBusinessHoursInline
+          tenant={tenant}
+          businessOpen={settings.businessOpen}
+          businessClose={settings.businessClose}
+          salesDayCutoff={settings.salesDayCutoff}
+          canEdit={canEdit}
+        />
 
         <MerchantSettingsBreakInline
           tenant={tenant}

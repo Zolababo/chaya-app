@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { Suspense } from "react";
 
 import { ConsumerBottomChromeIdle } from "@/components/consumer-bottom-chrome-idle";
+import { ConsumerDataNotice } from "@/components/consumer-data-notice";
 import { ConsumerTenantShellDeferred } from "@/components/consumer-tenant-shell-deferred";
 import { MenuHomeEarlySsr } from "@/components/menu-home-early-ssr";
 import { SessionHeaderFallback } from "@/components/header-fallback";
@@ -10,12 +11,12 @@ import { TenantSessionHeader } from "@/components/tenant-session-header";
 import { SkipToMainLink } from "@/components/skip-to-main-link";
 import { InvalidTableQueryBanner } from "@/components/invalid-table-query-banner";
 import { TenantTableQuerySync } from "@/components/tenant-table-query-sync";
-import { ConsumerScreenReaderRouteSync } from "@/components/consumer-screen-reader-route-sync";
-import { ConsumerScreenReaderModeProvider } from "@/lib/consumer/consumer-screen-reader-mode-context";
+import { ConsumerEasyModeProvider } from "@/lib/consumer/consumer-easy-mode-context";
 import { TenantTablesProvider } from "@/lib/consumer/tenant-tables-context";
 import { ConsumerLocaleProvider } from "@/lib/i18n/consumer-locale-context";
 import { getConsumerLocale } from "@/lib/i18n/get-consumer-locale";
 import { isConsumerMenuHomeRequest } from "@/lib/consumer/consumer-route";
+import { chayaConsumerPwaBrand, chayaPwaMetadataIcons } from "@/lib/pwa/chaya-pwa-brand";
 import { tenantBrandingFromSettings } from "@/lib/tenant/tenant-branding";
 import { chayaConsumerShellClass } from "@/lib/responsive/chaya-app-shell";
 import { fetchTenantStoreSettings } from "@/lib/tenant/tenant-store-settings";
@@ -32,6 +33,13 @@ export async function generateMetadata({
   return {
     title: titleLabel,
     description: `${titleLabel} 메뉴 주문`,
+    manifest: `/t/${encodeURIComponent(tenant.trim())}/homescreen-manifest`,
+    icons: chayaPwaMetadataIcons(chayaConsumerPwaBrand.icon),
+    appleWebApp: {
+      capable: true,
+      title: titleLabel,
+      statusBarStyle: "default",
+    },
     openGraph: {
       title: titleLabel,
       description: `${titleLabel} 메뉴 주문`,
@@ -55,8 +63,7 @@ export default async function TenantLayout({
     <Suspense>
       <ConsumerLocaleProvider locale={locale}>
         <TenantTablesProvider tenant={tenant} tables={[]} deferLoad>
-        <ConsumerScreenReaderModeProvider tenant={tenant}>
-        <ConsumerScreenReaderRouteSync tenant={tenant} />
+        <ConsumerEasyModeProvider tenant={tenant}>
         <div className="flex min-h-dvh flex-col bg-chaya-bg pb-[var(--chaya-consumer-nav-clearance)] text-zinc-900">
           <SkipToMainLink />
           <ConsumerTenantShellDeferred />
@@ -76,10 +83,11 @@ export default async function TenantLayout({
               </div>
             ) : null}
             {children}
+            <ConsumerDataNotice locale={locale} />
           </main>
           <ConsumerBottomChromeIdle tenant={tenant} />
         </div>
-        </ConsumerScreenReaderModeProvider>
+        </ConsumerEasyModeProvider>
         </TenantTablesProvider>
       </ConsumerLocaleProvider>
     </Suspense>

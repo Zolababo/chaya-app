@@ -1,3 +1,5 @@
+import { MerchantSalesMetricsStrip } from "@/components/merchant-sales-metrics-strip";
+
 type Props = {
   days: number;
   orderCount: number;
@@ -44,10 +46,10 @@ export function MerchantAnalyticsSummary({
 }: Props) {
   const periodLabel =
     fromDate && toDate
-      ? `${fromDate.slice(5)} ~ ${toDate.slice(5)}`
+      ? `${fromDate.slice(5)} ~ ${toDate.slice(5)} (영업일)`
       : days === 1
-        ? "오늘"
-        : `최근 ${days}일`;
+        ? "이번 영업일"
+        : `최근 ${days}영업일`;
 
   const avgOrderValue =
     completedCount > 0 ? Math.round(totalSales / completedCount) : 0;
@@ -65,10 +67,9 @@ export function MerchantAnalyticsSummary({
       className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-zinc-900"
       aria-label="기간 요약"
     >
-      {/* 주요 매출 */}
       <div className="px-4 pt-4 pb-3">
         <p className="mb-1.5 text-[11px] font-semibold text-zinc-400 dark:text-zinc-500">
-          {periodLabel} 매출
+          {periodLabel} · 결제 매출
         </p>
         <div className="flex items-end justify-between gap-2">
           <div className="flex items-baseline gap-1">
@@ -90,52 +91,53 @@ export function MerchantAnalyticsSummary({
         </div>
       </div>
 
-      {/* 3개 지표 그리드 */}
-      <div className="grid grid-cols-3 divide-x divide-zinc-100 border-t border-zinc-100 dark:divide-zinc-800 dark:border-zinc-800">
-        {/* 주문 수 */}
-        <div className="flex min-h-[3.5rem] flex-col items-center justify-between px-2 py-3 text-center">
-          <p className="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500">주문 수</p>
-          <p className="text-[17px] font-extrabold tabular-nums text-blue-600 dark:text-blue-400">
-            {orderCount.toLocaleString("ko-KR")}건
-          </p>
-          {odiff ? (
-            <p
-              className={[
-                "text-[10px] font-semibold",
-                odiff.startsWith("▲") ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400",
-              ].join(" ")}
-            >
-              {odiff}
-            </p>
-          ) : (
-            <p className="text-[10px] text-transparent select-none">·</p>
-          )}
-        </div>
-
-        {/* 객단가 */}
-        <div className="flex min-h-[3.5rem] flex-col items-center justify-between px-2 py-3 text-center">
-          <p className="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500">객단가</p>
-          <p className="text-[17px] font-extrabold tabular-nums text-emerald-600 dark:text-emerald-400">
-            {fmtWon(avgOrderValue)}
-          </p>
-          <p className="text-[10px] text-transparent select-none">·</p>
-        </div>
-
-        {/* 취소율 */}
-        <div className="flex min-h-[3.5rem] flex-col items-center justify-between px-2 py-3 text-center">
-          <p className="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500">취소율</p>
-          <p className="text-[17px] font-extrabold tabular-nums text-red-600 dark:text-red-400">
-            {cancelRate}%
-          </p>
-          {cancelledCount > 0 ? (
-            <p className="text-[10px] font-semibold text-red-400 dark:text-red-500">
-              {cancelledCount}건 취소
-            </p>
-          ) : (
-            <p className="text-[10px] text-transparent select-none">·</p>
-          )}
-        </div>
-      </div>
+      <MerchantSalesMetricsStrip
+        variant="analytics"
+        items={[
+          {
+            key: "payments",
+            label: "결제 수",
+            value: `${completedCount.toLocaleString("ko-KR")}건`,
+            valueClassName: "text-emerald-600 dark:text-emerald-400",
+          },
+          {
+            key: "avg",
+            label: "객단가",
+            value: fmtWon(avgOrderValue),
+            valueClassName: "text-emerald-600 dark:text-emerald-400",
+          },
+          {
+            key: "orders",
+            label: "접수",
+            value: `${orderCount.toLocaleString("ko-KR")}건`,
+            valueClassName: "text-blue-600 dark:text-blue-400",
+            sub: odiff ? (
+              <p
+                className={[
+                  "text-[10px] font-semibold",
+                  odiff.startsWith("▲")
+                    ? "text-emerald-600 dark:text-emerald-400"
+                    : "text-red-500 dark:text-red-400",
+                ].join(" ")}
+              >
+                {odiff}
+              </p>
+            ) : undefined,
+          },
+          {
+            key: "cancel",
+            label: "취소율",
+            value: `${cancelRate}%`,
+            valueClassName: "text-red-600 dark:text-red-400",
+            sub:
+              cancelledCount > 0 ? (
+                <p className="text-[10px] font-semibold text-red-400 dark:text-red-500">
+                  {cancelledCount}건 취소
+                </p>
+              ) : undefined,
+          },
+        ]}
+      />
     </section>
   );
 }

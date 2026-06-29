@@ -7,8 +7,8 @@
  *   (--sha-retries, --sha-retry-delay-ms) when production lags CI
  * - Verifies robots disallow for /m paths
  * - Verifies tenant page responds with menu marker text
- * - Verifies `/t/{tenant}/orders` guest hub shell (“주문 현황”)
- * - Verifies `/t/{tenant}/cart` SSR shell (“주문 확인”)
+ * - Verifies `/t/{tenant}/orders` guest hub shell (“주문내역”)
+ * - Verifies `/t/{tenant}/cart` SSR shell (“장바구니”)
  * - Verifies `/t/{tenant}/barrier-free` SSR shell (“목록형 메뉴”)
  * - Verifies 결제·직원호출 스텁: GET → 405 (GET 에 부작용 없음, auth 규칙과 정합)
  * - When `/health` includes `supabase.guestOrderRpcsProbe` with `probed: true`, asserts `allPresent` (C2 DB probe).
@@ -270,10 +270,10 @@ async function main() {
     if (!res.ok) {
       fail("/t/{tenant}/orders status", `${res.status}`);
       failed = true;
-    } else if (body.includes("주문 현황")) {
+    } else if (body.includes("주문내역")) {
       ok("/t/{tenant}/orders", "guest orders hub shell detected");
     } else {
-      fail("/t/{tenant}/orders", "expected 「주문 현황」 not found");
+      fail("/t/{tenant}/orders", "expected 「주문내역」 not found");
       failed = true;
     }
   } catch (e) {
@@ -287,10 +287,10 @@ async function main() {
     if (!res.ok) {
       fail("/t/{tenant}/cart status", `${res.status}`);
       failed = true;
-    } else if (body.includes("주문 확인")) {
+    } else if (body.includes("장바구니")) {
       ok("/t/{tenant}/cart", "checkout shell detected");
     } else {
-      fail("/t/{tenant}/cart", "expected 「주문 확인」 not found");
+      fail("/t/{tenant}/cart", "expected 「장바구니」 not found");
       failed = true;
     }
   } catch (e) {
@@ -324,7 +324,7 @@ async function main() {
     } else {
       const hasPay =
         body.includes("카운터") || body.includes("결제는 매장") || body.includes("매장 카운터");
-      const hasCartShell = body.includes("주문 확인") && body.includes("메뉴에서 담은");
+      const hasCartShell = body.includes("장바구니") && body.includes("담은 메뉴");
       if (hasPay && hasCartShell) {
         ok("/t/{tenant}/cart C2 copy", "offline payment + cart SSR shell");
       } else {

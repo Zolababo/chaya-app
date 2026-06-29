@@ -1,15 +1,19 @@
 import "server-only";
 
 import { formatGuestItemsBrief } from "@/lib/merchant/format-guest-last-visit";
+import { recordCompletedStoreVisit, recordCompletedTableSessionVisit } from "@/lib/merchant/guest-order-context";
 import { GUEST_REGULAR_MIN_PRIOR } from "@/lib/merchant/guest-visit-policy";
-import { parseOrderLineSummaries } from "@/lib/orders/format-order-line-summary";
 import {
-  getKstCalendarDayBounds,
-  resolveMerchantAnalyticsTimeBounds,
-  type MerchantAnalyticsRequest,
-} from "@/lib/orders/merchant-analytics";
+  countPaymentEventsFromOrderRows,
+  countPaymentEventsFromStoreVisitRows,
+  paymentEventKeyFromOrderRow,
+  paymentEventKeyFromStoreVisitRow,
+} from "@/lib/merchant/payment-event-count";
+import { parseOrderLineSummaries } from "@/lib/orders/format-order-line-summary";
+import { getTenantCurrentBusinessDayBounds, resolveTenantAnalyticsTimeBounds } from "@/lib/merchant/resolve-tenant-analytics-bounds";
+import type { MerchantAnalyticsRequest } from "@/lib/orders/merchant-analytics";
 import { createServiceSupabase } from "@/lib/supabase/create-service-client";
-import { withSupabaseReadRetry } from "@/lib/supabase/transient-retry";
+import { withSupabaseReadRetry, withSupabaseReadRetryResult } from "@/lib/supabase/transient-retry";
 
 const GUEST_LIST_TOP = 8;
 
@@ -39,6 +43,8 @@ export type MerchantGuestInsightsSnapshot =
 export type MerchantTodayGuestSummary =
   | {
       ok: true;
+      /** 영업일 구간 안내 */
+      rangeLabel: string;
       todayCompletedVisits: number;
       todayFirstVisitGuests: number;
       todayReturningGuests: number;
@@ -64,6 +70,113 @@ function sortGuestRows(rows: MerchantGuestListRow[]): MerchantGuestListRow[] {
   });
 }
 
+function guestPaidOrdersPeriodOrFilter(
+  sinceIso: string,
+  untilIso: string,
+  untilOp: "lte" | "lt" = "lte",
+): string {
+  const end = untilOp === "lt" ? "lt" : "lte";
+  return (
+    `and(completed_at.gte.${sinceIso},completed_at.${end}.${untilIso}),` +
+    `and(completed_at.is.null,created_at.gte.${sinceIso},created_at.${end}.${untilIso})`
+  );
+}
+
+/** 기간 내 guest_session 있는 결제 이벤트 수 — 주문 기준(세션당 1). */
+async function countCompletedGuestPaymentEventsInPeriod(
+  client: NonNullable<ReturnType<typeof createServiceSupabase>>,
+  slug: string,
+  sinceIso: string,
+  untilIso: string,
+): Promise<number> {
+  const first = await withSupabaseReadRetry(() =>
+    client
+      .from("orders")
+      .select("id, table_session_id")
+      .eq("tenant_slug", slug)
+      .eq("status", "completed")
+      .not("guest_session_id", "is", null)
+      .or(guestPaidOrdersPeriodOrFilter(sinceIso, untilIso, "lte")),
+  );
+
+  let rows = (first.data as Record<string, unknown>[] | null) ?? null;
+  if (first.error && /completed_at|does not exist/i.test(first.error.message ?? "")) {
+    const legacy = await withSupabaseReadRetry(() =>
+      client
+        .from("orders")
+        .select("id, table_session_id")
+        .eq("tenant_slug", slug)
+        .eq("status", "completed")
+        .not("guest_session_id", "is", null)
+        .gte("created_at", sinceIso)
+        .lte("created_at", untilIso),
+    );
+    rows = (legacy.data as Record<string, unknown>[] | null) ?? null;
+  } else if (first.error) {
+    return 0;
+  }
+
+  return countPaymentEventsFromOrderRows(rows ?? []);
+}
+
+/** @deprecated gap 감지용 — raw 주문 건수 */
+async function countCompletedGuestOrdersInPeriod(
+  client: NonNullable<ReturnType<typeof createServiceSupabase>>,
+  slug: string,
+  sinceIso: string,
+  untilIso: string,
+): Promise<number> {
+  const probe = await withSupabaseReadRetryResult(() =>
+    client
+      .from("orders")
+      .select("id", { count: "exact", head: true })
+      .eq("tenant_slug", slug)
+      .eq("status", "completed")
+      .not("guest_session_id", "is", null)
+      .or(guestPaidOrdersPeriodOrFilter(sinceIso, untilIso, "lte")),
+  );
+
+  if (probe.error && /completed_at|does not exist/i.test(probe.error.message ?? "")) {
+    const legacy = await withSupabaseReadRetryResult(() =>
+      client
+        .from("orders")
+        .select("id", { count: "exact", head: true })
+        .eq("tenant_slug", slug)
+        .eq("status", "completed")
+        .not("guest_session_id", "is", null)
+        .gte("created_at", sinceIso)
+        .lte("created_at", untilIso),
+    );
+    return legacy.count ?? 0;
+  }
+
+  if (probe.error) return 0;
+  return probe.count ?? 0;
+}
+
+async function resolveGuestInsightsWithStoreVisitsGap(
+  client: NonNullable<ReturnType<typeof createServiceSupabase>>,
+  slug: string,
+  sinceIso: string,
+  untilIso: string,
+  periodLabel: string,
+  visitRowCount: number,
+  orderCount: number,
+): Promise<MerchantGuestInsightsSnapshot | null> {
+  // store_visits 없고 주문만 있을 때 — 누락 보정·orders 폴백
+  if (visitRowCount === 0 && orderCount > 0) {
+    void backfillMissingStoreVisitsInPeriod(client, slug, sinceIso, untilIso);
+    return fallbackGuestInsightsFromOrders(client, slug, sinceIso, untilIso, periodLabel);
+  }
+
+  // 테이블 세션: 주문 N건·방문 1건은 정상 — orders 폴백으로 덮어쓰지 않음
+  if (orderCount > visitRowCount) {
+    void backfillMissingStoreVisitsInPeriod(client, slug, sinceIso, untilIso);
+  }
+
+  return null;
+}
+
 export async function getMerchantGuestInsights(
   tenantSlug: string,
   req: MerchantAnalyticsRequest,
@@ -71,7 +184,7 @@ export async function getMerchantGuestInsights(
   const slug = tenantSlug.trim();
   if (!slug) return { ok: false, message: "테넌트가 없습니다." };
 
-  const bounds = resolveMerchantAnalyticsTimeBounds(req);
+  const bounds = await resolveTenantAnalyticsTimeBounds(slug, req);
   if (!bounds.ok) return { ok: false, message: bounds.message };
 
   const { sinceIso, untilIso, periodLabel } = bounds;
@@ -84,7 +197,7 @@ export async function getMerchantGuestInsights(
   const { data: periodVisits, error: visitErr } = await withSupabaseReadRetry(() =>
     client
       .from("store_visits")
-      .select("guest_session_id, completed_at, total_price, items")
+      .select("guest_session_id, completed_at, total_price, items, order_id, table_session_id")
       .eq("tenant_slug", slug)
       .gte("completed_at", sinceIso)
       .lte("completed_at", untilIso)
@@ -105,12 +218,15 @@ export async function getMerchantGuestInsights(
     periodSpend: number;
     lastCompletedAt: string;
     lastItems: unknown;
+    seenPayments: Set<string>;
   };
   const periodBySession = new Map<string, PeriodAcc>();
 
   for (const raw of periodRows) {
     const sid = typeof raw.guest_session_id === "string" ? raw.guest_session_id.trim() : "";
     if (sid.length < 8) continue;
+    const payKey = paymentEventKeyFromStoreVisitRow(raw);
+    if (!payKey) continue;
     const at =
       typeof raw.completed_at === "string"
         ? raw.completed_at
@@ -123,9 +239,13 @@ export async function getMerchantGuestInsights(
       periodSpend: 0,
       lastCompletedAt: at,
       lastItems: raw.items,
+      seenPayments: new Set<string>(),
     };
-    acc.visitCountInPeriod += 1;
-    acc.periodSpend += parsePrice(raw.total_price);
+    if (!acc.seenPayments.has(payKey)) {
+      acc.seenPayments.add(payKey);
+      acc.visitCountInPeriod += 1;
+      acc.periodSpend += parsePrice(raw.total_price);
+    }
     if (at > acc.lastCompletedAt) {
       acc.lastCompletedAt = at;
       acc.lastItems = raw.items;
@@ -133,11 +253,31 @@ export async function getMerchantGuestInsights(
     periodBySession.set(sid, acc);
   }
 
+  const visitRowCount = countPaymentEventsFromStoreVisitRows(periodRows);
+  const orderCount = await countCompletedGuestOrdersInPeriod(client, slug, sinceIso, untilIso);
+  const paymentEventCount = await countCompletedGuestPaymentEventsInPeriod(
+    client,
+    slug,
+    sinceIso,
+    untilIso,
+  );
+
+  const gapSnapshot = await resolveGuestInsightsWithStoreVisitsGap(
+    client,
+    slug,
+    sinceIso,
+    untilIso,
+    periodLabel,
+    visitRowCount,
+    orderCount,
+  );
+  if (gapSnapshot) return gapSnapshot;
+
   if (periodBySession.size === 0) {
     return {
       ok: true,
       periodLabel,
-      completedVisits: periodRows.length,
+      completedVisits: 0,
       uniqueGuests: 0,
       returningGuests: 0,
       regularGuests: 0,
@@ -156,7 +296,12 @@ export async function getMerchantGuestInsights(
   );
 
   if (rollupErr && /tenant_guest_rollups|does not exist/i.test(rollupErr.message ?? "")) {
-    return buildGuestSnapshotFromPeriodMap(periodBySession, periodLabel, periodRows.length, null);
+    return buildGuestSnapshotFromPeriodMap(
+      periodBySession,
+      periodLabel,
+      paymentEventCount > 0 ? paymentEventCount : visitRowCount,
+      null,
+    );
   }
   if (rollupErr) {
     return { ok: false, message: rollupErr.message ?? "손님 데이터를 불러오지 못했습니다." };
@@ -171,7 +316,7 @@ export async function getMerchantGuestInsights(
   return buildGuestSnapshotFromPeriodMap(
     periodBySession,
     periodLabel,
-    periodRows.length,
+    paymentEventCount > 0 ? paymentEventCount : visitRowCount,
     rollupBySession,
   );
 }
@@ -193,13 +338,6 @@ function buildGuestSnapshotFromPeriodMap(
   const guests: MerchantGuestListRow[] = [];
   let returningGuests = 0;
   let regularGuests = 0;
-
-  for (const [, acc] of periodBySession) {
-    const rollup = rollupBySession
-      ? [...periodBySession.keys()].map((sid) => ({ sid, rollup: rollupBySession.get(sid) }))
-      : [];
-    void rollup;
-  }
 
   for (const [sid, acc] of periodBySession) {
     const raw = rollupBySession?.get(sid);
@@ -248,13 +386,12 @@ async function fallbackGuestInsightsFromOrders(
   const first = await withSupabaseReadRetry(() =>
     client
       .from("orders")
-      .select("guest_session_id, total_price, completed_at, created_at, items")
+      .select("id, guest_session_id, total_price, completed_at, created_at, items, table_session_id")
       .eq("tenant_slug", slug)
       .eq("status", "completed")
       .not("guest_session_id", "is", null)
-      .gte("completed_at", sinceIso)
-      .lte("completed_at", untilIso)
-      .order("completed_at", { ascending: false }),
+      .or(guestPaidOrdersPeriodOrFilter(sinceIso, untilIso, "lte"))
+      .order("created_at", { ascending: false }),
   );
   let data: Record<string, unknown>[] | null =
     (first.data as Record<string, unknown>[] | null) ?? null;
@@ -264,7 +401,7 @@ async function fallbackGuestInsightsFromOrders(
     const fallback = await withSupabaseReadRetry(() =>
       client
         .from("orders")
-        .select("guest_session_id, total_price, created_at, items")
+        .select("id, guest_session_id, total_price, created_at, items, table_session_id")
         .eq("tenant_slug", slug)
         .eq("status", "completed")
         .not("guest_session_id", "is", null)
@@ -285,13 +422,16 @@ async function fallbackGuestInsightsFromOrders(
     periodSpend: number;
     lastCompletedAt: string;
     lastItems: unknown;
+    seenPayments: Set<string>;
   };
   const bySession = new Map<string, Acc>();
-  let completedVisits = 0;
+  const globalPaymentKeys = new Set<string>();
 
   for (const row of data ?? []) {
     const sid = typeof row.guest_session_id === "string" ? row.guest_session_id.trim() : "";
     if (sid.length < 8) continue;
+    const payKey = paymentEventKeyFromOrderRow(row);
+    if (!payKey) continue;
     const at =
       typeof row.completed_at === "string"
         ? row.completed_at
@@ -299,14 +439,19 @@ async function fallbackGuestInsightsFromOrders(
           ? row.created_at
           : "";
     if (!at) continue;
-    completedVisits += 1;
+
     const acc = bySession.get(sid) ?? {
       visitCountInPeriod: 0,
       periodSpend: 0,
       lastCompletedAt: at,
       lastItems: row.items,
+      seenPayments: new Set<string>(),
     };
-    acc.visitCountInPeriod += 1;
+    if (!acc.seenPayments.has(payKey)) {
+      acc.seenPayments.add(payKey);
+      acc.visitCountInPeriod += 1;
+      globalPaymentKeys.add(payKey);
+    }
     acc.periodSpend += parsePrice(row.total_price);
     if (at > acc.lastCompletedAt) {
       acc.lastCompletedAt = at;
@@ -315,7 +460,146 @@ async function fallbackGuestInsightsFromOrders(
     bySession.set(sid, acc);
   }
 
-  return buildGuestSnapshotFromPeriodMap(bySession, label, completedVisits, null);
+  const completedVisits = globalPaymentKeys.size;
+
+  const rollupBySession = await loadLifetimeVisitRollupsFromRollupsTable(
+    client,
+    slug,
+    [...bySession.keys()],
+  );
+
+  return buildGuestSnapshotFromPeriodMap(bySession, label, completedVisits, rollupBySession);
+}
+
+/** tenant_guest_rollups — 누적 방문(결제) 횟수 (주문 수 아님). */
+async function loadLifetimeVisitRollupsFromRollupsTable(
+  client: NonNullable<ReturnType<typeof createServiceSupabase>>,
+  slug: string,
+  sessionIds: string[],
+): Promise<Map<string, Record<string, unknown>>> {
+  const rollupBySession = new Map<string, Record<string, unknown>>();
+  if (sessionIds.length === 0) return rollupBySession;
+
+  const { data, error } = await withSupabaseReadRetry(() =>
+    client
+      .from("tenant_guest_rollups")
+      .select("guest_session_id, completed_visit_count, last_items")
+      .eq("tenant_slug", slug)
+      .in("guest_session_id", sessionIds),
+  );
+
+  if (error || !data) return rollupBySession;
+
+  for (const raw of data as Record<string, unknown>[]) {
+    const sid = typeof raw.guest_session_id === "string" ? raw.guest_session_id.trim() : "";
+    if (sid) rollupBySession.set(sid, raw);
+  }
+
+  return rollupBySession;
+}
+
+const BACKFILL_VISITS_MAX = 50;
+
+/** store_visits 누락분만 백그라운드 보정 — 응답은 막지 않음. */
+async function backfillMissingStoreVisitsInPeriod(
+  client: NonNullable<ReturnType<typeof createServiceSupabase>>,
+  slug: string,
+  sinceIso: string,
+  untilIso: string,
+): Promise<void> {
+  try {
+    const first = await client
+      .from("orders")
+      .select("id, table_session_id, completed_at, created_at")
+      .eq("tenant_slug", slug)
+      .eq("status", "completed")
+      .not("guest_session_id", "is", null)
+      .or(guestPaidOrdersPeriodOrFilter(sinceIso, untilIso, "lte"))
+      .order("created_at", { ascending: false })
+      .limit(BACKFILL_VISITS_MAX);
+
+    let rows = (first.data as Record<string, unknown>[] | null) ?? null;
+    if (first.error && /completed_at|does not exist/i.test(first.error.message ?? "")) {
+      const legacy = await client
+        .from("orders")
+        .select("id, table_session_id, created_at")
+        .eq("tenant_slug", slug)
+        .eq("status", "completed")
+        .not("guest_session_id", "is", null)
+        .gte("created_at", sinceIso)
+        .lte("created_at", untilIso)
+        .order("created_at", { ascending: false })
+        .limit(BACKFILL_VISITS_MAX);
+      rows = (legacy.data as Record<string, unknown>[] | null) ?? null;
+    } else if (first.error) {
+      return;
+    }
+
+    const orderRows = rows ?? [];
+    if (orderRows.length === 0) return;
+
+    const orderIds = orderRows
+      .map((row) => (typeof row.id === "string" ? row.id : ""))
+      .filter(Boolean);
+
+    const sessionIds = [
+      ...new Set(
+        orderRows
+          .map((row) =>
+            typeof row.table_session_id === "string" ? row.table_session_id.trim() : "",
+          )
+          .filter(Boolean),
+      ),
+    ];
+
+    const [{ data: visitRows }, { data: sessionVisitRows }] = await Promise.all([
+      client.from("store_visits").select("order_id").eq("tenant_slug", slug).in("order_id", orderIds),
+      sessionIds.length > 0
+        ? client
+            .from("store_visits")
+            .select("table_session_id")
+            .eq("tenant_slug", slug)
+            .in("table_session_id", sessionIds)
+        : Promise.resolve({ data: [] as { table_session_id?: unknown }[] }),
+    ]);
+
+    const visitedOrders = new Set(
+      ((visitRows as { order_id?: unknown }[] | null) ?? [])
+        .map((row) => (typeof row.order_id === "string" ? row.order_id : ""))
+        .filter(Boolean),
+    );
+    const visitedSessions = new Set(
+      ((sessionVisitRows as { table_session_id?: unknown }[] | null) ?? [])
+        .map((row) => (typeof row.table_session_id === "string" ? row.table_session_id : ""))
+        .filter(Boolean),
+    );
+
+    const backfilledSessions = new Set<string>();
+
+    for (const row of orderRows) {
+      const orderId = typeof row.id === "string" ? row.id : "";
+      if (!orderId || visitedOrders.has(orderId)) continue;
+
+      const sessionId =
+        typeof row.table_session_id === "string" ? row.table_session_id.trim() : "";
+      if (sessionId) {
+        if (visitedSessions.has(sessionId) || backfilledSessions.has(sessionId)) continue;
+        const paidAt =
+          typeof row.completed_at === "string"
+            ? row.completed_at
+            : typeof row.created_at === "string"
+              ? row.created_at
+              : new Date().toISOString();
+        await recordCompletedTableSessionVisit(client, slug, sessionId, paidAt);
+        backfilledSessions.add(sessionId);
+        continue;
+      }
+
+      await recordCompletedStoreVisit(client, slug, orderId);
+    }
+  } catch (err) {
+    console.error("[backfillMissingStoreVisitsInPeriod]", err);
+  }
 }
 
 export async function getMerchantTodayGuestSummary(
@@ -327,24 +611,59 @@ export async function getMerchantTodayGuestSummary(
   const client = createServiceSupabase();
   if (!client) return { ok: false, message: "Supabase 서버 설정이 없습니다." };
 
-  const { sinceIso, untilIso } = getKstCalendarDayBounds();
+  const { sinceIso, untilIso, rangeLabel } = await getTenantCurrentBusinessDayBounds(slug);
+
+  const { data: visitRows, error: visitErr } = await withSupabaseReadRetry(() =>
+    client
+      .from("store_visits")
+      .select("guest_session_id, order_id, table_session_id")
+      .eq("tenant_slug", slug)
+      .gte("completed_at", sinceIso)
+      .lt("completed_at", untilIso),
+  );
+
+  if (!visitErr && visitRows) {
+    const todaySessions = new Set<string>();
+    for (const raw of visitRows as Record<string, unknown>[]) {
+      const sid = typeof raw.guest_session_id === "string" ? raw.guest_session_id.trim() : "";
+      if (sid.length >= 8) todaySessions.add(sid);
+    }
+    const paymentFromOrders = await countCompletedGuestPaymentEventsInPeriod(
+      client,
+      slug,
+      sinceIso,
+      untilIso,
+    );
+    const visitPaymentCount = countPaymentEventsFromStoreVisitRows(
+      visitRows as Record<string, unknown>[],
+    );
+    const todayCompletedVisits =
+      paymentFromOrders > 0 ? paymentFromOrders : visitPaymentCount;
+    return summarizeTodayGuests(
+      client,
+      slug,
+      sinceIso,
+      rangeLabel,
+      todaySessions,
+      todayCompletedVisits,
+    );
+  }
 
   const { data, error } = await withSupabaseReadRetry(() =>
     client
       .from("orders")
-      .select("guest_session_id")
+      .select("id, guest_session_id, table_session_id")
       .eq("tenant_slug", slug)
       .eq("status", "completed")
       .not("guest_session_id", "is", null)
-      .gte("completed_at", sinceIso)
-      .lt("completed_at", untilIso),
+      .or(guestPaidOrdersPeriodOrFilter(sinceIso, untilIso, "lt")),
   );
 
   if (error && /completed_at|does not exist/i.test(error.message ?? "")) {
     const fallback = await withSupabaseReadRetry(() =>
       client
         .from("orders")
-        .select("guest_session_id")
+        .select("id, guest_session_id, table_session_id")
         .eq("tenant_slug", slug)
         .eq("status", "completed")
         .not("guest_session_id", "is", null)
@@ -354,32 +673,55 @@ export async function getMerchantTodayGuestSummary(
     if (fallback.error) {
       return { ok: false, message: fallback.error.message ?? "손님 요약을 불러오지 못했습니다." };
     }
-    return summarizeTodayGuests(client, slug, sinceIso, fallback.data as Record<string, unknown>[]);
+    const rows = (fallback.data as Record<string, unknown>[]) ?? [];
+    const todaySessions = new Set<string>();
+    for (const raw of rows) {
+      const sid = typeof raw.guest_session_id === "string" ? raw.guest_session_id.trim() : "";
+      if (sid.length >= 8) todaySessions.add(sid);
+    }
+    return summarizeTodayGuests(
+      client,
+      slug,
+      sinceIso,
+      rangeLabel,
+      todaySessions,
+      countPaymentEventsFromOrderRows(rows),
+    );
   }
 
   if (error) {
     return { ok: false, message: error.message ?? "손님 요약을 불러오지 못했습니다." };
   }
 
-  return summarizeTodayGuests(client, slug, sinceIso, (data as Record<string, unknown>[]) ?? []);
+  const rows = (data as Record<string, unknown>[]) ?? [];
+  const todaySessions = new Set<string>();
+  for (const raw of rows) {
+    const sid = typeof raw.guest_session_id === "string" ? raw.guest_session_id.trim() : "";
+    if (sid.length >= 8) todaySessions.add(sid);
+  }
+  return summarizeTodayGuests(
+    client,
+    slug,
+    sinceIso,
+    rangeLabel,
+    todaySessions,
+    countPaymentEventsFromOrderRows(rows),
+  );
 }
 
 async function summarizeTodayGuests(
   client: NonNullable<ReturnType<typeof createServiceSupabase>>,
   slug: string,
   todaySinceIso: string,
-  todayRows: Record<string, unknown>[],
+  rangeLabel: string,
+  todaySessions: Set<string>,
+  todayCompletedVisits: number,
 ): Promise<MerchantTodayGuestSummary> {
-  const todaySessions = new Set<string>();
-  for (const raw of todayRows) {
-    const sid = typeof raw.guest_session_id === "string" ? raw.guest_session_id.trim() : "";
-    if (sid.length >= 8) todaySessions.add(sid);
-  }
-
   if (todaySessions.size === 0) {
     return {
       ok: true,
-      todayCompletedVisits: todayRows.length,
+      rangeLabel,
+      todayCompletedVisits,
       todayFirstVisitGuests: 0,
       todayReturningGuests: 0,
     };
@@ -399,7 +741,8 @@ async function summarizeTodayGuests(
   if (error && /completed_at|does not exist/i.test(error.message ?? "")) {
     return {
       ok: true,
-      todayCompletedVisits: todayRows.length,
+      rangeLabel,
+      todayCompletedVisits,
       todayFirstVisitGuests: todaySessions.size,
       todayReturningGuests: 0,
     };
@@ -418,7 +761,8 @@ async function summarizeTodayGuests(
 
   return {
     ok: true,
-    todayCompletedVisits: todayRows.length,
+    rangeLabel,
+    todayCompletedVisits,
     todayFirstVisitGuests: todaySessions.size - todayReturningGuests,
     todayReturningGuests,
   };

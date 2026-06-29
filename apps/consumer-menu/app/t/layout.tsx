@@ -1,7 +1,7 @@
 import type { Viewport } from "next";
 
 import { ConsumerLightTheme } from "@/components/consumer-light-theme";
-import { ConsumerPinchZoomDeferred } from "@/components/consumer-pinch-zoom-deferred";
+import { ConsumerPinchZoomGuard } from "@/components/consumer-pinch-zoom-guard";
 
 /** 손님 메뉴: 라이트 고정 + 핀치 줌 OFF (반응형·큰글씨 모드로 확대) */
 export const viewport: Viewport = {
@@ -21,7 +21,7 @@ export default function ConsumerSegmentLayout({
   return (
     <>
       <ConsumerLightTheme />
-      <ConsumerPinchZoomDeferred />
+      <ConsumerPinchZoomGuard />
       {children}
     </>
   );

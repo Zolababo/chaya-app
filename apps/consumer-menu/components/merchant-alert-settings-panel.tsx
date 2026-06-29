@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Bell, Clock, Volume2, Vibrate } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Bell, Clock, ExternalLink, Smartphone, Volume2, Vibrate } from "lucide-react";
 
 import { MerchantSettingsToggle } from "@/components/merchant-settings-sheet-ui";
 import {
@@ -23,6 +23,15 @@ import {
   type MerchantReAlertIntervalSec,
 } from "@/lib/merchant/merchant-alert-sound-profile";
 import { previewMerchantAlertSound, unlockMerchantAlertAudio } from "@/lib/merchant/merchant-new-order-alert";
+import {
+  detectMerchantNotificationDeviceKind,
+  merchantNotificationDeviceKindLabel,
+  merchantNotificationPermissionLabel,
+  merchantSystemNotificationManualSteps,
+  showMerchantTestSystemNotification,
+  tryOpenDeviceNotificationSettings,
+} from "@/lib/merchant/merchant-system-notification-settings";
+import { merchantSecondaryBtnClass } from "@/lib/merchant/merchant-more-sub-styles";
 import { useMerchantWebPush } from "@/lib/merchant/use-merchant-web-push";
 
 type Props = {
@@ -62,6 +71,58 @@ export function MerchantAlertSettingsPanel({
   };
 
   const push = useMerchantWebPush({ tenant, vapidPublicKey });
+  const [systemMsg, setSystemMsg] = useState<string | null>(null);
+  const [systemBusy, setSystemBusy] = useState(false);
+  const [permLabel, setPermLabel] = useState("확인 중…");
+
+  const deviceKind = useMemo(
+    () => (typeof window === "undefined" ? "unknown" : detectMerchantNotificationDeviceKind()),
+    [],
+  );
+  const manualSteps = useMemo(() => merchantSystemNotificationManualSteps(deviceKind), [deviceKind]);
+
+  useEffect(() => {
+    setPermLabel(merchantNotificationPermissionLabel());
+  }, [push.enabled]);
+
+  const onTestSystemNotification = useCallback(async () => {
+    setSystemBusy(true);
+    setSystemMsg(null);
+    try {
+      if (typeof Notification !== "undefined" && Notification.permission !== "granted") {
+        const ok = await push.enable();
+        setPermLabel(merchantNotificationPermissionLabel());
+        if (!ok) {
+          setSystemMsg("먼저 「브라우저 푸시」를 켜고 알림을 허용해 주세요.");
+          return;
+        }
+      }
+      const result = await showMerchantTestSystemNotification();
+      if (result === "ok") {
+        setSystemMsg("테스트 알림을 보냈습니다. 소리·진동이 들렸는지 확인해 주세요.");
+        return;
+      }
+      if (result === "no_permission") {
+        setSystemMsg("알림 권한이 없습니다. 「브라우저 푸시」를 켠 뒤 허용해 주세요.");
+        return;
+      }
+      setSystemMsg("테스트 알림을 보내지 못했습니다. 앱을 한 번 종료했다가 다시 시도해 주세요.");
+    } finally {
+      setSystemBusy(false);
+    }
+  }, [push]);
+
+  const onOpenDeviceSettings = useCallback(() => {
+    setSystemMsg(null);
+    const result = tryOpenDeviceNotificationSettings();
+    if (result === "attempted") {
+      setSystemMsg(
+        "휴대폰 설정 앱을 열었습니다. CHAYA(또는 Chrome) → 알림 → 소리를 켜 주세요. 열리지 않으면 아래 안내를 따라 주세요.",
+      );
+      return;
+    }
+    setSystemMsg("이 기기에서는 설정 앱을 바로 열 수 없습니다. 아래 안내를 따라 주세요.");
+  }, []);
 
   const onSoundProfileChange = (profile: MerchantAlertSoundProfile) => {
     if (profile !== "mute") {
@@ -76,7 +137,8 @@ export function MerchantAlertSettingsPanel({
       <div className={merchantSubCardHeadClass}>
         <h2 className={merchantSubCardTitleClass}>이 기기 알림 설정</h2>
         <p className="mt-0.5 text-xs font-medium text-[#9CA3AF]">
-          앱이 열려 있을 때 소리·진동·재알림. 화면이 꺼져 있으면 아래 「브라우저 푸시」를 켜 주세요.
+          앱이 열려 있을 때 소리·진동·재알림. 화면이 꺼지면 주방 알림음 대신 「브라우저 푸시」로
+          시스템 알림·진동이 옵니다(미처리 주문은 약 45초마다).
         </p>
       </div>
 
@@ -156,32 +218,90 @@ export function MerchantAlertSettingsPanel({
         </div>
 
         {showWebPush ? (
-          <div className="flex min-h-[52px] items-center justify-between gap-3 px-4">
-            <span className="flex min-w-0 flex-1 items-center gap-3">
-              <span className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[9px] bg-[#EFF6FF] text-[#2563EB]">
-                <Bell className="h-4 w-4" strokeWidth={2} aria-hidden />
-              </span>
-              <span className="min-w-0">
-                <span className="block text-[15px] font-bold text-[#111827] dark:text-zinc-50">
-                  브라우저 푸시
+          <div className="px-4 py-2">
+            <div className="flex min-h-[52px] items-center justify-between gap-3">
+              <span className="flex min-w-0 flex-1 items-center gap-3">
+                <span className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[9px] bg-[#EFF6FF] text-[#2563EB]">
+                  <Bell className="h-4 w-4" strokeWidth={2} aria-hidden />
                 </span>
-                <span className="block text-xs font-medium text-[#9CA3AF]">
-                  {push.configured ? "앱 닫아도 알림 받기 (주방용 권장)" : "준비 중"}
+                <span className="min-w-0">
+                  <span className="block text-[15px] font-bold text-[#111827] dark:text-zinc-50">
+                    브라우저 푸시
+                  </span>
+                  <span className="block text-xs font-medium text-[#9CA3AF]">
+                    {push.configured ? "앱 닫아도 알림 받기 (주방용 권장)" : "준비 중"}
+                  </span>
                 </span>
               </span>
-            </span>
-            {canEditPush && push.configured ? (
-              <MerchantSettingsToggle
-                on={push.enabled}
-                onToggle={() => void push.toggle()}
-                disabled={push.busy}
-                ariaLabel="브라우저 푸시"
-              />
-            ) : (
-              <span className="text-xs font-medium text-[#9CA3AF]">
-                {canEditPush ? "준비 중" : "권한 없음"}
+              {canEditPush && push.configured ? (
+                <MerchantSettingsToggle
+                  on={push.enabled}
+                  onToggle={() => void push.toggle()}
+                  disabled={push.busy}
+                  ariaLabel="브라우저 푸시"
+                />
+              ) : (
+                <span className="text-xs font-medium text-[#9CA3AF]">
+                  {canEditPush ? "준비 중" : "권한 없음"}
+                </span>
+              )}
+            </div>
+            {push.error ? (
+              <p className="mt-1 pb-2 text-xs font-semibold leading-relaxed text-red-600 dark:text-red-400">
+                {push.error}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+
+        {showWebPush ? (
+          <div className="border-t border-[#F3F4F6] px-4 py-3 dark:border-zinc-800">
+            <div className="flex items-start gap-3">
+              <span className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[9px] bg-[#F0FDF4] text-[#16A34A]">
+                <Smartphone className="h-4 w-4" strokeWidth={2} aria-hidden />
               </span>
-            )}
+              <div className="min-w-0 flex-1">
+                <p className="text-[15px] font-bold text-[#111827] dark:text-zinc-50">푸시 알림음 (휴대폰)</p>
+                <p className="mt-0.5 text-xs font-medium leading-relaxed text-[#9CA3AF]">
+                  앱을 닫았을 때 울리는 소리는 휴대폰·Chrome 설정입니다. 웹앱은 카카오톡처럼 전용
+                  알림음 파일을 넣을 수 없고, 아래에서 소리·진동을 확인·설정해 주세요.
+                </p>
+                <p className="mt-1.5 text-[11px] font-semibold text-[#6B7280] dark:text-zinc-400">
+                  {merchantNotificationDeviceKindLabel(deviceKind)} · 브라우저 알림: {permLabel}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <button
+                type="button"
+                disabled={systemBusy || push.busy}
+                onClick={() => void onTestSystemNotification()}
+                className={`${merchantSecondaryBtnClass} min-h-[44px] px-3`}
+              >
+                {systemBusy ? "보내는 중…" : "테스트 알림 보내기"}
+              </button>
+              <button
+                type="button"
+                onClick={onOpenDeviceSettings}
+                className={`${merchantSecondaryBtnClass} min-h-[44px] gap-1.5 px-3`}
+              >
+                <ExternalLink className="h-4 w-4 shrink-0" strokeWidth={2.25} aria-hidden />
+                휴대폰 알림 설정 열기
+              </button>
+            </div>
+
+            {systemMsg ? (
+              <p className="mt-2 text-xs font-semibold leading-relaxed text-[#2563EB] dark:text-blue-300">
+                {systemMsg}
+              </p>
+            ) : null}
+
+            <ol className="mt-3 list-decimal space-y-1.5 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-4 py-3 pl-8 text-xs font-medium leading-relaxed text-[#4B5563] dark:border-zinc-700 dark:bg-zinc-900/60 dark:text-zinc-300">
+              {manualSteps.map((step) => (
+                <li key={step}>{step}</li>
+              ))}
+            </ol>
           </div>
         ) : null}
       </div>

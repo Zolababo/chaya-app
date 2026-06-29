@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 
 type Props = {
   params: Promise<{ tenant: string }>;
-  searchParams: Promise<{ e?: string; ok?: string; focus?: string }>;
+  searchParams: Promise<{ e?: string; ok?: string; focus?: string; d?: string }>;
 };
 
 export default async function MerchantTablesPage({ params, searchParams }: Props) {
@@ -27,7 +27,7 @@ export default async function MerchantTablesPage({ params, searchParams }: Props
   const tEnc = encodeURIComponent(tenant);
 
   const list = await listTenantTablesForMerchant(tenant);
-  const errMsg = merchantTableErrorMessage(sp.e);
+  const errMsg = merchantTableErrorMessage(sp.e, sp.d);
   const okMsg = merchantTableOkMessage(sp.ok);
   const listError = list.ok ? null : merchantOwnerLoadErrorMessage("tables", list.message);
 
@@ -44,6 +44,7 @@ export default async function MerchantTablesPage({ params, searchParams }: Props
         listError={listError}
         siteBase={getServerSiteBaseUrl()}
         canManage={canManageTables}
+        focusCode={sp.focus?.trim() || null}
       />
     </MerchantMoreSubPageShell>
   );

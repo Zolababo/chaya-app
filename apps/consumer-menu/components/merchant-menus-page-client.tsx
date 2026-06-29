@@ -37,6 +37,7 @@ import {
 import { useMerchantLiveFetch } from "@/lib/merchant/use-merchant-live-fetch";
 import { useMerchantWideLandscape } from "@/lib/responsive/use-merchant-wide-landscape";
 import { menuTranslationNotice } from "@/lib/merchant/merchant-menu-translation-source";
+import { groupMenuItemsByCategory, sortCategoryNames } from "@/lib/menus/category-order";
 import type { ChayaMenuRow } from "@/lib/menus/types";
 
 type Props = {
@@ -49,17 +50,10 @@ type Props = {
 };
 
 function groupByCategory(items: ChayaMenuRow[]): { category: string; items: ChayaMenuRow[] }[] {
-  const order: string[] = [];
-  const map = new Map<string, ChayaMenuRow[]>();
-  for (const item of items) {
-    const cat = item.category?.trim() || "기타";
-    if (!map.has(cat)) {
-      order.push(cat);
-      map.set(cat, []);
-    }
-    map.get(cat)!.push(item);
-  }
-  return order.map((cat) => ({ category: cat, items: map.get(cat)! }));
+  const categories = sortCategoryNames([
+    ...new Set(items.map((item) => item.category?.trim() || "기타")),
+  ]);
+  return groupMenuItemsByCategory(items, categories);
 }
 
 export function MerchantMenusPageClient({
@@ -250,11 +244,12 @@ export function MerchantMenusPageClient({
               </aside>
             </div>
           ) : (
-            grouped.map((group) => (
+            grouped.map((group, categoryIndex) => (
               <MerchantMenuCategoryBlock
                 key={group.category}
                 tenant={tenant}
                 category={group.category}
+                categoryIndex={categoryIndex}
                 items={group.items}
                 defaultOpen
               />

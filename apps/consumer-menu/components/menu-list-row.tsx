@@ -40,17 +40,17 @@ export function MenuListRow({
   imagePriority = false,
 }: Props) {
   const nameClass = xlarge
-    ? "text-xl font-bold leading-snug tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-2xl"
+    ? "menu-list-row-name text-2xl font-bold leading-snug tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-[1.75rem]"
     : large
       ? "text-base font-semibold leading-snug tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-lg"
       : "text-sm font-medium leading-snug text-zinc-900 dark:text-zinc-50";
   const descClass = xlarge
-    ? "mt-1 line-clamp-2 text-base leading-relaxed text-zinc-700 dark:text-zinc-300"
+    ? "menu-list-row-desc mt-1 line-clamp-2 text-lg leading-relaxed text-zinc-700 dark:text-zinc-300"
     : large
       ? "mt-0.5 line-clamp-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400"
       : "mt-0.5 line-clamp-1 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400";
   const priceClass = xlarge
-    ? "mt-2 text-xl font-bold tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50"
+    ? "menu-list-row-price mt-2 text-2xl font-bold tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-[1.625rem]"
     : large
       ? "mt-1 text-base font-bold tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-lg"
       : "mt-0.5 text-sm font-semibold tabular-nums text-zinc-900 dark:text-zinc-50";
@@ -76,7 +76,7 @@ export function MenuListRow({
     <div
       className={[
         "flex gap-2 sm:gap-2.5",
-        xlarge ? "items-start py-5 sm:py-6" : large ? "items-start py-4" : "items-center py-0",
+        xlarge ? "menu-list-row-sr items-start py-5 sm:gap-3 sm:py-6" : large ? "items-start py-4" : "items-center py-0",
         soldOut ? "opacity-55" : "",
       ].join(" ")}
     >

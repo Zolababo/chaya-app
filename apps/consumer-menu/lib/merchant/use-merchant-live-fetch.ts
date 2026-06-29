@@ -40,11 +40,26 @@ export function useMerchantLiveFetch<T extends { ok: true }>({
   parse,
   staleTimeMs = MERCHANT_CACHE_STALE_MS,
 }: Options<T>): Result<T> {
-  const cached = readMerchantCache<T>(cacheKey);
-  const [data, setData] = useState<T | null>(cached);
+  const [data, setData] = useState<T | null>(() => readMerchantCache<T>(cacheKey));
   const [error, setError] = useState<string | null>(null);
-  const [isRefreshing, setIsRefreshing] = useState(enabled && !cached);
+  const [isRefreshing, setIsRefreshing] = useState(() => {
+    const hit = readMerchantCache<T>(cacheKey);
+    return hit == null || !isMerchantCacheFresh(cacheKey, staleTimeMs);
+  });
   const mountedRef = useRef(true);
+  const cacheKeyRef = useRef(cacheKey);
+
+  const applyCached = useCallback(
+    (key: string): T | null => {
+      const hit = readMerchantCache<T>(key);
+      if (mountedRef.current) {
+        setData(hit);
+        if (hit) setError(null);
+      }
+      return hit;
+    },
+    [],
+  );
 
   const load = useCallback(
     async (force = false) => {
@@ -52,6 +67,7 @@ export function useMerchantLiveFetch<T extends { ok: true }>({
 
       const hasCache = readMerchantCache<T>(cacheKey) != null;
       if (!force && hasCache && isMerchantCacheFresh(cacheKey, staleTimeMs)) {
+        applyCached(cacheKey);
         if (mountedRef.current) setIsRefreshing(false);
         return;
       }
@@ -90,7 +106,7 @@ export function useMerchantLiveFetch<T extends { ok: true }>({
         if (mountedRef.current) setIsRefreshing(false);
       }
     },
-    [cacheKey, enabled, parse, staleTimeMs, url],
+    [applyCached, cacheKey, enabled, parse, staleTimeMs, url],
   );
 
   useEffect(() => {
@@ -102,8 +118,23 @@ export function useMerchantLiveFetch<T extends { ok: true }>({
 
   useEffect(() => {
     if (!enabled) return;
+
+    const keyChanged = cacheKeyRef.current !== cacheKey;
+    cacheKeyRef.current = cacheKey;
+
+    const hit = readMerchantCache<T>(cacheKey);
+    if (hit) {
+      setData(hit);
+      setError(null);
+      setIsRefreshing(!isMerchantCacheFresh(cacheKey, staleTimeMs));
+    } else if (keyChanged) {
+      setData(null);
+      setError(null);
+      setIsRefreshing(true);
+    }
+
     void load(false);
-  }, [enabled, load]);
+  }, [cacheKey, enabled, load, staleTimeMs]);
 
   useEffect(() => {
     if (!enabled) return;

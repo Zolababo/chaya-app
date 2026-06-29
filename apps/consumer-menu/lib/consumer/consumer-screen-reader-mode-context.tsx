@@ -18,7 +18,9 @@ import {
 const SR_MODE_ATTR = "data-consumer-screen-reader-mode";
 
 type ConsumerScreenReaderModeContextValue = {
+  /** hydration 완료 후에만 신뢰 — 라우트·링크는 `useEffectiveScreenReaderMode` 사용 */
   screenReaderMode: boolean;
+  hydrated: boolean;
   setScreenReaderMode: (on: boolean) => void;
   toggleScreenReaderMode: () => void;
 };
@@ -26,13 +28,13 @@ type ConsumerScreenReaderModeContextValue = {
 const ConsumerScreenReaderModeContext =
   createContext<ConsumerScreenReaderModeContextValue | null>(null);
 
-function applyDomFlag(on: boolean, hydrated: boolean) {
+function applyScreenReaderDomFlag(on: boolean) {
   const root = document.documentElement;
-  if (!hydrated || !on) {
+  if (on) {
+    root.setAttribute(SR_MODE_ATTR, "");
+  } else {
     root.removeAttribute(SR_MODE_ATTR);
-    return;
   }
-  root.setAttribute(SR_MODE_ATTR, "");
 }
 
 type Props = {
@@ -45,18 +47,17 @@ export function ConsumerScreenReaderModeProvider({ tenant, children }: Props) {
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
+    const on = readScreenReaderMode(tenant);
+    setOn(on);
+    applyScreenReaderDomFlag(on);
     setHydrated(true);
-    setOn(readScreenReaderMode(tenant));
   }, [tenant]);
-
-  useEffect(() => {
-    applyDomFlag(screenReaderMode, hydrated);
-  }, [screenReaderMode, hydrated]);
 
   const setScreenReaderMode = useCallback(
     (on: boolean) => {
       setOn(on);
       writeScreenReaderMode(tenant, on);
+      applyScreenReaderDomFlag(on);
     },
     [tenant],
   );
@@ -65,13 +66,15 @@ export function ConsumerScreenReaderModeProvider({ tenant, children }: Props) {
     setOn((prev) => {
       const next = !prev;
       writeScreenReaderMode(tenant, next);
+      applyScreenReaderDomFlag(next);
       return next;
     });
   }, [tenant]);
 
   const value = useMemo(
     () => ({
-      screenReaderMode: hydrated && screenReaderMode,
+      screenReaderMode: hydrated ? screenReaderMode : false,
+      hydrated,
       setScreenReaderMode,
       toggleScreenReaderMode,
     }),

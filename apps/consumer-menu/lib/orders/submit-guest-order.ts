@@ -3,6 +3,7 @@ import { withSupabaseReadRetry, withSupabaseWriteRetry } from "@/lib/supabase/tr
 
 import type { GuestOrderErrorCode, GuestOrderErrorParams } from "@/lib/i18n/guest-order-error-codes";
 import { trackExperienceEvent } from "@/lib/experience/track-experience-event";
+import { attachOrderToOpenTableSession } from "@/lib/merchant/table-session";
 import { runMerchantGuestOrderCreatedNotification } from "@/lib/notifications/merchant-notification-pipeline";
 import {
   fetchTenantStoreSettings,
@@ -182,6 +183,14 @@ export async function submitGuestOrder(input: {
         order_no: orderNo,
       },
     });
+  }
+
+  if (tableCheck.tableNo) {
+    try {
+      await attachOrderToOpenTableSession(slug, orderIdStr, tableCheck.tableNo);
+    } catch (e) {
+      console.error("[submitGuestOrder] table session attach", e);
+    }
   }
 
   return { ok: true, orderId: orderIdStr, orderNo };

@@ -50,10 +50,18 @@ export type MerchantLiveMenusError = {
   message: string;
 };
 
+export type MerchantOpenTableSessionSummary = {
+  sessionId: string;
+  tableNo: string;
+  orderCount: number;
+  totalAmount: number;
+};
+
 export type MerchantLiveOrdersPayload = {
   ok: true;
   tab: MerchantOrdersTab;
   rows: MerchantOrderRow[];
+  openTableSessions?: MerchantOpenTableSessionSummary[];
   ops: {
     pending: number;
     cooking: number;
@@ -140,6 +148,9 @@ export function parseMerchantLiveOrders(
     ok: true,
     tab: o.tab as MerchantOrdersTab,
     rows: o.rows as MerchantOrderRow[],
+    openTableSessions: Array.isArray((o as { openTableSessions?: unknown }).openTableSessions)
+      ? ((o as { openTableSessions: MerchantOpenTableSessionSummary[] }).openTableSessions)
+      : undefined,
     ops,
   };
 }

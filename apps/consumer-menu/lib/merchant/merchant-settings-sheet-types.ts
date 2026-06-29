@@ -6,6 +6,9 @@ export type MerchantSettingsSheetSnapshot = {
   ordersAccepting: boolean;
   breakStart: string | null;
   breakEnd: string | null;
+  businessOpen: string | null;
+  businessClose: string | null;
+  salesDayCutoff: string;
   tableCount: number | null;
   staffCount: number | null;
   canManageStore: boolean;

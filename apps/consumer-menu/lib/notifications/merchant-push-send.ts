@@ -63,6 +63,7 @@ export async function sendGuestOrderWebPush(input: {
   body: string;
   openUrl: string;
   subscriptions: MerchantPushSubscriptionRow[];
+  tag?: string;
 }): Promise<void> {
   if (input.subscriptions.length === 0) return;
   const ok = await ensureWebPushVapidConfigured();
@@ -79,6 +80,7 @@ export async function sendGuestOrderWebPush(input: {
     const payload = JSON.stringify({
       title: input.title,
       body: input.body,
+      tag: input.tag ?? "chaya-guest-order",
       data: { url: input.openUrl },
     });
 

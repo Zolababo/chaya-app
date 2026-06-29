@@ -143,21 +143,21 @@ export function MerchantAnalyticsPeriodPicker({
           className={!isCustom && !currentMonth && !currentLastMonth && (currentDays === 1 || (!currentDays && !currentFrom)) ? chipActive : chipIdle}
           onClick={() => { setShowCustom(false); nav(`/m/${tEnc}/analytics?days=1`); }}
         >
-          오늘
+          오늘(영업일)
         </button>
         <button
           type="button"
           className={!isCustom && !currentMonth && !currentLastMonth && currentDays === 7 ? chipActive : chipIdle}
           onClick={() => { setShowCustom(false); nav(`/m/${tEnc}/analytics?days=7`); }}
         >
-          최근 7일
+          최근 7영업일
         </button>
         <button
           type="button"
           className={!isCustom && !currentMonth && !currentLastMonth && currentDays === 30 ? chipActive : chipIdle}
           onClick={() => { setShowCustom(false); nav(`/m/${tEnc}/analytics?days=30`); }}
         >
-          최근 30일
+          최근 30영업일
         </button>
         <button
           type="button"

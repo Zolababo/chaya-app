@@ -1,7 +1,21 @@
 import { isMerchantInternalUiVisible } from "@/lib/merchant/merchant-internal-ui";
 import { tableCodeFormatHintKo } from "@/lib/tables/tenant-table-code";
 
-export function merchantTableErrorMessage(code: string | null | undefined): string | null {
+function formatDuplicateList(detail: string | null | undefined, max = 8): string {
+  const codes = (detail ?? "")
+    .split(",")
+    .map((c) => c.trim())
+    .filter(Boolean)
+    .slice(0, max);
+  if (!codes.length) return "";
+  const suffix = (detail ?? "").split(",").filter(Boolean).length > max ? "…" : "";
+  return ` (${codes.join(", ")}${suffix})`;
+}
+
+export function merchantTableErrorMessage(
+  code: string | null | undefined,
+  detail?: string | null,
+): string | null {
   if (!code) return null;
   if (isMerchantInternalUiVisible()) {
     switch (code) {
@@ -17,7 +31,11 @@ export function merchantTableErrorMessage(code: string | null | undefined): stri
     case "table_code_format":
       return `테이블 번호는 ${tableCodeFormatHintKo()}`;
     case "table_duplicate":
-      return "이미 등록된 테이블 번호입니다.";
+      return detail?.trim()
+        ? `테이블 ${detail.trim()}번은 이미 등록되어 있습니다. 다른 번호를 입력하거나 숨긴 테이블을 확인해 주세요.`
+        : "이미 등록된 테이블 번호입니다.";
+    case "bulk_duplicate":
+      return `범위에 이미 등록된 테이블 번호가 있어 추가하지 못했습니다${formatDuplicateList(detail)}. 목록·숨긴 테이블을 확인한 뒤, 겹치지 않는 번호만 다시 추가해 주세요.`;
     case "bulk_too_many":
       return "한 번에 최대 50개까지 추가할 수 있습니다.";
     case "no_service":

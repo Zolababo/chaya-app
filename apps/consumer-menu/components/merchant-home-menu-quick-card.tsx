@@ -2,6 +2,11 @@ import Link from "next/link";
 import { UtensilsCrossed } from "lucide-react";
 
 import { merchantMenusHref } from "@/lib/merchant/merchant-menus-href";
+import { groupMenuItemsByCategory, sortCategoryNames } from "@/lib/menus/category-order";
+import {
+  menuCategoryHeaderClassForIndex,
+  menuCategorySectionClassForIndex,
+} from "@/lib/menus/menu-category-tints";
 import type { ChayaMenuRow } from "@/lib/menus/types";
 
 type Props = {
@@ -9,43 +14,32 @@ type Props = {
   items: ChayaMenuRow[];
 };
 
-/** 카테고리 없는 항목에 쓸 레이블 */
-const NO_CATEGORY = "기타";
+function sortSoldOutFirst(rows: ChayaMenuRow[]): ChayaMenuRow[] {
+  return [...rows].sort((a, b) => {
+    if (a.isSoldOut === b.isSoldOut) return 0;
+    return a.isSoldOut ? -1 : 1;
+  });
+}
 
 /**
  * 홈 메뉴 빠른 현황 카드.
- * - 카테고리별 그룹 표시 (null → "기타").
+ * - 소비자 메뉴판과 동일 카테고리 색상 팔레트.
  * - 각 카테고리 안에서 품절 → 판매중 순.
  */
 export function MerchantHomeMenuQuickCard({ tenant, items }: Props) {
   if (items.length === 0) return null;
 
   const soldOutCount = items.filter((m) => m.isSoldOut).length;
-
-  // 카테고리 순서 유지 (첫 등장 순) + 각 그룹 내 품절 우선
-  const categoryOrder: string[] = [];
-  const grouped: Record<string, ChayaMenuRow[]> = {};
-
-  for (const item of items) {
-    const cat = item.category ?? NO_CATEGORY;
-    if (!grouped[cat]) {
-      grouped[cat] = [];
-      categoryOrder.push(cat);
-    }
-    grouped[cat]!.push(item);
-  }
-
-  // 각 카테고리 내 정렬: 품절 → 판매중
-  for (const cat of categoryOrder) {
-    grouped[cat]!.sort((a, b) => {
-      if (a.isSoldOut === b.isSoldOut) return 0;
-      return a.isSoldOut ? -1 : 1;
-    });
-  }
+  const categories = sortCategoryNames([
+    ...new Set(items.map((m) => m.category?.trim() || "기타")),
+  ]);
+  const sections = groupMenuItemsByCategory(items, categories).map((section) => ({
+    ...section,
+    items: sortSoldOutFirst(section.items),
+  }));
 
   return (
     <section aria-label="메뉴 현황">
-      {/* 섹션 레이블 */}
       <div className="mb-2 flex items-center gap-2 px-1">
         <span className="text-xs font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
           메뉴 현황
@@ -54,7 +48,6 @@ export function MerchantHomeMenuQuickCard({ tenant, items }: Props) {
       </div>
 
       <div className="rounded-2xl bg-white shadow-sm dark:bg-zinc-900">
-        {/* 카드 헤더 */}
         <div className="flex items-center justify-between px-4 pt-4 pb-3">
           <div className="flex items-center gap-2">
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-200">
@@ -75,67 +68,67 @@ export function MerchantHomeMenuQuickCard({ tenant, items }: Props) {
           </Link>
         </div>
 
-        {/* 카테고리별 그룹 */}
-        <div className="pb-2">
-          {categoryOrder.map((cat, catIdx) => (
-            <div key={cat}>
-              {/* 카테고리 헤더 */}
+        <div className="space-y-2 border-t border-zinc-100 px-3 pt-3 pb-3 dark:border-zinc-800">
+          {sections.map((section, catIdx) => {
+            const catSoldOut = section.items.filter((m) => m.isSoldOut).length;
+            return (
               <div
-                className={[
-                  "flex items-center gap-2 px-4 py-1.5",
-                  catIdx === 0 ? "border-t border-zinc-100 dark:border-zinc-800" : "border-t border-zinc-100 dark:border-zinc-800",
-                ].join(" ")}
+                key={section.category}
+                className={menuCategorySectionClassForIndex(catIdx)}
+                aria-labelledby={`merchant-home-cat-${catIdx}`}
               >
-                <span className="text-[11px] font-bold tracking-wide text-zinc-400 dark:text-zinc-500">
-                  {cat}
-                </span>
-                <span className="text-[10px] font-semibold text-zinc-300 dark:text-zinc-600">
-                  {grouped[cat]!.length}개
-                </span>
-                {grouped[cat]!.some((m) => m.isSoldOut) ? (
-                  <span className="text-[10px] font-bold text-red-400 dark:text-red-500">
-                    품절 {grouped[cat]!.filter((m) => m.isSoldOut).length}
+                <div
+                  id={`merchant-home-cat-${catIdx}`}
+                  className="flex flex-wrap items-center gap-2 px-3 py-2"
+                >
+                  <span className={menuCategoryHeaderClassForIndex(catIdx)}>{section.category}</span>
+                  <span className="text-[10px] font-semibold text-zinc-500 dark:text-zinc-400">
+                    {section.items.length}개
                   </span>
-                ) : null}
-              </div>
+                  {catSoldOut > 0 ? (
+                    <span className="text-[10px] font-bold text-red-500 dark:text-red-400">
+                      품절 {catSoldOut}
+                    </span>
+                  ) : null}
+                </div>
 
-              {/* 해당 카테고리 메뉴 목록 */}
-              <ul className="divide-y divide-zinc-50 px-4 dark:divide-zinc-800/50">
-                {grouped[cat]!.map((menu) => (
-                  <li
-                    key={menu.id}
-                    className={`flex items-center justify-between py-2.5 ${
-                      menu.isSoldOut ? "opacity-70" : ""
-                    }`}
-                  >
-                    <div className="min-w-0 flex-1 pr-3">
-                      <p
-                        className={`truncate text-sm font-semibold ${
-                          menu.isSoldOut
-                            ? "text-zinc-400 line-through dark:text-zinc-500"
-                            : "text-zinc-900 dark:text-zinc-100"
-                        }`}
-                      >
-                        {menu.name}
-                      </p>
-                      <p className="mt-0.5 text-xs text-zinc-400 dark:text-zinc-500">
-                        {menu.price.toLocaleString("ko-KR")}원
-                      </p>
-                    </div>
-                    {menu.isSoldOut ? (
-                      <span className="shrink-0 rounded-full bg-red-50 px-2.5 py-1 text-xs font-bold text-red-600 dark:bg-red-950/30 dark:text-red-400">
-                        품절
-                      </span>
-                    ) : (
-                      <span className="shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400">
-                        판매중
-                      </span>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+                <ul className="divide-y divide-black/5 border-t border-black/5 dark:divide-white/5 dark:border-white/5">
+                  {section.items.map((menu) => (
+                    <li
+                      key={menu.id}
+                      className={`flex items-center justify-between px-3 py-2.5 ${
+                        menu.isSoldOut ? "opacity-75" : ""
+                      }`}
+                    >
+                      <div className="min-w-0 flex-1 pr-3">
+                        <p
+                          className={`truncate text-sm font-semibold ${
+                            menu.isSoldOut
+                              ? "text-zinc-400 line-through dark:text-zinc-500"
+                              : "text-zinc-900 dark:text-zinc-100"
+                          }`}
+                        >
+                          {menu.name}
+                        </p>
+                        <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+                          {menu.price.toLocaleString("ko-KR")}원
+                        </p>
+                      </div>
+                      {menu.isSoldOut ? (
+                        <span className="shrink-0 rounded-full bg-red-50 px-2.5 py-1 text-xs font-bold text-red-600 dark:bg-red-950/30 dark:text-red-400">
+                          품절
+                        </span>
+                      ) : (
+                        <span className="shrink-0 rounded-full bg-white/80 px-2.5 py-1 text-xs font-bold text-emerald-800 ring-1 ring-emerald-200/80 dark:bg-zinc-900/60 dark:text-emerald-300 dark:ring-emerald-800/50">
+                          판매중
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>

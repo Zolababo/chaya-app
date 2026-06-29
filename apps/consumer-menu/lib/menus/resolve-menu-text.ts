@@ -1,6 +1,7 @@
 import type { AppLocale } from "@/lib/i18n/locales";
 import { DEFAULT_LOCALE } from "@/lib/i18n/locales";
 import type { MenuTranslationsMap } from "@/lib/i18n/menu-translations";
+import { sanitizeMenuDescriptionForDiner } from "./menu-description-sanitize";
 import type { ChayaMenuRow } from "./types";
 
 function pickTranslated(
@@ -22,7 +23,10 @@ export function resolveMenuName(row: ChayaMenuRow, locale: AppLocale): string {
 export function resolveMenuDescription(row: ChayaMenuRow, locale: AppLocale): string | null {
   const base = row.description?.trim() || null;
   if (locale === DEFAULT_LOCALE) return base;
-  return pickTranslated(row.translations, locale, "description") ?? base;
+  const translated = pickTranslated(row.translations, locale, "description");
+  const raw = translated ?? base;
+  if (!raw) return null;
+  return sanitizeMenuDescriptionForDiner(raw);
 }
 
 const CATEGORY_LABEL_FALLBACK: Partial<Record<AppLocale, Record<string, string>>> = {

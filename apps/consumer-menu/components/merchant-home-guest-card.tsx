@@ -6,17 +6,17 @@ type Props = {
   summary: Extract<MerchantTodayGuestSummary, { ok: true }>;
 };
 
-/** 점주 홈 — 오늘 결제완료 손님 요약 */
+/** 점주 홈 — 이번 영업일 결제완료 손님 요약 */
 export function MerchantHomeGuestCard({ summary }: Props) {
   return (
     <section
       className="overflow-hidden rounded-2xl border border-chaya-border/60 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
-      aria-label="오늘 손님"
+      aria-label="이번 영업일 손님"
     >
       <div className="border-b border-zinc-100 px-4 py-3 dark:border-zinc-800">
-        <h2 className="text-sm font-bold text-zinc-900 dark:text-zinc-50">오늘 손님</h2>
+        <h2 className="text-sm font-bold text-zinc-900 dark:text-zinc-50">이번 영업일 손님</h2>
         <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
-          결제완료 기준 · 같은 폰·브라우저
+          {summary.rangeLabel} · 결제완료 · 같은 폰·브라우저
         </p>
       </div>
       <div className="grid grid-cols-3 divide-x divide-zinc-100 dark:divide-zinc-800">

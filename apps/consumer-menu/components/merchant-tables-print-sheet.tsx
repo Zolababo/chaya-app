@@ -1,15 +1,40 @@
 "use client";
 
 import { buildConsumerTableUrl, merchantTableQrImagePath } from "@/lib/tables/consumer-table-url";
+import {
+  merchantTablePrintQrCm,
+  merchantTablePrintStoreNamePt,
+  merchantTablePrintTableNumberPt,
+  type MerchantTablePrintDimensions,
+} from "@/lib/merchant/merchant-table-qr-batch";
 import type { TenantTableRow } from "@/lib/tables/types";
 
 type Props = {
   tenant: string;
+  storeName: string;
   tables: TenantTableRow[];
   siteBase: string | null;
+  showTableLabel: boolean;
+  dimensions: MerchantTablePrintDimensions;
 };
 
-export function MerchantTablesPrintSheet({ tenant, tables, siteBase }: Props) {
+export function MerchantTablesPrintSheet({
+  tenant,
+  storeName,
+  tables,
+  siteBase,
+  showTableLabel,
+  dimensions,
+}: Props) {
+  const qrCm = merchantTablePrintQrCm(dimensions, showTableLabel);
+  const tableNumPt = merchantTablePrintTableNumberPt(dimensions);
+  const storeNamePt = merchantTablePrintStoreNamePt(dimensions);
+  const cardStyle = {
+    width: `${dimensions.widthCm}cm`,
+    height: `${dimensions.heightCm}cm`,
+    padding: "0.35cm",
+  } as const;
+
   return (
     <>
       <div className="fixed bottom-4 left-1/2 z-50 -translate-x-1/2 print:hidden">
@@ -22,33 +47,64 @@ export function MerchantTablesPrintSheet({ tenant, tables, siteBase }: Props) {
         </button>
       </div>
 
-      <div className="mx-auto grid max-w-5xl grid-cols-2 gap-6 px-4 pb-24 pt-2 sm:grid-cols-3 print:grid-cols-3 print:gap-4 print:pb-0 print:pt-0">
+      <div className="mx-auto flex max-w-5xl flex-wrap justify-center gap-4 px-4 pb-24 pt-2 print:gap-[0.4cm] print:pb-0 print:pt-0">
         {tables.map((row) => {
           const url = buildConsumerTableUrl(tenant, row.table_code, siteBase);
           const qrSrc = merchantTableQrImagePath(tenant, row.table_code);
           return (
             <article
               key={row.id}
-              className="flex flex-col items-center rounded-xl border border-zinc-200 p-4 text-center print:break-inside-avoid print:border-zinc-300"
+              style={cardStyle}
+              className="box-border flex flex-col items-center justify-center overflow-hidden rounded-xl border border-zinc-200 text-center print:break-inside-avoid print:rounded-none print:border-zinc-400"
             >
-              <p className="text-2xl font-bold tabular-nums">테이블 {row.table_code}</p>
-              {row.label ? <p className="mt-0.5 text-sm text-zinc-600">{row.label}</p> : null}
+              <p
+                className="max-w-full truncate font-semibold leading-tight text-zinc-500"
+                style={{ fontSize: `${storeNamePt}pt` }}
+              >
+                {storeName}
+              </p>
+
+              {showTableLabel ? (
+                <div className="mt-[0.15cm] shrink-0">
+                  <p
+                    className="font-black tabular-nums leading-none text-zinc-900"
+                    style={{ fontSize: `${tableNumPt}pt` }}
+                  >
+                    {row.table_code}
+                  </p>
+                  <p className="mt-[0.05cm] font-bold text-zinc-600" style={{ fontSize: `${Math.max(7, tableNumPt * 0.38)}pt` }}>
+                    테이블
+                  </p>
+                  {row.label ? (
+                    <p
+                      className="mt-[0.05cm] truncate text-zinc-500"
+                      style={{ fontSize: `${Math.max(6, tableNumPt * 0.32)}pt` }}
+                    >
+                      {row.label}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={qrSrc}
                 alt={`테이블 ${row.table_code} QR`}
-                width={200}
-                height={200}
-                className="mt-3 size-[200px] print:size-[180px]"
+                width={Math.round(qrCm * 37.8)}
+                height={Math.round(qrCm * 37.8)}
+                className="mt-auto shrink-0 object-contain"
+                style={{
+                  width: `${qrCm}cm`,
+                  height: `${qrCm}cm`,
+                }}
               />
-              <p className="mt-2 max-w-full break-all font-mono text-[9px] leading-tight text-zinc-500">
+              <p className="mt-[0.1cm] hidden max-w-full break-all font-mono leading-tight text-zinc-400 print:block" style={{ fontSize: "5pt" }}>
                 {url}
               </p>
             </article>
           );
         })}
       </div>
-
     </>
   );
 }

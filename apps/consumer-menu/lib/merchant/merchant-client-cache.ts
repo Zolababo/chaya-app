@@ -57,6 +57,11 @@ export function dispatchMerchantCacheInvalidate(tenant: string, scope: MerchantC
   );
 }
 
+export function invalidateMerchantSalesCaches(tenant: string): void {
+  invalidateMerchantCacheForTenant(tenant, "dashboard");
+  invalidateMerchantCacheForTenant(tenant, "analytics");
+}
+
 export function invalidateMerchantCacheForTenant(tenant: string, scope: MerchantCacheScope): void {
   const t = tenant.trim();
   if (scope === "all" || scope === "menus") {

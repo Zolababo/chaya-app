@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
+import { MerchantTableSessionPayStrip } from "@/components/merchant-table-session-pay-strip";
 import { MerchantLoadingCenter } from "@/components/merchant-loading-center";
 import { MerchantOrderQueueCard } from "@/components/merchant-order-queue-card";
 import { MerchantOrderQueueList } from "@/components/merchant-order-queue-list";
@@ -17,6 +18,7 @@ import {
 } from "@/lib/merchant/merchant-owner-copy";
 import type { MerchantLiveOrdersPayload } from "@/lib/merchant/merchant-live-types";
 import type { MerchantOrdersTab } from "@/lib/merchant/merchant-orders-tab";
+import { isMerchantOrdersTerminalTab } from "@/lib/orders/merchant-order-stage";
 import { useMerchantWideLandscape } from "@/lib/responsive/use-merchant-wide-landscape";
 
 export type MerchantOrdersQueuePaneProps = {
@@ -55,6 +57,8 @@ export function MerchantOrdersQueuePane({
   const pendingCount = ops?.pending ?? null;
   const delayedOrderIds = ops?.delayedOrderIds ?? [];
   const rows = useMemo(() => data?.rows ?? [], [data?.rows]);
+  const openTableSessions = useMemo(() => data?.openTableSessions ?? [], [data?.openTableSessions]);
+  const showTablePayStrip = canMutateOrders && !isMerchantOrdersTerminalTab(activeTab);
   const delayedIds = useMemo(() => new Set(delayedOrderIds), [delayedOrderIds]);
 
   const selectedRow = useMemo(
@@ -93,7 +97,16 @@ export function MerchantOrdersQueuePane({
       {errMsg ? <MerchantActionToast message={errMsg} kind="error" /> : null}
       {okMsg ? <MerchantActionToast message={okMsg} kind="ok" /> : null}
 
-      {!data && isRefreshing ? <MerchantLoadingCenter context="orders" /> : null}
+      {showTablePayStrip ? (
+        <MerchantTableSessionPayStrip
+          tenant={tenant}
+          sessions={openTableSessions}
+          ordersTab={activeTab}
+          canMutateOrders={canMutateOrders}
+        />
+      ) : null}
+
+      {!data && !loadError ? <MerchantLoadingCenter context="orders" /> : null}
 
       {loadError ? (
         <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
@@ -131,6 +144,10 @@ export function MerchantOrdersQueuePane({
             </aside>
           ) : null}
         </div>
+      ) : !data && !isRefreshing ? (
+        <p className="py-12 text-center text-sm text-zinc-500 dark:text-zinc-400">
+          주문 목록을 불러오지 못했습니다. 위 새로고침을 눌러 주세요.
+        </p>
       ) : null}
     </div>
   );

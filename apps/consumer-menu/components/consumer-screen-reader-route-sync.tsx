@@ -3,7 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 
-import { useConsumerScreenReaderMode } from "@/lib/consumer/consumer-screen-reader-mode-context";
+import { useEffectiveScreenReaderMode } from "@/lib/consumer/use-effective-screen-reader-mode";
 import {
   isMenuHomePath,
   isScreenReaderMenuPath,
@@ -17,15 +17,20 @@ type Props = {
 
 /** SR 모드와 메뉴 URL(barrier-free ↔ 기본) 동기화 */
 export function ConsumerScreenReaderRouteSync({ tenant }: Props) {
-  const { screenReaderMode } = useConsumerScreenReaderMode();
+  const { screenReaderMode, hydrated } = useEffectiveScreenReaderMode(tenant);
   const pathname = usePathname();
   const router = useRouter();
   const navHref = useConsumerNavHref(tenant);
   const lastMode = useRef(screenReaderMode);
 
   useEffect(() => {
-    const modeChanged = lastMode.current !== screenReaderMode;
+    if (!hydrated) return;
+
     lastMode.current = screenReaderMode;
+
+    if (screenReaderMode) {
+      document.getElementById("menu-board-ssr")?.remove();
+    }
 
     if (screenReaderMode && isMenuHomePath(pathname, tenant)) {
       router.replace(navHref(menuPathForScreenReaderMode(tenant, true)));
@@ -34,13 +39,8 @@ export function ConsumerScreenReaderRouteSync({ tenant }: Props) {
 
     if (!screenReaderMode && isScreenReaderMenuPath(pathname)) {
       router.replace(navHref(menuPathForScreenReaderMode(tenant, false)));
-      return;
     }
-
-    if (modeChanged && screenReaderMode && isScreenReaderMenuPath(pathname)) {
-      /* 이미 SR 메뉴 — 유지 */
-    }
-  }, [screenReaderMode, pathname, tenant, router, navHref]);
+  }, [hydrated, screenReaderMode, pathname, tenant, router, navHref]);
 
   return null;
 }

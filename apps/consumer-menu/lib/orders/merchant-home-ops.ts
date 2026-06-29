@@ -2,7 +2,7 @@ import "server-only";
 
 import { cache } from "react";
 
-import { getKstCalendarDayBounds } from "@/lib/orders/merchant-analytics";
+import { getTenantCurrentBusinessDayBounds } from "@/lib/merchant/resolve-tenant-analytics-bounds";
 import { MERCHANT_COOKING_STATUSES } from "@/lib/orders/merchant-status-constants";
 import { createServiceSupabase } from "@/lib/supabase/create-service-client";
 import { withSupabaseReadRetry } from "@/lib/supabase/transient-retry";
@@ -28,7 +28,7 @@ export type MerchantHomeOpsCounts =
     }
   | { ok: false; message: string };
 
-/** 점주 홈 「운영」 5단계 — 큐 3종(전체) + 당일 결제·취소(KST). 요청당 1회. */
+/** 점주 홈 「운영」 5단계 — 큐 3종(전체) + 이번 영업일 결제·취소. 요청당 1회. */
 export const getMerchantHomeOpsCounts = cache(async function getMerchantHomeOpsCounts(
   tenantSlug: string,
 ): Promise<MerchantHomeOpsCounts> {
@@ -44,7 +44,7 @@ export const getMerchantHomeOpsCounts = cache(async function getMerchantHomeOpsC
     };
   }
 
-  const { sinceIso, untilIso } = getKstCalendarDayBounds();
+  const { sinceIso, untilIso } = await getTenantCurrentBusinessDayBounds(slug);
   // 10분 전 기준: 이보다 먼저 접수된 조리중 주문 = 지연
   const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
 
@@ -133,6 +133,21 @@ export const getMerchantHomeOpsCounts = cache(async function getMerchantHomeOpsC
     todayPaid = fallback.count ?? 0;
   } else if (todayPaidRes.error) {
     return { ok: false, message: todayPaidRes.error.message ?? "오늘 결제완료를 불러오지 못했습니다." };
+  } else {
+    // completed_at 미기록(구 데이터) — 당일 접수·completed도 오늘 결제로 집계
+    const legacyPaidRes = await withSupabaseReadRetryResult(() =>
+      client
+        .from("orders")
+        .select("*", { count: "exact", head: true })
+        .eq("tenant_slug", slug)
+        .eq("status", "completed")
+        .is("completed_at", null)
+        .gte("created_at", sinceIso)
+        .lt("created_at", untilIso),
+    );
+    if (!legacyPaidRes.error) {
+      todayPaid += legacyPaidRes.count ?? 0;
+    }
   }
 
   if (todayCancelledRes.error) {

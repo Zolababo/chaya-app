@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { batchAcceptPendingOrdersFromForm } from "@/app/m/[tenant]/orders/actions";
+import { MerchantOrderActionSubmit } from "@/components/merchant-order-action-submit";
 
 type Props = {
   tenant: string;
@@ -42,12 +43,11 @@ export function MerchantOrdersBatchAccept({ tenant, pendingCount }: Props) {
         접수하면 조리 탭으로 이동합니다.
       </p>
       <div className="mt-3 flex gap-2">
-        <button
-          type="submit"
-          className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-xl bg-chaya-primary px-4 text-sm font-bold text-white hover:opacity-95 dark:bg-orange-600"
-        >
-          {pendingCount}건 접수
-        </button>
+        <MerchantOrderActionSubmit
+          label={`${pendingCount}건 접수`}
+          pendingLabel="접수 중…"
+          className="inline-flex min-h-[44px] flex-1 rounded-xl bg-chaya-primary px-4 text-sm font-bold text-white hover:opacity-95 dark:bg-orange-600"
+        />
         <button
           type="button"
           className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-zinc-200 px-4 text-sm font-semibold text-zinc-700 dark:border-zinc-700 dark:text-zinc-200"

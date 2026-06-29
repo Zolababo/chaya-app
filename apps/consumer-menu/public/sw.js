@@ -3,12 +3,14 @@ self.addEventListener("push", (event) => {
   let title = "CHAYA";
   let body = "새 주문이 있습니다.";
   let url = "/";
+  let tag = "chaya-guest-order";
 
   try {
     if (event.data) {
       const j = event.data.json();
       if (typeof j.title === "string") title = j.title;
       if (typeof j.body === "string") body = j.body;
+      if (typeof j.tag === "string" && j.tag.trim()) tag = j.tag.trim();
       if (j.data && typeof j.data.url === "string") url = j.data.url;
     }
   } catch {
@@ -18,11 +20,14 @@ self.addEventListener("push", (event) => {
   event.waitUntil(
     self.registration.showNotification(title, {
       body,
+      icon: "/icons/chaya-store-icon.png",
+      badge: "/icons/chaya-store-icon.png",
       data: { url },
-      vibrate: [280, 120, 280, 120, 420],
-      tag: "chaya-guest-order",
+      vibrate: [400, 150, 400, 150, 600],
+      tag,
       renotify: true,
       requireInteraction: true,
+      silent: false,
     }),
   );
 });

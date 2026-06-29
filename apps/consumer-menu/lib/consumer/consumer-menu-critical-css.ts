@@ -6,7 +6,7 @@ export const CONSUMER_MENU_CRITICAL_CSS = `
 html[data-chaya-consumer]{color-scheme:only light!important;background:#fafaf9!important;touch-action:manipulation}
 html[data-chaya-consumer] body{background:#fafaf9!important;color:#1c1917!important;margin:0;touch-action:manipulation;-webkit-font-smoothing:antialiased}
 .chaya-app-shell{box-sizing:border-box;width:100%;max-width:32rem;margin-inline:auto;padding-inline:max(1rem,env(safe-area-inset-left,0px),env(safe-area-inset-right,0px))}
-#main-content h3{font-size:.875rem;font-weight:500;line-height:1.375;color:#18181b;margin:0}
+#main-content [data-menu-ssr-fallback] h3{font-size:.875rem;font-weight:500;line-height:1.375;color:#18181b;margin:0}
 #main-content [data-menu-ssr-fallback] li p{font-size:.875rem;font-weight:600;color:#18181b;margin:.125rem 0 0;font-variant-numeric:tabular-nums}
 #main-content [data-menu-ssr-fallback]{list-style:none;margin:0;padding:0}
 #main-content [data-menu-ssr-fallback] li+li{margin-top:.5rem}

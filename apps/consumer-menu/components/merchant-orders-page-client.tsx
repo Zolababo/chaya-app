@@ -8,6 +8,7 @@ import { MerchantOrdersTabs } from "@/components/merchant-orders-tabs";
 import { MerchantOrdersToolbar } from "@/components/merchant-orders-toolbar";
 import {
   invalidateMerchantCacheForTenant,
+  invalidateMerchantSalesCaches,
   merchantCacheKey,
 } from "@/lib/merchant/merchant-client-cache";
 import {
@@ -62,8 +63,10 @@ export function MerchantOrdersPageClient({
   });
 
   useEffect(() => {
-    if (okCode || errCode) {
-      invalidateMerchantCacheForTenant(tenant, "orders");
+    if (!okCode && !errCode) return;
+    invalidateMerchantCacheForTenant(tenant, "orders");
+    if (okCode === "table_session_paid" || okCode === "order_paid") {
+      invalidateMerchantSalesCaches(tenant);
     }
   }, [okCode, errCode, tenant]);
 
@@ -98,11 +101,11 @@ export function MerchantOrdersPageClient({
       case "cooking":
         return "조리 중인 주문이 없습니다.";
       case "ready":
-        return "서빙 완료 대기 주문이 없습니다.";
+        return "서빙 완료된 주문이 없습니다.";
       case "paid":
-        return "오늘 결제 완료된 주문이 없습니다.";
+        return "이번 영업일에 결제 완료된 주문이 없습니다.";
       default:
-        return "오늘 취소된 주문이 없습니다.";
+        return "이번 영업일에 취소된 주문이 없습니다.";
     }
   }, [activeTab]);
 

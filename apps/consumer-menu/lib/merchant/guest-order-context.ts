@@ -153,7 +153,7 @@ export async function recordCompletedStoreVisit(
 
   const { data: orderRaw, error: fetchErr } = await client
     .from("orders")
-    .select("id, status, guest_session_id, total_price, table_no, items, completed_at")
+    .select("id, status, guest_session_id, total_price, table_no, items, completed_at, table_session_id")
     .eq("tenant_slug", slug)
     .eq("id", orderId)
     .maybeSingle();
@@ -162,10 +162,24 @@ export async function recordCompletedStoreVisit(
   const order = orderRaw as Record<string, unknown>;
   if (order.status !== "completed") return;
 
+  const tableSessionId =
+    typeof order.table_session_id === "string" ? order.table_session_id.trim() : "";
+  if (tableSessionId) return;
+
   const guestSessionId = sanitizeGuestSessionId(
     typeof order.guest_session_id === "string" ? order.guest_session_id : null,
   );
   if (!guestSessionId) return;
+
+  const { count: existingVisitCount, error: existingVisitErr } = await client
+    .from("store_visits")
+    .select("id", { count: "exact", head: true })
+    .eq("order_id", orderId);
+
+  if (existingVisitErr && /store_visits|does not exist/i.test(existingVisitErr.message ?? "")) {
+    return;
+  }
+  if ((existingVisitCount ?? 0) > 0) return;
 
   const completedAt =
     typeof order.completed_at === "string"
@@ -176,17 +190,23 @@ export async function recordCompletedStoreVisit(
     typeof order.table_no === "string" && order.table_no.trim() ? order.table_no.trim() : null;
   const items = order.items ?? [];
 
-  const { count, error: countErr } = await client
-    .from("store_visits")
-    .select("id", { count: "exact", head: true })
+  const { data: rollupRaw } = await client
+    .from("tenant_guest_rollups")
+    .select("completed_visit_count, lifetime_spend")
     .eq("tenant_slug", slug)
-    .eq("guest_session_id", guestSessionId);
+    .eq("guest_session_id", guestSessionId)
+    .maybeSingle();
 
-  if (countErr && /store_visits|does not exist/i.test(countErr.message ?? "")) {
-    return;
-  }
+  const priorCount =
+    rollupRaw && typeof rollupRaw === "object"
+      ? Number((rollupRaw as { completed_visit_count?: unknown }).completed_visit_count) || 0
+      : 0;
+  const priorSpend =
+    rollupRaw && typeof rollupRaw === "object"
+      ? parsePrice((rollupRaw as { lifetime_spend?: unknown }).lifetime_spend)
+      : 0;
 
-  const visitNumber = (count ?? 0) + 1;
+  const visitNumber = priorCount + 1;
 
   const { error: insertErr } = await client.from("store_visits").insert({
     tenant_slug: slug,
@@ -204,22 +224,6 @@ export async function recordCompletedStoreVisit(
     console.error("[recordCompletedStoreVisit] insert", insertErr.message);
     return;
   }
-
-  const { data: rollupRaw } = await client
-    .from("tenant_guest_rollups")
-    .select("completed_visit_count, lifetime_spend")
-    .eq("tenant_slug", slug)
-    .eq("guest_session_id", guestSessionId)
-    .maybeSingle();
-
-  const priorCount =
-    rollupRaw && typeof rollupRaw === "object"
-      ? Number((rollupRaw as { completed_visit_count?: unknown }).completed_visit_count) || 0
-      : 0;
-  const priorSpend =
-    rollupRaw && typeof rollupRaw === "object"
-      ? parsePrice((rollupRaw as { lifetime_spend?: unknown }).lifetime_spend)
-      : 0;
 
   const nextCount = insertErr && /duplicate|unique/i.test(insertErr.message ?? "") ? priorCount : priorCount + 1;
   const nextSpend =
@@ -243,5 +247,135 @@ export async function recordCompletedStoreVisit(
 
   if (rollupErr && !/tenant_guest_rollups|does not exist/i.test(rollupErr.message ?? "")) {
     console.error("[recordCompletedStoreVisit] rollup", rollupErr.message);
+  }
+}
+
+/** 테이블 세션 결제 1회 — 방문·집계 1행 (세션 내 주문 합산). */
+export async function recordCompletedTableSessionVisit(
+  client: SupabaseClient,
+  tenantSlug: string,
+  tableSessionId: string,
+  completedAt: string,
+): Promise<void> {
+  const slug = tenantSlug.trim();
+  const sessionId = tableSessionId.trim();
+  if (!slug || !sessionId) return;
+
+  const { count: existingCount, error: existingErr } = await client
+    .from("store_visits")
+    .select("id", { count: "exact", head: true })
+    .eq("table_session_id", sessionId);
+
+  if (existingErr && /store_visits|table_session_id|does not exist/i.test(existingErr.message ?? "")) {
+    return;
+  }
+  if ((existingCount ?? 0) > 0) return;
+
+  const { data: sessionRaw } = await client
+    .from("table_sessions")
+    .select("table_no")
+    .eq("id", sessionId)
+    .eq("tenant_slug", slug)
+    .maybeSingle();
+
+  const tableNo =
+    sessionRaw && typeof (sessionRaw as { table_no?: unknown }).table_no === "string"
+      ? (sessionRaw as { table_no: string }).table_no.trim()
+      : null;
+
+  const { data: orderRows, error: ordersErr } = await client
+    .from("orders")
+    .select("id, guest_session_id, total_price, items, completed_at")
+    .eq("tenant_slug", slug)
+    .eq("table_session_id", sessionId)
+    .eq("status", "completed")
+    .order("completed_at", { ascending: false });
+
+  if (ordersErr || !orderRows?.length) return;
+
+  let guestSessionId: string | null = null;
+  let totalPrice = 0;
+  const mergedItems: unknown[] = [];
+  let repOrderId = "";
+
+  for (const raw of orderRows as Record<string, unknown>[]) {
+    if (!repOrderId && typeof raw.id === "string") repOrderId = raw.id;
+    totalPrice += parsePrice(raw.total_price);
+    if (!guestSessionId) {
+      guestSessionId = sanitizeGuestSessionId(
+        typeof raw.guest_session_id === "string" ? raw.guest_session_id : null,
+      );
+    }
+    const items = raw.items;
+    if (Array.isArray(items)) mergedItems.push(...items);
+  }
+
+  if (!guestSessionId || !repOrderId) return;
+
+  const paidAt =
+    typeof (orderRows[0] as Record<string, unknown>).completed_at === "string"
+      ? ((orderRows[0] as Record<string, unknown>).completed_at as string)
+      : completedAt;
+
+  const { data: rollupRaw } = await client
+    .from("tenant_guest_rollups")
+    .select("completed_visit_count, lifetime_spend")
+    .eq("tenant_slug", slug)
+    .eq("guest_session_id", guestSessionId)
+    .maybeSingle();
+
+  const priorCount =
+    rollupRaw && typeof rollupRaw === "object"
+      ? Number((rollupRaw as { completed_visit_count?: unknown }).completed_visit_count) || 0
+      : 0;
+  const priorSpend =
+    rollupRaw && typeof rollupRaw === "object"
+      ? parsePrice((rollupRaw as { lifetime_spend?: unknown }).lifetime_spend)
+      : 0;
+
+  const visitNumber = priorCount + 1;
+
+  const insertRow: Record<string, unknown> = {
+    tenant_slug: slug,
+    guest_session_id: guestSessionId,
+    order_id: repOrderId,
+    visit_number: visitNumber,
+    completed_at: paidAt,
+    total_price: totalPrice,
+    table_no: tableNo,
+    items: mergedItems,
+    table_session_id: sessionId,
+  };
+
+  const { error: insertErr } = await client.from("store_visits").insert(insertRow);
+
+  if (insertErr && !/duplicate|unique/i.test(insertErr.message ?? "")) {
+    if (/store_visits|does not exist/i.test(insertErr.message ?? "")) return;
+    console.error("[recordCompletedTableSessionVisit] insert", insertErr.message);
+    return;
+  }
+
+  const nextCount = insertErr && /duplicate|unique/i.test(insertErr.message ?? "") ? priorCount : priorCount + 1;
+  const nextSpend =
+    insertErr && /duplicate|unique/i.test(insertErr.message ?? "")
+      ? priorSpend
+      : priorSpend + totalPrice;
+
+  const { error: rollupErr } = await client.from("tenant_guest_rollups").upsert(
+    {
+      tenant_slug: slug,
+      guest_session_id: guestSessionId,
+      completed_visit_count: nextCount,
+      lifetime_spend: nextSpend,
+      last_completed_at: paidAt,
+      last_total_price: totalPrice,
+      last_items: mergedItems,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "tenant_slug,guest_session_id" },
+  );
+
+  if (rollupErr && !/tenant_guest_rollups|does not exist/i.test(rollupErr.message ?? "")) {
+    console.error("[recordCompletedTableSessionVisit] rollup", rollupErr.message);
   }
 }

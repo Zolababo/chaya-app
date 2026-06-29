@@ -17,6 +17,12 @@ export type TenantStoreSettings = {
   ordersAccepting: boolean;
   breakStart: string | null;
   breakEnd: string | null;
+  /** KST HH:MM — 영업 시작 (안내) */
+  businessOpen: string | null;
+  /** KST HH:MM — 영업 마감 (안내, 자정 넘김 가능) */
+  businessClose: string | null;
+  /** KST HH:MM — 매출·손님 영업일 구분 (기본 04:00) */
+  salesDayCutoff: string;
   kakaoAlimtalkLinkedAt: string | null;
   billingPlan: TenantBillingPlan;
 };
@@ -31,6 +37,9 @@ function parseRow(tenantSlug: string, row: Record<string, unknown> | null): Tena
       ordersAccepting: true,
       breakStart: null,
       breakEnd: null,
+      businessOpen: null,
+      businessClose: null,
+      salesDayCutoff: "04:00",
       kakaoAlimtalkLinkedAt: null,
       billingPlan: "starter",
     };
@@ -43,6 +52,12 @@ function parseRow(tenantSlug: string, row: Record<string, unknown> | null): Tena
     ordersAccepting: row.orders_accepting !== false,
     breakStart: typeof row.break_start === "string" ? row.break_start : null,
     breakEnd: typeof row.break_end === "string" ? row.break_end : null,
+    businessOpen: typeof row.business_open === "string" ? row.business_open : null,
+    businessClose: typeof row.business_close === "string" ? row.business_close : null,
+    salesDayCutoff:
+      typeof row.sales_day_cutoff === "string" && row.sales_day_cutoff.trim()
+        ? row.sales_day_cutoff.trim()
+        : "04:00",
     kakaoAlimtalkLinkedAt:
       typeof row.kakao_alimtalk_linked_at === "string" ? row.kakao_alimtalk_linked_at : null,
     billingPlan: parseTenantBillingPlan(row.billing_plan),

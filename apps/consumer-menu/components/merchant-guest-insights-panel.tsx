@@ -32,7 +32,7 @@ export function MerchantGuestInsightsSummary({
       <div className="border-b border-zinc-100 px-4 py-3 dark:border-zinc-800">
         <h2 className="text-sm font-bold text-zinc-900 dark:text-zinc-50">손님 · 재방문</h2>
         <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
-          {periodLabel} · 결제완료 기준 · 같은 폰·브라우저
+          {periodLabel} · 결제완료 · 같은 폰·브라우저
         </p>
       </div>
       <div className="grid grid-cols-2 gap-px bg-zinc-100 dark:bg-zinc-800">
