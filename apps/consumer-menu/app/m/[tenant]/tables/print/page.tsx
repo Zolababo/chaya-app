@@ -6,6 +6,7 @@ import {
   formatMerchantTablePrintDimensions,
   parseMerchantTablePrintDimensions,
 } from "@/lib/merchant/merchant-table-qr-batch";
+import { buildSignedConsumerUrlsForTables } from "@/lib/tables/build-signed-consumer-table-url";
 import { getServerSiteBaseUrl } from "@/lib/notifications/site-base-url";
 import { listTenantTablesForMerchant } from "@/lib/tables/list-tenant-tables";
 import { tenantBrandingFromSettings } from "@/lib/tenant/tenant-branding";
@@ -54,6 +55,11 @@ export default async function MerchantTablesPrintPage({ params, searchParams }: 
       : items;
 
   const siteBase = getServerSiteBaseUrl();
+  const consumerUrlsByCode = buildSignedConsumerUrlsForTables(
+    tenant,
+    filtered.map((t) => t.table_code),
+    siteBase,
+  );
   const countLabel = filtered.length === items.length ? "전체" : `${filtered.length}개`;
   const sizeLabel = formatMerchantTablePrintDimensions(dimensions);
 
@@ -80,7 +86,7 @@ export default async function MerchantTablesPrintPage({ params, searchParams }: 
           tenant={tenant}
           storeName={storeName}
           tables={filtered}
-          siteBase={siteBase}
+          consumerUrlsByCode={consumerUrlsByCode}
           showTableLabel={showTableLabel}
           dimensions={dimensions}
         />

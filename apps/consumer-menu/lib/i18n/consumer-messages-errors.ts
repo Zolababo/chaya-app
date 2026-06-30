@@ -59,6 +59,9 @@ const KO_ERRORS: OrderErrorMessages = {
   invalid_table_format: "테이블 번호 형식이 올바르지 않습니다 (1~3자리 숫자).",
   orders_closed: "지금은 주문을 받지 않습니다. 매장에 문의해 주세요.",
   break_time: "브레이크타임입니다. 잠시 후 다시 주문해 주세요.",
+  rate_limit: "잠시 후 다시 주문해 주세요. (요청이 많습니다)",
+  table_qr_invalid: "테이블 QR을 다시 스캔해 주세요. 저장된 링크로는 주문할 수 없습니다.",
+  table_qr_expired: "QR이 만료되었습니다. 테이블의 QR을 다시 스캔해 주세요.",
 };
 
 const EN_ERRORS: OrderErrorMessages = {
@@ -85,6 +88,9 @@ const EN_ERRORS: OrderErrorMessages = {
   invalid_table_format: "Table number must be 1–3 digits (e.g. 1, 01, 12).",
   orders_closed: "This store is not accepting orders right now. Please ask staff.",
   break_time: "Break time — please order again in a few minutes.",
+  rate_limit: "Please wait a moment and try again. (Too many requests)",
+  table_qr_invalid: "Scan the table QR again. Saved links cannot be used to order.",
+  table_qr_expired: "This QR has expired. Please scan the table QR again.",
 };
 
 const KO: ErrorsMessageTree = {

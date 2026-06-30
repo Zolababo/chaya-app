@@ -127,8 +127,32 @@ export function isWithinStoreBreakTime(settings: TenantStoreSettings, nowMs = Da
   return now >= start || now < end;
 }
 
+/** 영업시간 미설정이면 true. open/close 둘 다 있을 때만 KST 구간 검사. */
+export function isWithinStoreBusinessHours(
+  settings: TenantStoreSettings,
+  nowMs = Date.now(),
+): boolean {
+  const open = parseHm(settings.businessOpen);
+  const close = parseHm(settings.businessClose);
+  if (open == null || close == null) return true;
+  if (open === close) return true;
+  const now = kstMinutesNow(nowMs);
+  if (open < close) {
+    return now >= open && now < close;
+  }
+  return now >= open || now < close;
+}
+
+export function guestOrderAcceptanceBlock(
+  settings: TenantStoreSettings,
+  nowMs = Date.now(),
+): "orders_closed" | "break_time" | null {
+  if (!settings.ordersAccepting) return "orders_closed";
+  if (!isWithinStoreBusinessHours(settings, nowMs)) return "orders_closed";
+  if (isWithinStoreBreakTime(settings, nowMs)) return "break_time";
+  return null;
+}
+
 export function canAcceptGuestOrdersNow(settings: TenantStoreSettings, nowMs = Date.now()): boolean {
-  if (!settings.ordersAccepting) return false;
-  if (isWithinStoreBreakTime(settings, nowMs)) return false;
-  return true;
+  return guestOrderAcceptanceBlock(settings, nowMs) == null;
 }

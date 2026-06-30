@@ -9,7 +9,6 @@ import { MerchantTableRowActions } from "@/components/merchant-table-row-actions
 import { MerchantTablesQrToolbar } from "@/components/merchant-tables-qr-toolbar";
 import { setTenantTableActiveAction } from "@/app/m/[tenant]/tables/actions";
 import { merchantSubCardClass } from "@/lib/merchant/merchant-more-sub-styles";
-import { buildConsumerTableUrl } from "@/lib/tables/consumer-table-url";
 import type { TenantTableRow } from "@/lib/tables/types";
 
 type Props = {
@@ -17,6 +16,7 @@ type Props = {
   items: TenantTableRow[];
   listError: string | null;
   siteBase: string | null;
+  consumerUrlsByCode: Record<string, string>;
   canManage: boolean;
   focusCode?: string | null;
 };
@@ -26,6 +26,7 @@ export function MerchantTablesManager({
   items,
   listError,
   siteBase,
+  consumerUrlsByCode,
   canManage,
   focusCode,
 }: Props) {
@@ -58,7 +59,7 @@ export function MerchantTablesManager({
         <MerchantTableQrCard
           tenant={tenant}
           tableCode={focusRow.table_code}
-          consumerUrl={buildConsumerTableUrl(tenant, focusRow.table_code, siteBase)}
+          consumerUrl={consumerUrlsByCode[focusRow.table_code] ?? ""}
         />
       ) : null}
 
@@ -76,7 +77,7 @@ export function MerchantTablesManager({
         {active.length > 0 ? (
           <ul>
             {active.map((row) => {
-              const url = buildConsumerTableUrl(tenant, row.table_code, siteBase);
+              const url = consumerUrlsByCode[row.table_code] ?? "";
               const selected = selectedCodes.includes(row.table_code);
               return (
                 <li

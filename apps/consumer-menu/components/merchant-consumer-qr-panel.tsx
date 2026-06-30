@@ -121,8 +121,8 @@ export function MerchantConsumerQrPanel({ tenantSlug, siteBase }: Props) {
         </a>
         에서 번호만 넣으면 됩니다 (CHAYA가 QR을 만들어 드립니다).
       </p>
-      <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-500">
-        상세 절차: <span className="font-mono">docs/CONSUMER_TENANT_QR_SETUP.md</span>
+      <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+        테이블 QR은 서명·만료 링크로 생성됩니다. 저장·공유한 옛 주소로는 주문할 수 없어요.
       </p>
     </section>
   );

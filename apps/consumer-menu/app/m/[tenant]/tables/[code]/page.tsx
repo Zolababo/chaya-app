@@ -3,10 +3,8 @@ import { MerchantMoreSubPageShell } from "@/components/merchant-more-sub-page-sh
 import { MerchantTableQrPreviewClient } from "@/components/merchant-table-qr-preview-client";
 import { requireMerchantForTenant } from "@/lib/merchant/merchant-access";
 import { getServerSiteBaseUrl } from "@/lib/notifications/site-base-url";
-import {
-  buildConsumerTableUrl,
-  merchantTableQrImagePath,
-} from "@/lib/tables/consumer-table-url";
+import { buildSignedConsumerTableUrl } from "@/lib/tables/build-signed-consumer-table-url";
+import { merchantTableQrImagePath } from "@/lib/tables/consumer-table-url";
 import { listTenantTablesForMerchant } from "@/lib/tables/list-tenant-tables";
 import { matchActiveTableCode, normalizeTableCode } from "@/lib/tables/tenant-table-code";
 import { notFound } from "next/navigation";
@@ -30,7 +28,7 @@ export default async function MerchantTableQrPreviewPage({ params }: Props) {
   if (!dbCode) notFound();
 
   const tEnc = encodeURIComponent(tenant);
-  const consumerUrl = buildConsumerTableUrl(tenant, dbCode, getServerSiteBaseUrl());
+  const consumerUrl = buildSignedConsumerTableUrl(tenant, dbCode, getServerSiteBaseUrl());
   const qrImagePath = merchantTableQrImagePath(tenant, dbCode);
 
   return (

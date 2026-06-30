@@ -4,6 +4,12 @@ import type { GuestOrderErrorCode, GuestOrderErrorParams } from "@/lib/i18n/gues
 import type { GuestOrderLine } from "@/lib/orders/guest-order-validation";
 import { GUEST_ORDER_LIMITS } from "@/lib/orders/guest-order-validation";
 import { submitGuestOrder } from "@/lib/orders/submit-guest-order";
+import {
+  GUEST_ORDER_RATE_IP_MAX,
+  GUEST_ORDER_RATE_IP_WINDOW_MS,
+  GUEST_ORDER_RATE_SESSION_MAX,
+} from "@/lib/security/guest-order-rate-limit";
+import { isRateLimited, rateLimitKeyFromHeaders } from "@/lib/security/simple-rate-limit";
 
 function parseLines(raw: unknown): GuestOrderLine[] | null {
   if (!Array.isArray(raw)) return null;
@@ -44,7 +50,23 @@ export async function submitGuestOrderAction(
   guestSessionId: string | null,
   tableNo: string | null,
   guestNote: string | null,
+  tableQrExp: number | null,
+  tableQrSig: string | null,
 ): Promise<SubmitGuestOrderActionResult> {
+  const slug = tenant.trim();
+  const ipKey = await rateLimitKeyFromHeaders(`guest-order:${slug}`);
+  if (isRateLimited(ipKey, GUEST_ORDER_RATE_IP_MAX, GUEST_ORDER_RATE_IP_WINDOW_MS)) {
+    return { ok: false, code: "rate_limit" };
+  }
+
+  const sid = guestSessionId?.trim() || "";
+  if (sid.length >= 8) {
+    const sessionKey = `guest-order:${slug}:sess:${sid.slice(0, 64)}`;
+    if (isRateLimited(sessionKey, GUEST_ORDER_RATE_SESSION_MAX, GUEST_ORDER_RATE_IP_WINDOW_MS)) {
+      return { ok: false, code: "rate_limit" };
+    }
+  }
+
   if (linesJson.length > MAX_LINES_JSON_CHARS) {
     return { ok: false, code: "payload_too_large" };
   }
@@ -64,8 +86,10 @@ export async function submitGuestOrderAction(
   return submitGuestOrder({
     tenant,
     lines,
-    guestSessionId: guestSessionId?.trim() || null,
+    guestSessionId: sid || null,
     tableNo: tableNo?.trim() || null,
     guestNote: guestNote?.trim() || null,
+    tableQrExp,
+    tableQrSig: tableQrSig?.trim() || null,
   });
 }

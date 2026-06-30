@@ -3,6 +3,7 @@
 import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 
+import { writeTableQrTokenPref } from "@/lib/cart/table-qr-token-pref";
 import { persistTablePrefFromQuery, writeTablePref } from "@/lib/cart/table-pref";
 import { useTenantTables } from "@/lib/consumer/tenant-tables-context";
 import { normalizeTableCode } from "@/lib/tables/tenant-table-code";
@@ -11,10 +12,12 @@ type Props = {
   tenant: string;
 };
 
-/** `/t/{tenant}?table=…` 를 로컬에 두어 장바구니·주문 폼과 맞춥니다. */
+/** `/t/{tenant}?table=…&exp=…&sig=…` 를 로컬에 두어 장바구니·주문과 맞춥니다. */
 export function TenantTableQuerySync({ tenant }: Props) {
   const searchParams = useSearchParams();
   const raw = searchParams.get("table");
+  const expRaw = searchParams.get("exp");
+  const sigRaw = searchParams.get("sig");
   const { hasRegistry, isKnownCode } = useTenantTables();
 
   useEffect(() => {
@@ -27,6 +30,11 @@ export function TenantTableQuerySync({ tenant }: Props) {
     const norm = normalizeTableCode(trimmed);
     if (norm.ok && isKnownCode(norm.code)) {
       writeTablePref(tenant, norm.code);
+      const exp = expRaw ? Number(expRaw) : NaN;
+      const sig = sigRaw?.trim() ?? "";
+      if (Number.isFinite(exp) && exp > 0 && sig.length >= 8) {
+        writeTableQrTokenPref(tenant, { table: norm.code, exp, sig });
+      }
       const logKey = `chaya-qr-visit:${tenant}:${norm.code}`;
       if (typeof sessionStorage !== "undefined" && !sessionStorage.getItem(logKey)) {
         sessionStorage.setItem(logKey, "1");
@@ -39,7 +47,7 @@ export function TenantTableQuerySync({ tenant }: Props) {
     } else if (!trimmed) {
       persistTablePrefFromQuery(tenant, "");
     }
-  }, [tenant, raw, hasRegistry, isKnownCode]);
+  }, [tenant, raw, expRaw, sigRaw, hasRegistry, isKnownCode]);
 
   return null;
 }

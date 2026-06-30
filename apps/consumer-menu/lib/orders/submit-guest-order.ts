@@ -7,8 +7,9 @@ import { attachOrderToOpenTableSession } from "@/lib/merchant/table-session";
 import { runMerchantGuestOrderCreatedNotification } from "@/lib/notifications/merchant-notification-pipeline";
 import {
   fetchTenantStoreSettings,
-  isWithinStoreBreakTime,
+  guestOrderAcceptanceBlock,
 } from "@/lib/tenant/tenant-store-settings";
+import { validateGuestTableQrToken } from "@/lib/tables/validate-guest-table-qr-token";
 
 import { validateGuestTableNo } from "@/lib/tables/validate-guest-table";
 
@@ -35,6 +36,8 @@ export async function submitGuestOrder(input: {
   guestSessionId?: string | null;
   tableNo?: string | null;
   guestNote?: string | null;
+  tableQrExp?: number | null;
+  tableQrSig?: string | null;
 }): Promise<SubmitGuestOrderResult> {
   const tenantCheck = sanitizeTenantSlug(input.tenant);
   if (!tenantCheck.ok) {
@@ -43,11 +46,9 @@ export async function submitGuestOrder(input: {
   const slug = tenantCheck.slug;
 
   const storeSettings = await fetchTenantStoreSettings(slug);
-  if (!storeSettings.ordersAccepting) {
-    return { ok: false, code: "orders_closed" };
-  }
-  if (isWithinStoreBreakTime(storeSettings)) {
-    return { ok: false, code: "break_time" };
+  const acceptanceBlock = guestOrderAcceptanceBlock(storeSettings);
+  if (acceptanceBlock) {
+    return { ok: false, code: acceptanceBlock };
   }
 
   const linesCheck = sanitizeGuestOrderLines(input.lines);
@@ -137,6 +138,15 @@ export async function submitGuestOrder(input: {
     return { ok: false, code: tableCheck.code };
   }
   if (tableCheck.tableNo) {
+    const qrCheck = await validateGuestTableQrToken(
+      slug,
+      tableCheck.tableNo,
+      input.tableQrExp,
+      input.tableQrSig,
+    );
+    if (!qrCheck.ok) {
+      return { ok: false, code: qrCheck.code };
+    }
     row.table_no = tableCheck.tableNo;
   }
 

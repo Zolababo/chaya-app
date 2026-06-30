@@ -116,8 +116,20 @@
 
 ## 4. 백로그 — 손님 주문·QR 남용 방지 (**KEEP · 필수 후속**)
 
-**상태 (2026-05):** 의도적으로 **보류(deferred)**. C2 수동·접근성 등 **다른 소비자 기능을 먼저** 챙긴 뒤 반드시 구현한다.  
+**상태 (2026-06):** **1차 구현 완료** — 서명·만료 테이블 QR, 주문 submit 검증, rate limit, 영업시간 자동 중지.  
 **지금 유지(변경 금지):** 주문 상세·목록·상태 RPC의 **`guest_session_id` 일치** — 공유된 `…/orders/{id}` URL만으로 타인·다른 브라우저에서 주문 내용이 보이지 않게 하는 장치. 이 동작은 **제거하지 않는다.**
+
+### 4.0 구현 요약 (2026-06)
+
+| # | 기능 | 구현 |
+|---|------|------|
+| 1 | 서명·만료 QR | `CONSUMER_TABLE_QR_TOKEN_SECRET` · `buildSignedConsumerTableUrl` · submit 시 `validateGuestTableQrToken` |
+| 2 | 주문 받기 중지 | `tenant_store_settings.orders_accepting` (기존) |
+| 3 | rate limit | `submitGuestOrderAction` — IP·guest_session (15분 창) |
+| 4 | 영업시간 | `business_open`/`business_close` 설정 시 KST 구간 밖 `orders_closed` |
+| 5 | 의도적 주문 공유 | **미구현** (영수증·share 코드 — 파일럿 제외) |
+
+**운영:** 마감·이상 시 점주 **주문 받기 중지** (`/m/{tenant}/more` 영업 설정). 테이블 QR **재인쇄** 시 새 토큰 발급.
 
 ### 4.1 문제 (왜 메뉴 QR도 막아야 하는지)
 

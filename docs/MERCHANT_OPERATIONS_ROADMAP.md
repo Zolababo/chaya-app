@@ -28,7 +28,7 @@
 | 영역 | 비율 | 비고 |
 |------|------|------|
 | 점주 콘솔 운영 성숙도(로드맵 Phase 1–4 통합) | **~99%** | Phase 4: 역할 5종(owner·staff·menu_editor·viewer·finance) + 메뉴 삭제 owner 전용 + 조회 전용 푸시 차단. 남음: 2인 승인·추가 세분(필요 시), 운영 설정(VAPID 등). |
-| 소비자 `/t` 주문·메뉴 MVP | **~90%** | C2 자동 확장·QR 패널·메뉴 상세. 남음: C2 수동(런북)·실매장. C6 보류. 결제·직원호출 숨김. |
+| 소비자 `/t` 주문·메뉴 MVP | **~92%** | C2 자동·QR 패널·메뉴 상세·**C6 QR 토큰·rate limit**. 남음: C2 수동·실매장. 결제·직원호출 숨김. |
 
 ### 소비자 `/t` — Phase 개요 (점주와 별도 축)
 
@@ -41,7 +41,7 @@
 | **C3** | 결제(PG) | ⏸️ 숨김·구조만 | 손님 UX는 **카운터 오프라인 결제**; `checkout/payment` 스텁(501). PG는 사용량 확대 후 UI·플래그로 개방 |
 | **C4** | 직원 호출·부가 | ⏸️ 의도적 보류 | `POST …/staff-call` 스텁, 헤더 버튼 비활성 |
 | **C5** | (선택) 로그인·소셜 | 미착수 | `ARCHITECTURE.md` — `consumer-log`, 소비자 로그인 시점 등 장기 |
-| **C6** | QR·외부 주문 남용 방지 | **KEEP · 보류** | **필수 후속** — 토큰 QR·점주 주문 중지·rate limit (`docs/QR_AND_GUEST_ORDERS.md` §4). **유지:** 주문 URL `guest_session` 조회 차단. C2 수동 등 **다른 소비자 작업 우선**. |
+| **C6** | QR·외부 주문 남용 방지 | **완료 ~85%** | 토큰 QR·submit 검증·rate limit·영업시간 자동 중지 (`docs/QR_AND_GUEST_ORDERS.md` §4). **유지:** 주문 URL `guest_session` 조회 차단. 남음: Vercel `CONSUMER_TABLE_QR_TOKEN_SECRET`·매장 QR 재인쇄. |
 
 **`docs/DELIVERY_PROGRESS.md`** 에는 예전 스냅샷(88% 등)이 남아 있을 수 있으니, **진척 숫자는 이 표(위 `~63%`)와 본 문서의 Phase 표를 기준**으로 보는 것을 권장합니다.
 

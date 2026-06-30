@@ -36,3 +36,13 @@ export function rateLimitKeyFromRequest(request: NextRequest, routeSuffix: strin
   return `${routeSuffix}:${ip}`;
 }
 
+/** Server Actions — `headers()` 기준 IP 키 */
+export async function rateLimitKeyFromHeaders(routeSuffix: string): Promise<string> {
+  const { headers } = await import("next/headers");
+  const h = await headers();
+  const xf = h.get("x-forwarded-for");
+  const first = xf?.split(",")[0]?.trim();
+  const ip = first || h.get("x-real-ip")?.trim() || "unknown";
+  return `${routeSuffix}:${ip}`;
+}
+

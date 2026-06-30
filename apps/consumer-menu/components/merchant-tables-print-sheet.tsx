@@ -1,6 +1,6 @@
 "use client";
 
-import { buildConsumerTableUrl, merchantTableQrImagePath } from "@/lib/tables/consumer-table-url";
+import { merchantTableQrImagePath } from "@/lib/tables/consumer-table-url";
 import {
   merchantTablePrintQrCm,
   merchantTablePrintStoreNamePt,
@@ -13,7 +13,7 @@ type Props = {
   tenant: string;
   storeName: string;
   tables: TenantTableRow[];
-  siteBase: string | null;
+  consumerUrlsByCode: Record<string, string>;
   showTableLabel: boolean;
   dimensions: MerchantTablePrintDimensions;
 };
@@ -22,7 +22,7 @@ export function MerchantTablesPrintSheet({
   tenant,
   storeName,
   tables,
-  siteBase,
+  consumerUrlsByCode,
   showTableLabel,
   dimensions,
 }: Props) {
@@ -49,7 +49,7 @@ export function MerchantTablesPrintSheet({
 
       <div className="mx-auto flex max-w-5xl flex-wrap justify-center gap-4 px-4 pb-24 pt-2 print:gap-[0.4cm] print:pb-0 print:pt-0">
         {tables.map((row) => {
-          const url = buildConsumerTableUrl(tenant, row.table_code, siteBase);
+          const url = consumerUrlsByCode[row.table_code] ?? "";
           const qrSrc = merchantTableQrImagePath(tenant, row.table_code);
           return (
             <article

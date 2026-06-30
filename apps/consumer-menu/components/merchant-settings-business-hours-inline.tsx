@@ -77,6 +77,9 @@ export function MerchantSettingsBusinessHoursInline({
       <div className="px-3.5 py-3">
         <p className="text-sm font-bold text-[#111827] dark:text-zinc-50">영업 시간</p>
         <p className="text-xs font-medium text-[#9CA3AF]">{hoursSub}</p>
+        <p className="mt-1 text-[11px] font-medium leading-snug text-[#9CA3AF]">
+          시작·마감을 모두 설정하면 그 밖 시간에는 손님 주문이 자동으로 막혀요.
+        </p>
       </div>
 
       <div className="space-y-3 border-t border-[#F3F4F6] px-3.5 pb-3.5 pt-3 dark:border-zinc-800">

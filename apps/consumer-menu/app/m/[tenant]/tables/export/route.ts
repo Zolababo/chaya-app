@@ -6,7 +6,7 @@ import JSZip from "jszip";
 
 import { assertMerchantTableRoute } from "@/lib/tables/assert-merchant-table-route";
 
-import { buildConsumerTableUrl } from "@/lib/tables/consumer-table-url";
+import { buildSignedConsumerTableUrl } from "@/lib/tables/build-signed-consumer-table-url";
 
 import { generateTableQrPng } from "@/lib/tables/generate-table-qr-png";
 
@@ -128,7 +128,7 @@ export async function GET(request: NextRequest, ctx: Ctx) {
 
   for (const row of active) {
 
-    const url = buildConsumerTableUrl(tenant, row.table_code);
+    const url = buildSignedConsumerTableUrl(tenant, row.table_code);
 
     urlLines.push(`${row.table_code}\t${url}${row.label ? `\t${row.label}` : ""}`);
 

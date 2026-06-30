@@ -22,7 +22,10 @@ export type GuestOrderErrorCode =
   | "invalid_table"
   | "invalid_table_format"
   | "orders_closed"
-  | "break_time";
+  | "break_time"
+  | "rate_limit"
+  | "table_qr_invalid"
+  | "table_qr_expired";
 
 export type GuestOrderErrorParams = {
   max?: string;

@@ -10,6 +10,7 @@ import {
   merchantTableOkMessage,
 } from "@/lib/merchant/merchant-table-messages";
 import { getServerSiteBaseUrl } from "@/lib/notifications/site-base-url";
+import { buildSignedConsumerUrlsForTables } from "@/lib/tables/build-signed-consumer-table-url";
 import { listTenantTablesForMerchant } from "@/lib/tables/list-tenant-tables";
 
 export const dynamic = "force-dynamic";
@@ -31,6 +32,14 @@ export default async function MerchantTablesPage({ params, searchParams }: Props
   const okMsg = merchantTableOkMessage(sp.ok);
   const listError = list.ok ? null : merchantOwnerLoadErrorMessage("tables", list.message);
 
+  const activeItems = list.ok ? list.items.filter((t) => t.is_active) : [];
+  const siteBase = getServerSiteBaseUrl();
+  const consumerUrlsByCode = buildSignedConsumerUrlsForTables(
+    tenant,
+    activeItems.map((t) => t.table_code),
+    siteBase,
+  );
+
   return (
     <MerchantMoreSubPageShell>
       <MerchantMoreSubPageBack href={`/m/${tEnc}/more`} label="테이블 · QR" />
@@ -42,7 +51,8 @@ export default async function MerchantTablesPage({ params, searchParams }: Props
         tenant={tenant}
         items={list.ok ? list.items : []}
         listError={listError}
-        siteBase={getServerSiteBaseUrl()}
+        siteBase={siteBase}
+        consumerUrlsByCode={consumerUrlsByCode}
         canManage={canManageTables}
         focusCode={sp.focus?.trim() || null}
       />

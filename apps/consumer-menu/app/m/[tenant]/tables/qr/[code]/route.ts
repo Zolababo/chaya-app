@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { assertMerchantTableRoute } from "@/lib/tables/assert-merchant-table-route";
-import { buildConsumerTableUrl } from "@/lib/tables/consumer-table-url";
+import { buildSignedConsumerTableUrl } from "@/lib/tables/build-signed-consumer-table-url";
 import { generateTableQrPng } from "@/lib/tables/generate-table-qr-png";
 import { listTenantTablesForMerchant } from "@/lib/tables/list-tenant-tables";
 import { matchActiveTableCode, normalizeTableCode } from "@/lib/tables/tenant-table-code";
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest, ctx: Ctx) {
     return NextResponse.json({ error: "table_not_found" }, { status: 404 });
   }
 
-  const url = buildConsumerTableUrl(tenant, dbCode);
+  const url = buildSignedConsumerTableUrl(tenant, dbCode);
   let png: Buffer;
   try {
     png = await generateTableQrPng(url);
