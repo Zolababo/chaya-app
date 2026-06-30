@@ -7,6 +7,11 @@ import { ChevronDown, Plus, X } from "lucide-react";
 import { createMenuFromForm } from "@/app/m/[tenant]/menus/actions";
 import type { MenuOptionGroup } from "@/lib/menus/menu-options";
 import { uploadMerchantMenuImageStaging } from "@/lib/merchant/upload-merchant-menu-image-client";
+import {
+  MERCHANT_IMAGE_ACCEPT,
+  MERCHANT_IMAGE_UPLOAD_HINT,
+  validateMerchantImageFile,
+} from "@/lib/merchant/merchant-image-upload-policy";
 
 type Props = {
   tenant: string;
@@ -170,6 +175,11 @@ export function MerchantMenuAddForm({ tenant, categoryFilter, existingCategories
         const picked = fileInput?.files?.[0];
 
         if (picked && picked.size > 0) {
+          const checked = await validateMerchantImageFile(picked);
+          if (!checked.ok) {
+            setSaveError(checked.message);
+            return;
+          }
           const uploaded = await uploadMerchantMenuImageStaging(tenant, picked);
           if (!uploaded.ok) {
             setSaveError(uploaded.message);
@@ -441,10 +451,12 @@ export function MerchantMenuAddForm({ tenant, categoryFilter, existingCategories
             <input
               name="file"
               type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif,image/*"
+              accept={MERCHANT_IMAGE_ACCEPT}
               className="block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-chaya-primary file:px-3 file:py-2 file:text-sm file:font-bold file:text-white"
             />
-            <p className="mt-1 text-[11px] text-zinc-400">· 등록 후 사진 탭에서 언제든 교체 가능해요</p>
+            <p className="mt-1 text-[11px] text-zinc-400">
+              · {MERCHANT_IMAGE_UPLOAD_HINT} · 등록 후 사진 탭에서 언제든 교체 가능해요
+            </p>
           </div>
 
           {SaveButtons}

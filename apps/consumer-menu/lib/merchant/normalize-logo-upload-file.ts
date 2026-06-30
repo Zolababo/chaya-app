@@ -1,5 +1,7 @@
 /** 매장 로고 — HEIC·카메라 사진을 JPEG로 변환 (클라이언트 전용) */
 
+import { sniffImageFileKind } from "@/lib/merchant/sniff-image-file-kind";
+
 export class LogoUploadNormalizeError extends Error {
   constructor(message: string) {
     super(message);
@@ -10,6 +12,13 @@ export class LogoUploadNormalizeError extends Error {
 const MAX_SIDE = 800;
 const JPEG_QUALITY = 0.82;
 const UPLOAD_BUDGET_BYTES = 1_500_000;
+
+function initialMaxSideForBytes(bytes: number): number {
+  if (bytes > 12 * 1024 * 1024) return 480;
+  if (bytes > 8 * 1024 * 1024) return 560;
+  if (bytes > 4 * 1024 * 1024) return 640;
+  return MAX_SIDE;
+}
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -27,23 +36,8 @@ function isHeicLike(file: File): boolean {
 }
 
 async function sniffHeicBytes(file: File): Promise<boolean> {
-  try {
-    const buf = new Uint8Array(await file.slice(0, 12).arrayBuffer());
-    if (buf.length < 12 || buf[4] !== 0x66 || buf[5] !== 0x74 || buf[6] !== 0x79 || buf[7] !== 0x70) {
-      return false;
-    }
-    const brand = String.fromCharCode(buf[8]!, buf[9]!, buf[10]!, buf[11]!).toLowerCase();
-    return (
-      brand.startsWith("heic") ||
-      brand.startsWith("heix") ||
-      brand.startsWith("hevc") ||
-      brand.startsWith("mif1") ||
-      brand.startsWith("msf1") ||
-      brand.startsWith("heif")
-    );
-  } catch {
-    return false;
-  }
+  const kind = await sniffImageFileKind(file);
+  return kind === "heic" || kind === "heif";
 }
 
 async function heicToJpeg(file: File): Promise<File> {
@@ -111,7 +105,11 @@ async function rasterToJpeg(file: File, maxSide: number, quality: number): Promi
   try {
     return await decodeWithBitmap(file, maxSide, quality);
   } catch {
-    /* Image() 폴백 */
+    /* Image() 폴백 — 소형 파일만 (갤럭시 고해상도는 전체 디코드 시 OOM) */
+  }
+
+  if (file.size > 2_500_000) {
+    throw new LogoUploadNormalizeError("bitmap_decode_failed");
   }
 
   const url = URL.createObjectURL(file);
@@ -155,7 +153,7 @@ export async function prepareLogoUploadFile(file: File): Promise<File> {
     throw new LogoUploadNormalizeError("빈 파일입니다. 다른 사진을 선택해 주세요.");
   }
 
-  let maxSide = MAX_SIDE;
+  let maxSide = initialMaxSideForBytes(file.size);
   let quality = JPEG_QUALITY;
   let last: File | null = null;
 
@@ -211,35 +209,52 @@ export async function convertHeicLogoFileToJpeg(file: File): Promise<File | null
   }
 }
 
-/** canvas 단순 루프 — createImageBitmap·HEIC 실패 시 (갤럭시 카메라) */
+/** createImageBitmap 우선 — 갤럭시·고해상도 카메라 JPEG OOM 방지 */
 export async function forceLogoJpegUnderBytes(file: File, budgetBytes: number): Promise<File> {
-  const url = URL.createObjectURL(file);
-  try {
-    const img = await loadImage(url);
-    let maxSide = 720;
-    let quality = 0.82;
+  let maxSide = initialMaxSideForBytes(file.size);
+  let quality = 0.82;
 
-    for (let i = 0; i < 10; i++) {
-      const { w, h } = scaleDimensions(img.naturalWidth, img.naturalHeight, maxSide);
-      const canvas = document.createElement("canvas");
-      canvas.width = w;
-      canvas.height = h;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) break;
-      ctx.drawImage(img, 0, 0, w, h);
-
-      const blob = await new Promise<Blob | null>((resolve) => {
-        canvas.toBlob(resolve, "image/jpeg", quality);
-      });
-      if (blob && blob.size > 0 && blob.size <= budgetBytes) {
-        return new File([blob], "logo.jpg", { type: "image/jpeg", lastModified: Date.now() });
-      }
-
-      quality = Math.max(0.45, quality - 0.08);
-      maxSide = Math.max(400, Math.round(maxSide * 0.82));
+  for (let i = 0; i < 12; i++) {
+    try {
+      const jpeg = await decodeWithBitmap(file, maxSide, quality);
+      if (jpeg.size > 0 && jpeg.size <= budgetBytes) return jpeg;
+    } catch {
+      /* 더 작게 재시도 */
     }
-  } finally {
-    URL.revokeObjectURL(url);
+
+    quality = Math.max(0.4, quality - 0.07);
+    maxSide = Math.max(360, Math.round(maxSide * 0.8));
+  }
+
+  if (file.size <= 2_500_000) {
+    const url = URL.createObjectURL(file);
+    try {
+      const img = await loadImage(url);
+      let side = maxSide;
+      let q = quality;
+
+      for (let i = 0; i < 6; i++) {
+        const { w, h } = scaleDimensions(img.naturalWidth, img.naturalHeight, side);
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) break;
+        ctx.drawImage(img, 0, 0, w, h);
+
+        const blob = await new Promise<Blob | null>((resolve) => {
+          canvas.toBlob(resolve, "image/jpeg", q);
+        });
+        if (blob && blob.size > 0 && blob.size <= budgetBytes) {
+          return new File([blob], "logo.jpg", { type: "image/jpeg", lastModified: Date.now() });
+        }
+
+        q = Math.max(0.45, q - 0.08);
+        side = Math.max(360, Math.round(side * 0.82));
+      }
+    } finally {
+      URL.revokeObjectURL(url);
+    }
   }
 
   throw new LogoUploadNormalizeError("사진을 JPEG로 줄이지 못했어요.");

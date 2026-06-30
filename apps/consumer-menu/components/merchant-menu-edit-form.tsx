@@ -8,6 +8,11 @@ import { updateMenuFromForm, deleteMenuFromForm } from "@/app/m/[tenant]/menus/a
 import type { ChayaMenuRow } from "@/lib/menus/types";
 import type { MenuOptionGroup, MenuOptionChoice } from "@/lib/menus/menu-options";
 import { uploadMerchantMenuImageFile } from "@/lib/merchant/upload-merchant-menu-image-client";
+import {
+  MERCHANT_IMAGE_ACCEPT,
+  MERCHANT_IMAGE_UPLOAD_HINT,
+  validateMerchantImageFile,
+} from "@/lib/merchant/merchant-image-upload-policy";
 
 // ── 타입 ──────────────────────────────────────────────────────
 type StatusMode = "selling" | "soldout";
@@ -453,25 +458,32 @@ export function MerchantMenuEditForm({
             <input
               ref={imageFileRef}
               type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif,image/*"
+              accept={MERCHANT_IMAGE_ACCEPT}
               className="hidden"
               onChange={(e) => {
                 const f = e.target.files?.[0];
                 if (!f) return;
                 setImagePickError(null);
                 setImageSavedHint(false);
-                setImageBusy(true);
-                void uploadMerchantMenuImageFile(tenant, item.id, f)
-                  .then((result) => {
-                    if (!result.ok) {
-                      setImagePickError(result.message);
-                      if (imageFileRef.current) imageFileRef.current.value = "";
-                      return;
-                    }
-                    setImagePreview(result.url);
-                    setImageSavedHint(true);
-                  })
-                  .finally(() => setImageBusy(false));
+                void validateMerchantImageFile(f).then((checked) => {
+                  if (!checked.ok) {
+                    setImagePickError(checked.message);
+                    if (imageFileRef.current) imageFileRef.current.value = "";
+                    return;
+                  }
+                  setImageBusy(true);
+                  void uploadMerchantMenuImageFile(tenant, item.id, f)
+                    .then((result) => {
+                      if (!result.ok) {
+                        setImagePickError(result.message);
+                        if (imageFileRef.current) imageFileRef.current.value = "";
+                        return;
+                      }
+                      setImagePreview(result.url);
+                      setImageSavedHint(true);
+                    })
+                    .finally(() => setImageBusy(false));
+                });
               }}
             />
             <button
@@ -489,7 +501,9 @@ export function MerchantMenuEditForm({
             ) : imageSavedHint ? (
               <p className="mt-2 text-xs font-semibold text-[#059669]">사진이 저장됐어요.</p>
             ) : (
-              <p className="mt-2 text-[11px] text-zinc-400">· 사진 교체 시 기존 사진은 삭제돼요</p>
+              <p className="mt-2 text-[11px] text-zinc-400">
+                · {MERCHANT_IMAGE_UPLOAD_HINT} · 사진 교체 시 기존 사진은 삭제돼요
+              </p>
             )}
           </div>
 

@@ -2,6 +2,10 @@ import { MenuTranslationFields } from "@/components/menu-translation-fields";
 import { MerchantMenuMerchandisingFields } from "@/components/merchant-menu-merchandising-fields";
 import { createMenuFromForm } from "@/app/m/[tenant]/menus/actions";
 import { MERCHANT_OPTIONS_INPUT_PLACEHOLDER } from "@/lib/menus/menu-options";
+import {
+  MERCHANT_IMAGE_ACCEPT,
+  MERCHANT_IMAGE_UPLOAD_HINT,
+} from "@/lib/merchant/merchant-image-upload-policy";
 
 type Props = {
   tenant: string;
@@ -77,10 +81,10 @@ export function MerchantMenuAddSection({ tenant, categoryFilter }: Props) {
             id="new-file"
             name="file"
             type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif,image/*"
+            accept={MERCHANT_IMAGE_ACCEPT}
             className="mt-1 block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-chaya-primary file:px-3 file:py-2 file:text-sm file:font-medium file:text-chaya-on-primary"
           />
-          <p className="mt-1 text-xs text-zinc-500">최대 5MB · JPEG·PNG·HEIC</p>
+          <p className="mt-1 text-xs text-zinc-500">{MERCHANT_IMAGE_UPLOAD_HINT}</p>
         </div>
 
         <div className="sm:col-span-2 flex items-center gap-2">

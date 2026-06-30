@@ -4,7 +4,13 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { ImagePlus, Trash2 } from "lucide-react";
 
 import { updateMerchantStoreProfileFromForm } from "@/app/m/[tenant]/more/actions";
+import { ConsumerSessionHeaderPreview } from "@/components/consumer-session-header-preview";
 import { ConsumerStoreLogo } from "@/components/consumer-store-logo";
+import {
+  MERCHANT_IMAGE_ACCEPT,
+  MERCHANT_IMAGE_UPLOAD_HINT,
+  validateMerchantImageFile,
+} from "@/lib/merchant/merchant-image-upload-policy";
 import {
   merchantFieldHintClass,
   merchantFieldInputClass,
@@ -107,25 +113,14 @@ export function MerchantStoreSettingsForm({ tenant, settings, canEdit, focus }: 
           <div>
             <label className={merchantFieldLabelClass}>로고 (선택)</label>
             <p className={`${merchantFieldHintClass} mb-2`}>
-              없으면 손님·점주 화면에 아래처럼 매장명이 강조 표시돼요
+              {MERCHANT_IMAGE_UPLOAD_HINT} · 없으면 매장명이 강조 표시돼요
             </p>
             <div className="mb-3 rounded-xl border border-dashed border-[#E5E7EB] bg-[#FAFAFA] p-3 dark:border-zinc-700 dark:bg-zinc-900/50">
               <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-[#9CA3AF]">손님 화면 미리보기</p>
-              <div className="flex items-center gap-2.5">
-                <ConsumerStoreLogo
-                  displayName={previewName.trim() || displayNameDefault}
-                  logoUrl={effectiveLogo}
-                  sizeClass="h-10 w-10"
-                  shape="circle"
-                  fallback="initial"
-                />
-                <span className="min-w-0 flex-1 truncate text-lg font-extrabold text-[#111827] dark:text-zinc-50">
-                  {previewName.trim() || displayNameDefault}
-                </span>
-                <span className="shrink-0 rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-bold text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
-                  테이블 01
-                </span>
-              </div>
+              <ConsumerSessionHeaderPreview
+                displayName={previewName.trim() || displayNameDefault}
+                logoUrl={effectiveLogo}
+              />
             </div>
             <div className="flex items-start gap-3.5">
               {effectiveLogo ? (
@@ -141,28 +136,35 @@ export function MerchantStoreSettingsForm({ tenant, settings, canEdit, focus }: 
                   <input
                     ref={fileRef}
                     type="file"
-                    accept="image/*,.heic,.heif"
+                    accept={MERCHANT_IMAGE_ACCEPT}
                     className="hidden"
                     onChange={(e) => {
                       const f = e.target.files?.[0];
                       if (!f) return;
                       setLogoPickError(null);
                       setLogoSavedHint(false);
-                      setLogoBusy(true);
-                      void uploadMerchantLogoFile(tenant, f)
-                        .then((result) => {
-                          if (!result.ok) {
-                            setLogoPickError(result.message);
-                            if (fileRef.current) fileRef.current.value = "";
-                            return;
-                          }
-                          uploadedLogoUrl.current = result.url;
-                          setClearLogo(false);
-                          setLogoPreview(result.url);
-                          setShowLogoUrl(false);
-                          setLogoSavedHint(true);
-                        })
-                        .finally(() => setLogoBusy(false));
+                      void validateMerchantImageFile(f).then((checked) => {
+                        if (!checked.ok) {
+                          setLogoPickError(checked.message);
+                          if (fileRef.current) fileRef.current.value = "";
+                          return;
+                        }
+                        setLogoBusy(true);
+                        void uploadMerchantLogoFile(tenant, f)
+                          .then((result) => {
+                            if (!result.ok) {
+                              setLogoPickError(result.message);
+                              if (fileRef.current) fileRef.current.value = "";
+                              return;
+                            }
+                            uploadedLogoUrl.current = result.url;
+                            setClearLogo(false);
+                            setLogoPreview(result.url);
+                            setShowLogoUrl(false);
+                            setLogoSavedHint(true);
+                          })
+                          .finally(() => setLogoBusy(false));
+                      });
                     }}
                   />
                   <button

@@ -1,5 +1,7 @@
 import { buildMerchantImageUploadPayload } from "@/lib/merchant/build-merchant-image-upload-payload";
 
+const UPLOAD_TIMEOUT_MS = 30_000;
+
 type UploadOk = { ok: true; url: string };
 type UploadErr = { ok: false; message: string };
 
@@ -24,21 +26,31 @@ async function postMenuImage(
     ? `/m/${tEnc}/menus/${encodeURIComponent(menuId)}/image-upload`
     : `/m/${tEnc}/menus/image-upload`;
 
-  const res = await fetch(url, {
-    method: "POST",
-    body: fd,
-    credentials: "same-origin",
-  });
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: "POST",
+      body: fd,
+      credentials: "same-origin",
+      signal: AbortSignal.timeout(UPLOAD_TIMEOUT_MS),
+    });
+  } catch (err) {
+    if (err instanceof Error && err.name === "TimeoutError") {
+      return { ok: false, message: "업로드 시간이 초과됐어요. 잠시 후 다시 시도해 주세요." };
+    }
+    return { ok: false, message: "사진을 올리지 못했어요. 네트워크를 확인해 주세요." };
+  }
 
   const json = (await res.json().catch(() => null)) as
     | { ok?: boolean; url?: string; message?: string }
     | null;
 
   if (!res.ok || !json?.ok || !json.url) {
-    return {
-      ok: false,
-      message: json?.message ?? "사진을 올리지 못했어요. 잠시 후 다시 시도해 주세요.",
-    };
+    const fallback =
+      res.status === 413 ?
+        "사진 용량은 3MB 이하여야 합니다. 다른 사진을 선택해 주세요."
+      : (json?.message ?? "사진을 올리지 못했어요. 잠시 후 다시 시도해 주세요.");
+    return { ok: false, message: fallback };
   }
 
   return { ok: true, url: json.url };
