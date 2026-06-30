@@ -11,7 +11,6 @@ import {
   menuCardItemClass,
   menuCardListClass,
 } from "@/components/menu-list-styles";
-import { useConsumerVoiceAnnounce } from "@/lib/consumer/use-consumer-voice-announce";
 import { useConsumerLocale } from "@/lib/i18n/consumer-locale-context";
 import { formatConsumerMoney } from "@/lib/i18n/format-consumer-money";
 import { useConsumerNavHref } from "@/lib/i18n/use-consumer-nav-href";
@@ -31,7 +30,6 @@ const ALL_CATEGORY_KEY = "__all__";
 export function BarrierFreeMenuClient({ tenant, items, categories }: Props) {
   const { locale, m } = useConsumerLocale();
   const navHref = useConsumerNavHref(tenant);
-  const { speak } = useConsumerVoiceAnnounce();
   const slug = tenant.trim();
   const [active, setActive] = useState<string>(ALL_CATEGORY_KEY);
   const [addedToast, setAddedToast] = useState(false);
@@ -51,7 +49,6 @@ export function BarrierFreeMenuClient({ tenant, items, categories }: Props) {
   const flashAdded = (name: string) => {
     const msg = m.barrierFree.addedOne.replace("{name}", name);
     setLastMessage(msg);
-    speak(msg);
     setAddedToast(true);
     if (toastHide.current) clearTimeout(toastHide.current);
     toastHide.current = setTimeout(() => setAddedToast(false), 2200);
@@ -82,7 +79,6 @@ export function BarrierFreeMenuClient({ tenant, items, categories }: Props) {
     const label = tabCategories.find((c) => c.key === key)?.label ?? key;
     const msg = m.barrierFree.categoryChanged.replace("{category}", label);
     setLastMessage(msg);
-    speak(msg);
   };
 
   return (

@@ -66,7 +66,7 @@ export default async function TenantLayout({
         <ConsumerEasyModeProvider tenant={tenant}>
         <div className="flex min-h-dvh flex-col bg-chaya-bg pb-[var(--chaya-consumer-nav-clearance)] text-zinc-900">
           <SkipToMainLink />
-          <ConsumerTenantShellDeferred />
+          <ConsumerTenantShellDeferred tenant={tenant} />
           <Suspense fallback={<SessionHeaderFallback />}>
             <TenantSessionHeader tenant={tenant} />
             <InvalidTableQueryBanner tenant={tenant} />

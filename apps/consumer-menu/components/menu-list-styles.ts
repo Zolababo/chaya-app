@@ -37,6 +37,8 @@ export const cartCardListClass = "space-y-2 px-4 pb-[9.5rem] sm:px-6";
 
 export const orderCardListClass = "space-y-2";
 
+export const orderCardListEasyClass = "space-y-3";
+
 /** a0 cart-sheet 행 */
 export const cartCardItemClass =
   "flex gap-2.5 rounded-xl border border-chaya-border/60 bg-chaya-surface p-2 shadow-sm dark:border-zinc-800 dark:bg-zinc-900";
@@ -53,10 +55,10 @@ export const cartCardListEasyClass = "space-y-3 pb-[10rem] sm:pb-[10.5rem]";
 export const cartCardItemEasyClass = `${menuCardItemClass} overflow-hidden`;
 
 export const cartCategoryLabelEasyClass =
-  "px-0.5 text-base font-bold tracking-tight text-zinc-700 dark:text-zinc-300";
+  "px-0.5 text-lg font-bold tracking-tight text-zinc-700 dark:text-zinc-300";
 
 export const cartSubmitButtonEasyClass =
-  "w-full min-h-[52px] rounded-xl bg-chaya-primary py-3.5 text-base font-bold text-chaya-on-primary shadow-sm transition hover:bg-chaya-primary-hover active:scale-[0.99] disabled:opacity-60";
+  "w-full min-h-[56px] rounded-xl bg-chaya-primary py-4 text-lg font-bold text-chaya-on-primary shadow-sm transition hover:bg-chaya-primary-hover active:scale-[0.99] disabled:opacity-60";
 
 export const cartSheetFooterEasyClass =
   "fixed inset-x-0 bottom-[var(--chaya-consumer-cart-bar-offset)] z-30 border-t border-chaya-border/80 bg-chaya-surface/98 px-4 py-4 shadow-[0_-6px_24px_rgba(0,0,0,0.07)] backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-950/98 sm:px-6";

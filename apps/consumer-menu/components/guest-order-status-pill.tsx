@@ -1,5 +1,6 @@
 "use client";
 
+import { useConsumerEasyMode } from "@/lib/consumer/consumer-easy-mode-context";
 import { useConsumerLocale } from "@/lib/i18n/consumer-locale-context";
 import { orderStatusLabelForLocale } from "@/lib/i18n/order-status-for-locale";
 import { isActiveOrderStatus } from "@/lib/consumer/order-status-visual";
@@ -22,18 +23,22 @@ const PILL_CLASS: Record<string, string> = {
 
 export function GuestOrderStatusPill({ status, className = "" }: Props) {
   const { locale } = useConsumerLocale();
+  const { easyMode } = useConsumerEasyMode();
   const code = status.trim().toLowerCase();
   const label = orderStatusLabelForLocale(code, locale);
   const pillClass = PILL_CLASS[code] ?? PILL_CLASS.pending;
   const blink = isActiveOrderStatus(code);
+  const sizeClass = easyMode
+    ? "gap-2 rounded-full px-3.5 py-1.5 text-sm font-bold leading-none"
+    : "gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold leading-none";
 
   return (
     <span
-      className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold leading-none ${pillClass} ${className}`.trim()}
+      className={`inline-flex shrink-0 items-center ${sizeClass} ${pillClass} ${className}`.trim()}
       role="status"
     >
       <span
-        className={`size-1.5 rounded-full bg-current ${blink ? "animate-pulse" : ""}`}
+        className={`rounded-full bg-current ${easyMode ? "size-2" : "size-1.5"} ${blink ? "animate-pulse" : ""}`}
         aria-hidden
       />
       {label}

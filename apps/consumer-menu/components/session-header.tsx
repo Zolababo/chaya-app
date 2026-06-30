@@ -23,10 +23,10 @@ type Props = {
 
 export function SessionHeader({ tenant, displayName, logoUrl, toolbarSlot }: Props) {
   const { m } = useConsumerLocale();
-  const { fontScale, voiceEnabled } = useConsumerEasyMode();
+  const { easyMode } = useConsumerEasyMode();
   const homeHref = useEasyMenuHref(tenant);
   const { effectiveCode, needsPick, hasRegistry } = useTenantTableSelection(tenant);
-  const largeHeader = fontScale !== "normal";
+  const largeHeader = easyMode;
 
   const tableBadgeLabel = effectiveCode
     ? m.header.tableBadge.replace("{table}", effectiveCode)
@@ -72,15 +72,6 @@ export function SessionHeader({ tenant, displayName, logoUrl, toolbarSlot }: Pro
         </Link>
         {toolbarSlot ? <div className="flex shrink-0 items-center gap-0.5">{toolbarSlot}</div> : null}
       </div>
-      {voiceEnabled ? (
-        <div
-          className="border-t border-chaya-primary/15 bg-chaya-primary/8 px-4 py-1.5 text-center"
-          role="status"
-          aria-live="polite"
-        >
-          <span className="text-[11px] font-bold text-chaya-primary">🔊 {m.settings.voiceBadge}</span>
-        </div>
-      ) : null}
       {showStaffCall ? (
         <div className="border-t border-chaya-border px-4 py-2 dark:border-zinc-800">
           <button

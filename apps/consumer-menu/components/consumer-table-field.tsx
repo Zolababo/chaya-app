@@ -25,7 +25,7 @@ export function ConsumerTableField({ tenant, easyMode = false }: Props) {
     <div
       className={
         easyMode
-          ? "rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-base font-semibold text-amber-950 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-100"
+          ? "rounded-xl border border-amber-200 bg-amber-50 px-4 py-3.5 text-lg font-semibold text-amber-950 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-100"
           : "rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm font-semibold text-amber-950 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-100"
       }
       role="alert"

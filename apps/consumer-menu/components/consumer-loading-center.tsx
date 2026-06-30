@@ -24,7 +24,7 @@ export function ConsumerLoadingCenter({ label, easyMode = false, className }: Pr
       <ConsumerLoadingSpinner size="lg" />
       <p
         className={`mt-4 text-zinc-600 dark:text-zinc-400 ${
-          easyMode ? "text-base font-semibold" : "text-sm font-medium"
+          easyMode ? "text-lg font-semibold" : "text-sm font-medium"
         }`}
       >
         {label}

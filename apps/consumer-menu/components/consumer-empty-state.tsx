@@ -19,7 +19,7 @@ export function ConsumerEmptyState({ icon, message, action, easyMode = false }: 
       </div>
       <p
         className={`text-zinc-600 dark:text-zinc-400 ${
-          easyMode ? "text-lg font-semibold" : "text-sm font-medium"
+          easyMode ? "text-xl font-semibold" : "text-sm font-medium"
         }`}
       >
         {message}

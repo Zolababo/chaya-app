@@ -5,6 +5,7 @@ import { ChevronRight, ShoppingCart } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
+import { useConsumerEasyMode } from "@/lib/consumer/consumer-easy-mode-context";
 import { useConsumerLocale } from "@/lib/i18n/consumer-locale-context";
 import { formatConsumerMoney } from "@/lib/i18n/format-consumer-money";
 import { useConsumerNavHref } from "@/lib/i18n/use-consumer-nav-href";
@@ -18,6 +19,7 @@ type Props = {
 /** 메뉴판 하단: 담긴 품목이 있을 때 장바구니로 가는 고정 바. */
 export function MenuCartStickyBar({ tenant }: Props) {
   const { locale, m } = useConsumerLocale();
+  const { easyMode } = useConsumerEasyMode();
   const navHref = useConsumerNavHref(tenant);
   const pathname = usePathname();
   const slug = tenant.trim();
@@ -60,14 +62,14 @@ export function MenuCartStickyBar({ tenant }: Props) {
     <div className="fixed inset-x-0 bottom-[var(--chaya-consumer-cart-bar-offset)] z-30">
       <Link
         href={cartHref}
-        className={`${chayaAppShellNavInnerClass} chaya-app-shell--consumer flex min-h-[40px] w-full items-center justify-between gap-2 rounded-xl bg-chaya-primary px-3.5 py-2 text-chaya-on-primary shadow-lg transition hover:bg-chaya-primary-hover active:scale-[0.99]`}
+        className={`${chayaAppShellNavInnerClass} chaya-app-shell--consumer flex w-full items-center justify-between gap-2 rounded-xl bg-chaya-primary px-3.5 py-2 text-chaya-on-primary shadow-lg transition hover:bg-chaya-primary-hover active:scale-[0.99] ${easyMode ? "min-h-[52px]" : "min-h-[40px]"}`}
         aria-label={`${m.nav.cart} ${countLabel}, ${formatConsumerMoney(total, locale)}`}
       >
-        <span className="inline-flex items-center gap-2 text-sm font-semibold">
-          <ShoppingCart className="size-4" aria-hidden strokeWidth={2.5} />
+        <span className={`inline-flex items-center gap-2 font-semibold ${easyMode ? "text-base" : "text-sm"}`}>
+          <ShoppingCart className={easyMode ? "size-5" : "size-4"} aria-hidden strokeWidth={2.5} />
           {m.nav.cart} {countLabel}
         </span>
-        <span className="inline-flex items-center gap-0.5 text-base font-bold tabular-nums">
+        <span className={`inline-flex items-center gap-0.5 font-bold tabular-nums ${easyMode ? "text-lg" : "text-base"}`}>
           {formatConsumerMoney(total, locale)}
           <ChevronRight className="size-4 opacity-90" aria-hidden />
         </span>

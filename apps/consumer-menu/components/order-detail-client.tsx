@@ -13,6 +13,7 @@ import { SplitBillPanel } from "@/components/split-bill-panel";
 import { chayaSurfaceCardPaddedClass } from "@/components/menu-list-styles";
 import { CONSUMER_SPLIT_BILL_UI_VISIBLE } from "@/lib/consumer/future-features";
 import { consumeFreshOrderView } from "@/lib/consumer/fresh-order-view";
+import { useConsumerEasyMode } from "@/lib/consumer/consumer-easy-mode-context";
 import { syncGuestSessionCookieFromBrowser } from "@/lib/guest-session/sync-guest-session-cookie";
 import type { GuestOrderView } from "@/lib/orders/fetch-guest-order";
 import { chayaConsumerContentClass } from "@/lib/responsive/chaya-app-shell";
@@ -26,6 +27,7 @@ type Props = {
 export function OrderDetailClient({ tenant, order }: Props) {
   const router = useRouter();
   const { locale, m } = useConsumerLocale();
+  const { easyMode } = useConsumerEasyMode();
   const [isFreshView, setIsFreshView] = useState(false);
   const [freshOrderNo, setFreshOrderNo] = useState<number | null>(null);
 
@@ -69,10 +71,14 @@ export function OrderDetailClient({ tenant, order }: Props) {
             >
               <Check className="size-8" strokeWidth={2.5} />
             </span>
-            <p className="text-lg font-extrabold leading-snug text-zinc-900 dark:text-zinc-50">
+            <p
+              className={`font-extrabold leading-snug text-zinc-900 dark:text-zinc-50 ${easyMode ? "text-xl" : "text-lg"}`}
+            >
               {m.orderDetail.placedTitle}
             </p>
-            <p className="text-sm font-medium leading-relaxed text-zinc-600 dark:text-zinc-400">
+            <p
+              className={`font-medium leading-relaxed text-zinc-600 dark:text-zinc-400 ${easyMode ? "text-base" : "text-sm"}`}
+            >
               {m.orderDetail.placedSubtitle}
             </p>
             <span className="sr-only">{m.orderDetail.receivedSr}</span>
@@ -87,17 +93,18 @@ export function OrderDetailClient({ tenant, order }: Props) {
         </div>
       )}
 
-      <div className={`${chayaSurfaceCardPaddedClass} sm:p-5`}>
+      <div className={`${chayaSurfaceCardPaddedClass} ${easyMode ? "sm:p-6" : "sm:p-5"}`}>
         <GuestOrderReceiptBody
           order={displayOrder}
           locale={locale}
           cardTitle={m.orderDetail.linesHeading}
           totalLabel={m.orderDetail.total}
+          easyMode={easyMode}
         />
       </div>
 
       {order.guest_note ? (
-        <div className={`${chayaSurfaceCardPaddedClass} text-left text-sm`}>
+        <div className={`${chayaSurfaceCardPaddedClass} text-left ${easyMode ? "text-base" : "text-sm"}`}>
           <p>
             <span className="font-medium text-zinc-600 dark:text-zinc-400">{m.orderDetail.requestLabel}</span>{" "}
             <span className="whitespace-pre-wrap">{order.guest_note}</span>

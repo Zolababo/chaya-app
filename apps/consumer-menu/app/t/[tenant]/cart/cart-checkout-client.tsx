@@ -343,7 +343,7 @@ export function CartCheckoutClient({
             <span
               className={
                 easyMode
-                  ? "text-base font-semibold text-zinc-600 dark:text-zinc-400"
+                  ? "text-lg font-semibold text-zinc-600 dark:text-zinc-400"
                   : "text-sm font-semibold text-zinc-600 dark:text-zinc-400"
               }
             >

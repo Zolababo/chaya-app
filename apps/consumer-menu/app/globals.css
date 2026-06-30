@@ -280,6 +280,75 @@ html[data-consumer-font-scale="xl"] .menu-add-target {
   min-width: 2.75rem;
 }
 
+/*
+ * 베리어프리 ON — 손님앱 전역 가독성(저시력).
+ * Tailwind 고정 text-* 를 #main-content·헤더·하단탭·장바구니바에서 한 단계씩 키움.
+ */
+html[data-chaya-consumer][data-consumer-easy-mode] #main-content .text-\[11px\],
+html[data-chaya-consumer][data-consumer-easy-mode] header.sticky .text-\[11px\],
+html[data-chaya-consumer][data-consumer-easy-mode] nav.fixed .text-\[11px\],
+html[data-chaya-consumer][data-consumer-easy-mode] .chaya-app-shell--consumer .text-\[11px\] {
+  font-size: 0.9375rem !important;
+  line-height: 1.45 !important;
+}
+
+html[data-chaya-consumer][data-consumer-easy-mode] #main-content .text-xs,
+html[data-chaya-consumer][data-consumer-easy-mode] header.sticky .text-xs,
+html[data-chaya-consumer][data-consumer-easy-mode] nav.fixed .text-xs,
+html[data-chaya-consumer][data-consumer-easy-mode] .chaya-app-shell--consumer .text-xs {
+  font-size: 0.9375rem !important;
+  line-height: 1.45 !important;
+}
+
+html[data-chaya-consumer][data-consumer-easy-mode] #main-content .text-sm,
+html[data-chaya-consumer][data-consumer-easy-mode] header.sticky .text-sm,
+html[data-chaya-consumer][data-consumer-easy-mode] nav.fixed .text-sm,
+html[data-chaya-consumer][data-consumer-easy-mode] .chaya-app-shell--consumer .text-sm {
+  font-size: 1.0625rem !important;
+  line-height: 1.5 !important;
+}
+
+html[data-chaya-consumer][data-consumer-easy-mode] #main-content .text-base,
+html[data-chaya-consumer][data-consumer-easy-mode] header.sticky .text-base,
+html[data-chaya-consumer][data-consumer-easy-mode] nav.fixed .text-base,
+html[data-chaya-consumer][data-consumer-easy-mode] .chaya-app-shell--consumer .text-base {
+  font-size: 1.1875rem !important;
+  line-height: 1.5 !important;
+}
+
+html[data-chaya-consumer][data-consumer-easy-mode] #main-content .text-lg,
+html[data-chaya-consumer][data-consumer-easy-mode] header.sticky .text-lg,
+html[data-chaya-consumer][data-consumer-easy-mode] nav.fixed .text-lg,
+html[data-chaya-consumer][data-consumer-easy-mode] .chaya-app-shell--consumer .text-lg {
+  font-size: 1.3125rem !important;
+  line-height: 1.45 !important;
+}
+
+html[data-chaya-consumer][data-consumer-easy-mode] #main-content .text-xl,
+html[data-chaya-consumer][data-consumer-easy-mode] header.sticky .text-xl,
+html[data-chaya-consumer][data-consumer-easy-mode] nav.fixed .text-xl,
+html[data-chaya-consumer][data-consumer-easy-mode] .chaya-app-shell--consumer .text-xl {
+  font-size: 1.5rem !important;
+  line-height: 1.35 !important;
+}
+
+html[data-chaya-consumer][data-consumer-easy-mode] #main-content .text-2xl,
+html[data-chaya-consumer][data-consumer-easy-mode] header.sticky .text-2xl,
+html[data-chaya-consumer][data-consumer-easy-mode] nav.fixed .text-2xl,
+html[data-chaya-consumer][data-consumer-easy-mode] .chaya-app-shell--consumer .text-2xl {
+  font-size: 1.75rem !important;
+  line-height: 1.3 !important;
+}
+
+html[data-chaya-consumer][data-consumer-easy-mode] #main-content .min-h-\[44px\],
+html[data-chaya-consumer][data-consumer-easy-mode] #main-content .min-h-\[48px\],
+html[data-chaya-consumer][data-consumer-easy-mode] header.sticky .min-h-\[44px\],
+html[data-chaya-consumer][data-consumer-easy-mode] nav.fixed .min-h-\[40px\],
+html[data-chaya-consumer][data-consumer-easy-mode] nav.fixed .min-h-\[44px\],
+html[data-chaya-consumer][data-consumer-easy-mode] .chaya-app-shell--consumer .min-h-\[40px\] {
+  min-height: 3.25rem !important;
+}
+
 /* 고대비 — 손님 `/t/*` 선택 옵션 (data-chaya-consumer 유지) */
 html[data-chaya-consumer][data-consumer-high-contrast] {
   --color-chaya-bg: #0a0a0a;

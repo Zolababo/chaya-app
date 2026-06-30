@@ -1,5 +1,6 @@
 "use client";
 
+import { useConsumerEasyMode } from "@/lib/consumer/consumer-easy-mode-context";
 import { useConsumerLocale } from "@/lib/i18n/consumer-locale-context";
 import { orderStatusLabelForLocale } from "@/lib/i18n/order-status-for-locale";
 
@@ -43,6 +44,7 @@ function connectorDone(leftStepIndex: number, status: string): boolean {
 /** 주문 접수 후 진행 단계(스티치 OrderProgressSteps 대응). */
 export function OrderProgressSteps({ status }: Props) {
   const { locale, m } = useConsumerLocale();
+  const { easyMode } = useConsumerEasyMode();
   const labels = {
     received: m.progress.stepReceived,
     preparing: m.progress.stepPreparing,
@@ -54,7 +56,7 @@ export function OrderProgressSteps({ status }: Props) {
     return (
       <p
         role="status"
-        className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-center text-sm font-medium text-red-900 dark:border-red-900 dark:bg-red-950/40 dark:text-red-100"
+        className={`rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-center font-medium text-red-900 dark:border-red-900 dark:bg-red-950/40 dark:text-red-100 ${easyMode ? "text-base" : "text-sm"}`}
       >
         {m.progress.cancelled}
       </p>
@@ -63,7 +65,7 @@ export function OrderProgressSteps({ status }: Props) {
 
   return (
     <div
-      className="rounded-2xl border border-chaya-border/60 bg-chaya-surface px-2 py-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+      className={`rounded-2xl border border-chaya-border/60 bg-chaya-surface shadow-sm dark:border-zinc-800 dark:bg-zinc-900 ${easyMode ? "px-3 py-5" : "px-2 py-4"}`}
       aria-label={m.progress.ariaLabel}
     >
       <ol className="grid grid-cols-3">
@@ -72,7 +74,7 @@ export function OrderProgressSteps({ status }: Props) {
           const isLast = i === STEP_KEYS.length - 1;
           return (
             <li key={key} className="flex min-w-0 flex-col items-center">
-              <div className="relative flex h-10 w-full items-center justify-center">
+              <div className={`relative flex w-full items-center justify-center ${easyMode ? "h-12" : "h-10"}`}>
                 {!isLast ? (
                   <span
                     className={[
@@ -97,7 +99,8 @@ export function OrderProgressSteps({ status }: Props) {
                 ) : null}
                 <span
                   className={[
-                    "relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold",
+                    "relative z-10 flex shrink-0 items-center justify-center rounded-full font-bold",
+                    easyMode ? "h-11 w-11 text-sm" : "h-9 w-9 text-xs",
                     state === "done" || state === "current"
                       ? "bg-chaya-primary text-chaya-on-primary"
                       : "border border-chaya-border bg-white text-zinc-500 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-400",
@@ -109,7 +112,8 @@ export function OrderProgressSteps({ status }: Props) {
               </div>
               <span
                 className={[
-                  "mt-1 flex min-h-[2.25rem] w-full items-start justify-center px-0.5 text-center text-[11px] font-semibold leading-snug sm:text-xs",
+                  "mt-1 flex w-full items-start justify-center px-0.5 text-center font-semibold leading-snug",
+                  easyMode ? "min-h-[2.75rem] text-sm" : "min-h-[2.25rem] text-[11px] sm:text-xs",
                   state === "current"
                     ? "text-chaya-primary dark:text-orange-400"
                     : "text-zinc-600 dark:text-zinc-400",

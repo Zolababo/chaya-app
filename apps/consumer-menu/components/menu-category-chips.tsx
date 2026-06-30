@@ -17,7 +17,7 @@ export function MenuCategoryChips({ tabs, active, onSelect, ariaLabel, easyMode 
 
   const chipClass = (selected: boolean) => {
     const base = easyMode
-      ? "min-h-[44px] shrink-0 rounded-full px-5 py-2 text-base font-medium leading-none transition-all"
+      ? "min-h-[48px] shrink-0 rounded-full px-5 py-2.5 text-lg font-semibold leading-none transition-all"
       : "min-h-[32px] shrink-0 rounded-full px-4 py-1.5 text-sm font-medium leading-none transition-all";
     if (selected) {
       return `${base} bg-zinc-900 text-white shadow-sm dark:bg-zinc-100 dark:text-zinc-900`;

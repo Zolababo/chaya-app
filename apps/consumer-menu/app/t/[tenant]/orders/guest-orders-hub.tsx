@@ -8,7 +8,7 @@ import Link from "next/link";
 import { ConsumerEmptyState } from "@/components/consumer-empty-state";
 import { ConsumerLoadingCenter } from "@/components/consumer-loading-center";
 import { GuestOrderHistoryCard } from "@/components/guest-order-history-card";
-import { chayaPrimaryButtonClass, orderCardListClass } from "@/components/menu-list-styles";
+import { chayaPrimaryButtonClass, orderCardListClass, orderCardListEasyClass } from "@/components/menu-list-styles";
 import { GUEST_SESSION_STORAGE_KEY } from "@/lib/guest-session/constants";
 import {
   isCancelledConsumerOrderStatus,
@@ -194,6 +194,7 @@ export function GuestOrdersHub({
   const visibleOrderCount = activeOrders.length + cancelledOrders.length;
 
   const visitTotal = useMemo(() => sumOrderTotals(activeOrders), [activeOrders]);
+  const orderListClass = easyMode ? orderCardListEasyClass : orderCardListClass;
 
   useEffect(() => {
     if (orders === null || hubSummarySpokenRef.current) return;
@@ -241,7 +242,7 @@ export function GuestOrdersHub({
         action={
           <Link
             href={menuHref}
-            className={`${chayaPrimaryButtonClass} px-8 ${easyMode ? "min-h-[48px]" : "min-h-[44px]"}`}
+            className={`${chayaPrimaryButtonClass} px-8 ${easyMode ? "min-h-[56px] text-lg" : "min-h-[44px]"}`}
             aria-label={m.cart.emptyCtaAria}
           >
             {m.cart.emptyCta}
@@ -257,13 +258,13 @@ export function GuestOrdersHub({
         <div
           role="alert"
           aria-live="assertive"
-          className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-100"
+          className={`rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-900 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-100 ${easyMode ? "text-base" : "text-sm"}`}
         >
           <p>{loadError}</p>
           <button
             type="button"
             onClick={() => load()}
-            className="mt-2 min-h-[44px] font-semibold underline-offset-2 hover:underline"
+            className={`mt-2 font-semibold underline-offset-2 hover:underline ${easyMode ? "min-h-[52px] text-base" : "min-h-[44px]"}`}
           >
             {m.orders.retry}
           </button>
@@ -275,29 +276,37 @@ export function GuestOrdersHub({
           {activeOrders.length > 0 ? (
             <>
               <div
-                className="rounded-2xl border border-chaya-border/70 bg-chaya-surface px-4 py-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+                className={`rounded-2xl border border-chaya-border/70 bg-chaya-surface shadow-sm dark:border-zinc-800 dark:bg-zinc-900 ${easyMode ? "px-5 py-4" : "px-4 py-3"}`}
                 role="status"
                 aria-live="polite"
               >
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+                    <p
+                      className={`font-semibold text-zinc-800 dark:text-zinc-100 ${easyMode ? "text-lg" : "text-sm"}`}
+                    >
                       {m.orders.counterVisitTotal}
                     </p>
-                    <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+                    <p
+                      className={`mt-0.5 text-zinc-500 dark:text-zinc-400 ${easyMode ? "text-base" : "text-xs"}`}
+                    >
                       {m.orders.counterVisitTotalHint}
                     </p>
                   </div>
-                  <p className="shrink-0 self-end text-xl font-extrabold tabular-nums whitespace-nowrap text-chaya-primary sm:self-auto dark:text-orange-400">
+                  <p
+                    className={`shrink-0 self-end font-extrabold tabular-nums whitespace-nowrap text-chaya-primary sm:self-auto dark:text-orange-400 ${easyMode ? "text-2xl" : "text-xl"}`}
+                  >
                     {formatConsumerMoney(visitTotal, locale)}
                   </p>
                 </div>
               </div>
               <div>
-                <h2 className="mb-2 text-xs font-bold tracking-wide text-zinc-500 uppercase dark:text-zinc-400">
+                <h2
+                  className={`mb-2 font-bold tracking-wide text-zinc-500 uppercase dark:text-zinc-400 ${easyMode ? "text-sm" : "text-xs"}`}
+                >
                   {m.orders.sectionActive}
                 </h2>
-                <ul className={orderCardListClass} aria-label={m.orders.sectionActive}>
+                <ul className={orderListClass} aria-label={m.orders.sectionActive}>
                   {activeOrders.map((o) => (
                     <li key={o.id} className="list-none">
                       <GuestOrderHistoryCard
@@ -318,10 +327,12 @@ export function GuestOrdersHub({
 
           {cancelledOrders.length > 0 ? (
             <div>
-              <h2 className="mb-2 text-xs font-bold tracking-wide text-zinc-500 uppercase dark:text-zinc-400">
+              <h2
+                className={`mb-2 font-bold tracking-wide text-zinc-500 uppercase dark:text-zinc-400 ${easyMode ? "text-sm" : "text-xs"}`}
+              >
                 {m.orders.sectionPast}
               </h2>
-              <ul className={orderCardListClass} aria-label={m.orders.sectionPast}>
+              <ul className={orderListClass} aria-label={m.orders.sectionPast}>
                 {cancelledOrders.map((o) => (
                   <li key={o.id} className="list-none">
                     <GuestOrderHistoryCard

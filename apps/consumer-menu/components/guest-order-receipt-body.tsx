@@ -31,14 +31,15 @@ export function GuestOrderReceiptBody({
   hideHeader = false,
 }: Props) {
   const orderNoText = formatConsumerOrderNo(order.order_no, order.id);
-  const textSize = easyMode ? "text-sm" : "text-sm";
+  const lineTextClass = easyMode ? "text-base leading-relaxed" : "text-sm";
+  const lineQtyClass = easyMode ? "text-base font-semibold" : "text-sm font-medium";
 
   return (
-    <div className={`space-y-2 ${easyMode ? "py-1" : ""}`}>
+    <div className={`space-y-2 ${easyMode ? "space-y-3 py-1" : ""}`}>
       {hideHeader ? null : (
         <div className="flex items-baseline justify-between gap-3 border-b border-zinc-200/90 pb-2 dark:border-zinc-700">
           <h3
-            className={`font-bold text-zinc-800 dark:text-zinc-200 ${easyMode ? "text-base" : "text-sm"}`}
+            className={`font-bold text-zinc-800 dark:text-zinc-200 ${easyMode ? "text-lg" : "text-sm"}`}
           >
             {cardTitle}
           </h3>
@@ -54,27 +55,29 @@ export function GuestOrderReceiptBody({
       {order.created_at ? (
         <time
           dateTime={order.created_at}
-          className={`block text-zinc-500 dark:text-zinc-400 ${easyMode ? "text-sm" : "text-xs"}`}
+          className={`block text-zinc-500 dark:text-zinc-400 ${easyMode ? "text-base font-medium" : "text-xs"}`}
         >
           {formatOrderDateTime(order.created_at, locale)}
         </time>
       ) : null}
 
       {order.lines.length > 0 ? (
-        <ul className="list-none space-y-2 pt-0.5">
+        <ul className={`list-none pt-0.5 ${easyMode ? "space-y-2.5" : "space-y-2"}`}>
           {order.lines.map((line, i) => (
             <li
               key={`${line.name}-${i}`}
-              className={`flex items-start justify-between gap-3 ${textSize}`}
+              className={`flex items-start justify-between gap-3 ${lineTextClass}`}
             >
-              <span className="min-w-0 text-zinc-800 dark:text-zinc-200">
+              <span className="min-w-0 font-medium text-zinc-800 dark:text-zinc-200">
                 {line.name}
-                <span className="font-medium text-zinc-500 dark:text-zinc-400">
+                <span className={`text-zinc-500 dark:text-zinc-400 ${lineQtyClass}`}>
                   {" "}
                   × {line.quantity}
                 </span>
               </span>
-              <span className="shrink-0 tabular-nums font-medium text-zinc-900 dark:text-zinc-50">
+              <span
+                className={`shrink-0 tabular-nums font-semibold text-zinc-900 dark:text-zinc-50 ${easyMode ? "text-lg" : ""}`}
+              >
                 {formatConsumerMoney(line.price * line.quantity, locale)}
               </span>
             </li>
@@ -83,10 +86,12 @@ export function GuestOrderReceiptBody({
       ) : null}
 
       <div
-        className={`flex items-center justify-between border-t border-zinc-200/90 pt-2.5 dark:border-zinc-700 ${easyMode ? "text-base" : "text-sm"}`}
+        className={`flex items-center justify-between border-t border-zinc-200/90 pt-2.5 dark:border-zinc-700 ${easyMode ? "pt-3 text-lg" : "text-sm"}`}
       >
         <span className="font-semibold text-zinc-700 dark:text-zinc-300">{totalLabel}</span>
-        <span className="text-base font-bold tabular-nums text-zinc-900 dark:text-zinc-50">
+        <span
+          className={`font-bold tabular-nums text-zinc-900 dark:text-zinc-50 ${easyMode ? "text-xl" : "text-base"}`}
+        >
           {formatConsumerMoney(order.total_price, locale)}
         </span>
       </div>

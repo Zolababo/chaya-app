@@ -35,7 +35,7 @@ function NavItem({
       href={href}
       className={[
         "relative flex flex-1 flex-col items-center gap-0.5 px-4 py-1 font-medium transition-colors",
-        easyMode ? "min-h-[44px] text-xs sm:text-sm" : "min-h-[40px] text-[11px]",
+        easyMode ? "min-h-[48px] text-sm sm:text-base" : "min-h-[40px] text-[11px]",
         active
           ? "text-chaya-primary"
           : "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200",
@@ -125,7 +125,7 @@ export function BottomNav({ tenant }: Props) {
           label={m.nav.menu}
           ariaLabel={m.menu.boardTitle}
           easyMode={easyMode}
-          icon={<Menu className={iconSize} strokeWidth={2} />}
+          icon={<Menu className={easyMode ? "size-5" : iconSize} strokeWidth={2} />}
         />
         <NavItem
           href={cartHref}
