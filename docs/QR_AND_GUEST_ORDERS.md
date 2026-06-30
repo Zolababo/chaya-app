@@ -127,7 +127,8 @@
 | 2 | 주문 받기 중지 | `tenant_store_settings.orders_accepting` (기존) |
 | 3 | rate limit | `submitGuestOrderAction` — IP·guest_session (15분 창) |
 | 4 | 영업시간 | `business_open`/`business_close` 설정 시 KST 구간 밖 `orders_closed` |
-| 5 | 의도적 주문 공유 | **미구현** (영수증·share 코드 — 파일럿 제외) |
+| 5 | 방문 종료 | QR 스캔 **이후** `completed` 결제가 있으면 재주문 `visit_closed` (QR 재스캔) |
+| 6 | 의도적 주문 공유 | **미구현** (영수증·share 코드 — 파일럿 제외) |
 
 **운영:** 마감·이상 시 점주 **주문 받기 중지** (`/m/{tenant}/more` 영업 설정). 테이블 QR **재인쇄** 시 새 토큰 발급.
 

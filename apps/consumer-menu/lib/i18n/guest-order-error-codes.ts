@@ -25,7 +25,8 @@ export type GuestOrderErrorCode =
   | "break_time"
   | "rate_limit"
   | "table_qr_invalid"
-  | "table_qr_expired";
+  | "table_qr_expired"
+  | "visit_closed";
 
 export type GuestOrderErrorParams = {
   max?: string;

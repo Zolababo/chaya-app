@@ -84,7 +84,7 @@ export function mintTableOrderGate(
 }
 
 export type TableOrderGateVerifyResult =
-  | { ok: true }
+  | { ok: true; iatSec: number }
   | { ok: false; code: "table_qr_invalid" | "table_qr_expired" };
 
 export function verifyTableOrderGate(
@@ -93,7 +93,7 @@ export function verifyTableOrderGate(
   tableCode: string,
   nowMs = Date.now(),
 ): TableOrderGateVerifyResult {
-  if (!isTableQrTokenConfigured()) return { ok: true };
+  if (!isTableQrTokenConfigured()) return { ok: true, iatSec: 0 };
 
   const raw = cookieValue?.trim() ?? "";
   const dot = raw.lastIndexOf(".");
@@ -108,15 +108,16 @@ export function verifyTableOrderGate(
 
   const parts = body.split("|");
   if (parts.length !== 4) return { ok: false, code: "table_qr_invalid" };
-  const [slug, code, , expRaw] = parts;
+  const [slug, code, iatRaw, expRaw] = parts;
+  const iatSec = Number(iatRaw);
   const expSec = Number(expRaw);
   if (slug !== tenant.trim() || code !== tableCode.trim()) {
     return { ok: false, code: "table_qr_invalid" };
   }
-  if (!Number.isFinite(expSec) || expSec * 1000 <= nowMs) {
+  if (!Number.isFinite(iatSec) || !Number.isFinite(expSec) || expSec * 1000 <= nowMs) {
     return { ok: false, code: "table_qr_expired" };
   }
-  return { ok: true };
+  return { ok: true, iatSec };
 }
 
 export { GATE_COOKIE as TABLE_ORDER_GATE_COOKIE };

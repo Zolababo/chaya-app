@@ -136,7 +136,7 @@ export async function submitGuestOrder(input: {
     return { ok: false, code: tableCheck.code };
   }
   if (tableCheck.tableNo) {
-    const gateCheck = await validateGuestTableOrderGate(slug, tableCheck.tableNo);
+    const gateCheck = await validateGuestTableOrderGate(slug, tableCheck.tableNo, sid);
     if (!gateCheck.ok) {
       return { ok: false, code: gateCheck.code };
     }
