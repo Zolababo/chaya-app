@@ -94,7 +94,7 @@ const KO: ErrorsMessageTree = {
     cancelled: "주문이 취소되었습니다.",
     stepReceived: "접수",
     stepPreparing: "조리",
-    stepReady: "준비·서빙",
+    stepReady: "서빙 완료",
   },
   copyOrder: {
     copy: "이 주문 주소 복사",
@@ -119,7 +119,7 @@ const EN: ErrorsMessageTree = {
     cancelled: "This order was cancelled.",
     stepReceived: "Received",
     stepPreparing: "Preparing",
-    stepReady: "Ready",
+    stepReady: "Served",
   },
   copyOrder: {
     copy: "Copy order link",
@@ -142,17 +142,17 @@ const BY_LOCALE: Record<AppLocale, ErrorsMessageTree> = {
   en: EN,
   ja: {
     ...EN,
-    progress: { ...EN.progress, stepReceived: "受付", stepPreparing: "調理", stepReady: "提供" },
+    progress: { ...EN.progress, stepReceived: "受付", stepPreparing: "調理", stepReady: "提供完了" },
     copyOrder: { ...EN.copyOrder, copy: "注文URLをコピー", share: "共有" },
   },
   "zh-Hans": {
     ...EN,
-    progress: { ...EN.progress, stepReceived: "接单", stepPreparing: "制作", stepReady: "可取" },
+    progress: { ...EN.progress, stepReceived: "接单", stepPreparing: "制作", stepReady: "已上菜" },
     copyOrder: { ...EN.copyOrder, copy: "复制订单链接", share: "分享" },
   },
   "zh-Hant": {
     ...EN,
-    progress: { ...EN.progress, stepReceived: "接單", stepPreparing: "製作", stepReady: "可取" },
+    progress: { ...EN.progress, stepReceived: "接單", stepPreparing: "製作", stepReady: "已上菜" },
     copyOrder: { ...EN.copyOrder, copy: "複製訂單連結", share: "分享" },
   },
 };

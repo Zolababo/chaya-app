@@ -214,8 +214,8 @@ const KO: FlowMessageTree = {
     pending: "접수됨",
     accepted: "주문 확인",
     preparing: "조리 중",
-    ready: "픽업·서빙 준비",
-    completed: "완료",
+    ready: "서빙 완료",
+    completed: "결제 완료",
     cancelled: "취소됨",
   },
   orderDetail: {
@@ -337,8 +337,8 @@ const EN: FlowMessageTree = {
     pending: "Received",
     accepted: "Confirmed",
     preparing: "Preparing",
-    ready: "Ready",
-    completed: "Done",
+    ready: "Served",
+    completed: "Paid",
     cancelled: "Cancelled",
   },
   orderDetail: {
@@ -448,8 +448,8 @@ const JA: FlowMessageTree = {
     pending: "受付済み",
     accepted: "確認済み",
     preparing: "調理中",
-    ready: "提供準備完了",
-    completed: "完了",
+    ready: "提供完了",
+    completed: "お会計済み",
     cancelled: "キャンセル",
   },
   orderDetail: {
@@ -548,8 +548,8 @@ const ZH_HANS: FlowMessageTree = {
     pending: "已接单",
     accepted: "已确认",
     preparing: "制作中",
-    ready: "可取餐",
-    completed: "已完成",
+    ready: "已上菜",
+    completed: "已结账",
     cancelled: "已取消",
   },
   orderDetail: {
@@ -582,6 +582,7 @@ const ZH_HANT: FlowMessageTree = {
   cart: { ...ZH_HANS.cart, pageTitle: "確認訂單", pageIntro: "購物車僅保存在本瀏覽器。下單後可在此查看，請至櫃台付款。", loading: "正在載入購物車…", empty: "購物車是空的。請從菜單或詳情頁加入餐點。", emptyCta: "返回菜單", noteLabel: "備註", submit: "送至廚房", submitPending: "正在送出…" },
   orders: { ...ZH_HANS.orders, pageTitle: "訂單狀態", pageIntro: "訪客訂單僅顯示在本瀏覽器。", loading: "正在載入訂單…", claimed: "已將 {count} 筆訪客訂單連結到帳戶。" },
   payment: { offlineLead: "請至櫃台", offlineRest: "付款。本應用僅顯示訂單與金顡。" },
+  status: { ...ZH_HANS.status, completed: "已結帳" },
   orderDetail: { ...ZH_HANS.orderDetail, receivedTitle: "訂單已送出", toMenu: "返回菜單" },
 };
 
