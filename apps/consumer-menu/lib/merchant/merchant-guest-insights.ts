@@ -2,7 +2,13 @@ import "server-only";
 
 import { formatGuestItemsBrief } from "@/lib/merchant/format-guest-last-visit";
 import { recordCompletedStoreVisit, recordCompletedTableSessionVisit } from "@/lib/merchant/guest-order-context";
-import { GUEST_REGULAR_MIN_PRIOR } from "@/lib/merchant/guest-visit-policy";
+import {
+  buildGuestFrequencyCounts,
+  emptyGuestFrequencyCounts,
+  isActiveRegularGuest,
+  msSinceWindowDays,
+  type GuestFrequencyCounts,
+} from "@/lib/merchant/guest-visit-policy";
 import {
   countPaymentEventsFromOrderRows,
   countPaymentEventsFromStoreVisitRows,
@@ -20,6 +26,9 @@ const GUEST_LIST_TOP = 8;
 export type MerchantGuestListRow = {
   visitCountInPeriod: number;
   lifetimeVisitCount: number;
+  visitsLast7: number;
+  visitsLast30: number;
+  visitsLast90: number;
   periodSpend: number;
   lastCompletedAt: string;
   itemsSummary: string;
@@ -63,11 +72,93 @@ function parsePrice(v: unknown): number {
 function sortGuestRows(rows: MerchantGuestListRow[]): MerchantGuestListRow[] {
   return [...rows].sort((a, b) => {
     if (a.isRegular !== b.isRegular) return a.isRegular ? -1 : 1;
+    if (a.visitsLast90 !== b.visitsLast90) return b.visitsLast90 - a.visitsLast90;
     if (a.visitCountInPeriod !== b.visitCountInPeriod) {
       return b.visitCountInPeriod - a.visitCountInPeriod;
     }
     return b.periodSpend - a.periodSpend;
   });
+}
+
+async function loadGuestFrequencyWindows(
+  client: NonNullable<ReturnType<typeof createServiceSupabase>>,
+  slug: string,
+  sessionIds: string[],
+): Promise<Map<string, GuestFrequencyCounts>> {
+  const out = new Map<string, GuestFrequencyCounts>();
+  if (sessionIds.length === 0) return out;
+
+  const since90Iso = new Date(msSinceWindowDays(90)).toISOString();
+  const bySession = new Map<string, string[]>();
+
+  const { data: visitRows, error: visitErr } = await withSupabaseReadRetry(() =>
+    client
+      .from("store_visits")
+      .select("guest_session_id, completed_at")
+      .eq("tenant_slug", slug)
+      .gte("completed_at", since90Iso)
+      .in("guest_session_id", sessionIds),
+  );
+
+  if (!visitErr && visitRows) {
+    for (const raw of visitRows as Record<string, unknown>[]) {
+      const sid = typeof raw.guest_session_id === "string" ? raw.guest_session_id.trim() : "";
+      const at =
+        typeof raw.completed_at === "string"
+          ? raw.completed_at
+          : raw.completed_at instanceof Date
+            ? raw.completed_at.toISOString()
+            : "";
+      if (!sid || !at) continue;
+      const list = bySession.get(sid) ?? [];
+      list.push(at);
+      bySession.set(sid, list);
+    }
+  } else {
+    const first = await withSupabaseReadRetry(() =>
+      client
+        .from("orders")
+        .select("guest_session_id, completed_at, created_at")
+        .eq("tenant_slug", slug)
+        .eq("status", "completed")
+        .not("guest_session_id", "is", null)
+        .in("guest_session_id", sessionIds)
+        .gte("completed_at", since90Iso),
+    );
+    let orderRows = (first.data as Record<string, unknown>[] | null) ?? null;
+    if (first.error && /completed_at|does not exist/i.test(first.error.message ?? "")) {
+      const legacy = await withSupabaseReadRetry(() =>
+        client
+          .from("orders")
+          .select("guest_session_id, created_at")
+          .eq("tenant_slug", slug)
+          .eq("status", "completed")
+          .not("guest_session_id", "is", null)
+          .in("guest_session_id", sessionIds)
+          .gte("created_at", since90Iso),
+      );
+      orderRows = (legacy.data as Record<string, unknown>[] | null) ?? null;
+    }
+    for (const raw of orderRows ?? []) {
+      const sid = typeof raw.guest_session_id === "string" ? raw.guest_session_id.trim() : "";
+      const at =
+        typeof raw.completed_at === "string"
+          ? raw.completed_at
+          : typeof raw.created_at === "string"
+            ? raw.created_at
+            : "";
+      if (!sid || !at) continue;
+      const list = bySession.get(sid) ?? [];
+      list.push(at);
+      bySession.set(sid, list);
+    }
+  }
+
+  const nowMs = Date.now();
+  for (const sid of sessionIds) {
+    out.set(sid, buildGuestFrequencyCounts(bySession.get(sid) ?? [], nowMs));
+  }
+  return out;
 }
 
 function guestPaidOrdersPeriodOrFilter(
@@ -296,11 +387,13 @@ export async function getMerchantGuestInsights(
   );
 
   if (rollupErr && /tenant_guest_rollups|does not exist/i.test(rollupErr.message ?? "")) {
+    const frequencyBySession = await loadGuestFrequencyWindows(client, slug, sessionIds);
     return buildGuestSnapshotFromPeriodMap(
       periodBySession,
       periodLabel,
       paymentEventCount > 0 ? paymentEventCount : visitRowCount,
       null,
+      frequencyBySession,
     );
   }
   if (rollupErr) {
@@ -313,11 +406,14 @@ export async function getMerchantGuestInsights(
     if (sid) rollupBySession.set(sid, raw);
   }
 
+  const frequencyBySession = await loadGuestFrequencyWindows(client, slug, sessionIds);
+
   return buildGuestSnapshotFromPeriodMap(
     periodBySession,
     periodLabel,
     paymentEventCount > 0 ? paymentEventCount : visitRowCount,
     rollupBySession,
+    frequencyBySession,
   );
 }
 
@@ -334,6 +430,7 @@ function buildGuestSnapshotFromPeriodMap(
   periodLabel: string,
   completedVisits: number,
   rollupBySession: Map<string, Record<string, unknown>> | null,
+  frequencyBySession: Map<string, GuestFrequencyCounts>,
 ): MerchantGuestInsightsSnapshot {
   const guests: MerchantGuestListRow[] = [];
   let returningGuests = 0;
@@ -344,8 +441,9 @@ function buildGuestSnapshotFromPeriodMap(
     const lifetimeVisitCount = raw
       ? Number(raw.completed_visit_count) || acc.visitCountInPeriod
       : acc.visitCountInPeriod;
+    const freq = frequencyBySession.get(sid) ?? emptyGuestFrequencyCounts();
     const isReturning = lifetimeVisitCount >= 2;
-    const isRegular = lifetimeVisitCount >= GUEST_REGULAR_MIN_PRIOR + 1;
+    const isRegular = isActiveRegularGuest(freq.visitsLast90);
     if (isReturning) returningGuests += 1;
     if (isRegular) regularGuests += 1;
 
@@ -353,6 +451,9 @@ function buildGuestSnapshotFromPeriodMap(
     guests.push({
       visitCountInPeriod: acc.visitCountInPeriod,
       lifetimeVisitCount,
+      visitsLast7: freq.visitsLast7,
+      visitsLast30: freq.visitsLast30,
+      visitsLast90: freq.visitsLast90,
       periodSpend: acc.periodSpend,
       lastCompletedAt: acc.lastCompletedAt,
       itemsSummary: formatGuestItemsBrief(parseOrderLineSummaries(items)),
@@ -468,7 +569,15 @@ async function fallbackGuestInsightsFromOrders(
     [...bySession.keys()],
   );
 
-  return buildGuestSnapshotFromPeriodMap(bySession, label, completedVisits, rollupBySession);
+  const frequencyBySession = await loadGuestFrequencyWindows(client, slug, [...bySession.keys()]);
+
+  return buildGuestSnapshotFromPeriodMap(
+    bySession,
+    label,
+    completedVisits,
+    rollupBySession,
+    frequencyBySession,
+  );
 }
 
 /** tenant_guest_rollups — 누적 방문(결제) 횟수 (주문 수 아님). */

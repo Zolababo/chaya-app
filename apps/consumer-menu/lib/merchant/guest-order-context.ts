@@ -5,8 +5,9 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { formatGuestItemsBrief } from "@/lib/merchant/format-guest-last-visit";
 import { formatGuestLabel } from "@/lib/merchant/guest-label";
 import {
+  buildGuestFrequencyCounts,
   guestVisitNumberFromPrior,
-  guestVisitTierFromPrior,
+  guestVisitTierFromHistory,
   type GuestVisitTier,
 } from "@/lib/merchant/guest-visit-policy";
 import { parseOrderLineSummaries } from "@/lib/orders/format-order-line-summary";
@@ -19,6 +20,9 @@ export type MerchantGuestOrderContext = {
   priorCompletedCount: number;
   visitNumber: number;
   tier: GuestVisitTier;
+  visitsLast7: number;
+  visitsLast30: number;
+  visitsLast90: number;
   visitConfirmed: boolean;
   lastVisitAt: string | null;
   lastVisitTotal: number | null;
@@ -68,8 +72,10 @@ function buildContextForOrder(
 ): MerchantGuestOrderContext {
   const others = history.filter((h) => h.id !== orderId);
   const priorCompletedCount = others.length;
+  const priorCompletedAts = others.map((h) => h.completed_at);
   const visitNumber = guestVisitNumberFromPrior(priorCompletedCount);
-  const tier = guestVisitTierFromPrior(priorCompletedCount);
+  const tier = guestVisitTierFromHistory(priorCompletedCount, priorCompletedAts);
+  const { visitsLast7, visitsLast30, visitsLast90 } = buildGuestFrequencyCounts(priorCompletedAts);
   const visitConfirmed = status === "completed";
 
   const last = others.length > 0 ? others[others.length - 1]! : null;
@@ -80,6 +86,9 @@ function buildContextForOrder(
     priorCompletedCount,
     visitNumber,
     tier,
+    visitsLast7,
+    visitsLast30,
+    visitsLast90,
     visitConfirmed,
     lastVisitAt: last?.completed_at ?? null,
     lastVisitTotal: last?.total_price ?? null,

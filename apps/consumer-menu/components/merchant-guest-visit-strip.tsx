@@ -1,6 +1,10 @@
 import type { MerchantGuestOrderContext } from "@/lib/merchant/guest-order-context";
 import { formatGuestLastVisitLine } from "@/lib/merchant/format-guest-last-visit";
-import { guestVisitTierLabel } from "@/lib/merchant/guest-visit-policy";
+import {
+  GUEST_QUEUE_DISPLAY_WINDOW_DAYS,
+  guestFrequencyCountForWindow,
+  guestVisitTierLabel,
+} from "@/lib/merchant/guest-visit-policy";
 
 type Props = {
   guest: MerchantGuestOrderContext;
@@ -17,6 +21,18 @@ const TIER_CLASS: Record<MerchantGuestOrderContext["tier"], string> = {
 export function MerchantGuestVisitStrip({ guest, compact = false }: Props) {
   const tierLabel = guestVisitTierLabel(guest.tier);
   const visitLabel = `${guest.visitNumber}번째 방문`;
+  const freqCount = guestFrequencyCountForWindow(
+    {
+      visitsLast7: guest.visitsLast7,
+      visitsLast30: guest.visitsLast30,
+      visitsLast90: guest.visitsLast90,
+    },
+    GUEST_QUEUE_DISPLAY_WINDOW_DAYS,
+  );
+  const freqLine =
+    guest.tier !== "first"
+      ? `최근 ${GUEST_QUEUE_DISPLAY_WINDOW_DAYS}일 ${freqCount}회`
+      : null;
 
   const lastLine =
     guest.lastVisitAt && guest.lastVisitTotal != null
@@ -34,6 +50,7 @@ export function MerchantGuestVisitStrip({ guest, compact = false }: Props) {
       >
         <span className="truncate">
           {tierLabel === "단골" ? "단골" : tierLabel} · {visitLabel}
+          {freqLine ? ` · ${freqLine}` : ""}
         </span>
       </span>
     );
@@ -50,6 +67,9 @@ export function MerchantGuestVisitStrip({ guest, compact = false }: Props) {
         >
           {tierLabel} · {visitLabel}
         </span>
+        {freqLine ? (
+          <span className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">{freqLine}</span>
+        ) : null}
       </div>
       {lastLine ? (
         <p className="mt-1.5 text-xs leading-relaxed text-zinc-600 dark:text-zinc-300">{lastLine}</p>

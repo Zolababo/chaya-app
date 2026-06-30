@@ -4,6 +4,11 @@ import { useState } from "react";
 
 import { formatGuestVisitDateKst } from "@/lib/merchant/format-guest-last-visit";
 import type { MerchantGuestListRow } from "@/lib/merchant/merchant-guest-insights";
+import {
+  GUEST_FREQUENCY_WINDOWS,
+  guestFrequencyCountForWindow,
+  type GuestFrequencyWindowDays,
+} from "@/lib/merchant/guest-visit-policy";
 
 type SummaryProps = {
   periodLabel: string;
@@ -58,7 +63,7 @@ export function MerchantGuestInsightsSummary({
           </p>
         </div>
         <div className="bg-white px-4 py-3 dark:bg-zinc-900">
-          <p className="text-[11px] font-semibold text-zinc-400">단골 (3회+)</p>
+          <p className="text-[11px] font-semibold text-zinc-400">활성 단골 (90일 3회+)</p>
           <p className="mt-1 text-2xl font-black tabular-nums text-chaya-primary dark:text-orange-400">
             {regularGuests}
             <span className="ml-0.5 text-sm font-bold text-zinc-400">명</span>
@@ -75,7 +80,24 @@ type ListProps = {
   periodLabel: string;
 };
 
-function GuestRow({ g, periodLabel }: { g: MerchantGuestListRow; periodLabel: string }) {
+function GuestRow({
+  g,
+  periodLabel,
+  freqWindow,
+}: {
+  g: MerchantGuestListRow;
+  periodLabel: string;
+  freqWindow: GuestFrequencyWindowDays;
+}) {
+  const freqCount = guestFrequencyCountForWindow(
+    {
+      visitsLast7: g.visitsLast7,
+      visitsLast30: g.visitsLast30,
+      visitsLast90: g.visitsLast90,
+    },
+    freqWindow,
+  );
+
   return (
     <li className="rounded-xl border border-zinc-200 bg-white px-4 py-3 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
       <div className="flex items-start justify-between gap-2">
@@ -96,7 +118,8 @@ function GuestRow({ g, periodLabel }: { g: MerchantGuestListRow; periodLabel: st
             )}
           </div>
           <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-            {periodLabel} {g.visitCountInPeriod}회 결제 · 마지막 {formatGuestVisitDateKst(g.lastCompletedAt)}
+            {periodLabel} {g.visitCountInPeriod}회 결제 · 평생 {g.lifetimeVisitCount}번째 · 최근 {freqWindow}일{" "}
+            {freqCount}회 · 마지막 {formatGuestVisitDateKst(g.lastCompletedAt)}
           </p>
           {g.itemsSummary ? (
             <p className="mt-1 truncate text-xs text-zinc-600 dark:text-zinc-300">{g.itemsSummary}</p>
@@ -112,6 +135,7 @@ function GuestRow({ g, periodLabel }: { g: MerchantGuestListRow; periodLabel: st
 
 export function MerchantGuestInsightsList({ guests, hiddenCount, periodLabel }: ListProps) {
   const [expanded, setExpanded] = useState(false);
+  const [freqWindow, setFreqWindow] = useState<GuestFrequencyWindowDays>(30);
 
   if (guests.length === 0) {
     return (
@@ -141,18 +165,43 @@ export function MerchantGuestInsightsList({ guests, hiddenCount, periodLabel }: 
       </button>
       {expanded ? (
         <>
+          <div
+            className="flex flex-wrap gap-1.5 px-0.5"
+            role="group"
+            aria-label="방문 빈도 기간"
+          >
+            {GUEST_FREQUENCY_WINDOWS.map((days) => {
+              const active = freqWindow === days;
+              return (
+                <button
+                  key={days}
+                  type="button"
+                  onClick={() => setFreqWindow(days)}
+                  aria-pressed={active}
+                  className={`rounded-full px-2.5 py-1 text-[11px] font-bold transition-colors ${
+                    active
+                      ? "bg-chaya-primary text-white dark:bg-orange-500"
+                      : "border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                  }`}
+                >
+                  최근 {days}일
+                </button>
+              );
+            })}
+          </div>
           <ul className="space-y-2" aria-label="손님 목록">
             {guests.map((g, i) => (
               <GuestRow
                 key={`${g.lastCompletedAt}-${g.lifetimeVisitCount}-${i}`}
                 g={g}
                 periodLabel={periodLabel}
+                freqWindow={freqWindow}
               />
             ))}
           </ul>
           {hiddenCount > 0 ? (
             <p className="px-1 text-center text-xs text-zinc-400 dark:text-zinc-500">
-              단골·기간 결제 많은 순 상위 {guests.length}명만 표시 · 같은 폰·브라우저 기준
+              활성 단골·기간 결제 많은 순 상위 {guests.length}명만 표시 · 같은 폰·브라우저 기준
             </p>
           ) : null}
         </>
