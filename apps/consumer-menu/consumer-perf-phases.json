@@ -1,0 +1,73 @@
+[
+  {
+    "phase": "step1-slim-props",
+    "measuredAt": "2026-06-20T13:10:18.246Z",
+    "fast3g": {
+      "textMedianMs": 2678,
+      "textP95Ms": 3218,
+      "ttfbMedianMs": 708,
+      "ttfbP95Ms": 1394,
+      "jsChunksMedian": 16,
+      "wireTotalMedianKb": 187,
+      "htmlWireMedianKb": 10,
+      "jsWireMedianKb": 105,
+      "fontsOtherWireMedianKb": 39,
+      "inlineFlightCharsMedian": 28690
+    }
+  },
+  {
+    "phase": "step2-bottom-idle",
+    "measuredAt": "2026-06-20T13:18:05.382Z",
+    "fast3g": {
+      "textMedianMs": 2569,
+      "textP95Ms": 3034,
+      "ttfbMedianMs": 667,
+      "ttfbP95Ms": 1265,
+      "jsChunksMedian": 16,
+      "wireTotalMedianKb": 183,
+      "htmlWireMedianKb": 10,
+      "jsWireMedianKb": 101,
+      "fontsOtherWireMedianKb": 39,
+      "inlineFlightCharsMedian": 28445
+    }
+  },
+  {
+    "phase": "step3-fonts",
+    "measuredAt": "2026-06-20T13:25:20.458Z",
+    "fast3g": {
+      "textMedianMs": 2546,
+      "textP95Ms": 2624,
+      "ttfbMedianMs": 682,
+      "ttfbP95Ms": 735,
+      "jsChunksMedian": 16,
+      "wireTotalMedianKb": 183,
+      "htmlWireMedianKb": 10,
+      "jsWireMedianKb": 101,
+      "fontsOtherWireMedianKb": 39,
+      "inlineFlightCharsMedian": 28446
+    }
+  },
+  {
+    "phase": "step4-critical-path",
+    "measuredAt": "2026-06-20T14:06:04.597Z",
+    "fast3g": {
+      "textMedianMs": 2496,
+      "textP95Ms": 3105,
+      "ttfbMedianMs": 668,
+      "ttfbP95Ms": 1431,
+      "jsChunksMedian": 23,
+      "wireTotalMedianKb": 173,
+      "htmlWireMedianKb": 10,
+      "jsWireMedianKb": 99,
+      "fontsOtherWireMedianKb": 39,
+      "inlineFlightCharsMedian": 26161,
+      "lastCssEndMedianMs": 2373.7,
+      "cssEndToTextGapMedianMs": 99.90000000000009
+    },
+    "waterfall": {
+      "lastCssEndMedianMs": 2373.7,
+      "cssEndToTextGapMedianMs": 99.90000000000009,
+      "menuTextVisibleMedianMs": 2497
+    }
+  }
+]

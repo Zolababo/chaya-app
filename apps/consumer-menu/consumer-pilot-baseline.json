@@ -1,0 +1,92 @@
+{
+  "measuredAt": "2026-06-20T14:43:43.201Z",
+  "phase": "pilot-baseline",
+  "kpiPolicy": {
+    "primary": [
+      "koreaLte",
+      "storeWifi"
+    ],
+    "regressionGuard": [
+      "fast3g"
+    ],
+    "note": "신규 목표 숫자는 pilotPrimary median 기준으로 협의. fast3g는 회귀만."
+  },
+  "config": {
+    "baseUrl": "https://chaya-app.vercel.app",
+    "tenant": "demo",
+    "menuUrl": "https://chaya-app.vercel.app/t/demo",
+    "runs": 20
+  },
+  "pilotPrimary": {
+    "koreaLte": {
+      "profile": {
+        "label": "Korea LTE (pilot primary)",
+        "downloadThroughput": 1572864,
+        "uploadThroughput": 786432,
+        "latency": 28,
+        "note": "추정: ~12Mbps down, ~28ms latency (SK/KT LTE 실내·혼잡 보수)"
+      },
+      "menuQrColdStart": {
+        "documentTtfbMedianMs": 465,
+        "menuTextVisibleMedianMs": 926,
+        "menuTextVisibleP95Ms": 1775,
+        "firstMenuImageMedianMs": 1004,
+        "jsChunksMedian": 23
+      },
+      "payloadUntilText": {
+        "wireTotalMedianKb": 369,
+        "jsWireMedianKb": 158,
+        "inlineFlightCharsMedian": 26161
+      }
+    },
+    "storeWifi": {
+      "profile": {
+        "label": "Store Wi-Fi (pilot primary)",
+        "downloadThroughput": 4587520,
+        "uploadThroughput": 1572864,
+        "latency": 12,
+        "note": "추정: ~35Mbps down, ~12ms latency (소형 매장 AP·손님 1명 콜드)"
+      },
+      "menuQrColdStart": {
+        "documentTtfbMedianMs": 437,
+        "menuTextVisibleMedianMs": 861,
+        "menuTextVisibleP95Ms": 1247,
+        "firstMenuImageMedianMs": 963,
+        "jsChunksMedian": 24
+      },
+      "payloadUntilText": {
+        "wireTotalMedianKb": 257,
+        "jsWireMedianKb": 158,
+        "inlineFlightCharsMedian": 26161
+      }
+    }
+  },
+  "regressionGuard": {
+    "fast3g": {
+      "profile": {
+        "label": "Fast 3G (regression guard)",
+        "downloadThroughput": 209715,
+        "uploadThroughput": 96000,
+        "latency": 562.5,
+        "note": "Chrome DevTools Fast 3G — KPI 아님, 회귀만"
+      },
+      "menuQrColdStart": {
+        "documentTtfbMedianMs": 661,
+        "menuTextVisibleMedianMs": 2477,
+        "menuTextVisibleP95Ms": 2503,
+        "firstMenuImageMedianMs": 3078,
+        "jsChunksMedian": 23
+      },
+      "payloadUntilText": {
+        "wireTotalMedianKb": 173,
+        "jsWireMedianKb": 99,
+        "inlineFlightCharsMedian": 26161
+      }
+    }
+  },
+  "suggestedGoalInputs": {
+    "koreaLteMenuTextMedianMs": 926,
+    "storeWifiMenuTextMedianMs": 861,
+    "fast3gMenuTextMedianMs": 2477
+  }
+}

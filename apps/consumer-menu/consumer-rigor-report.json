@@ -1,0 +1,324 @@
+{
+  "measuredAt": "2026-06-20T14:42:43.980Z",
+  "networkEnvironment": {
+    "host": "DESKTOP-G2FUIPK",
+    "platform": "win32 10.0.26200",
+    "playwrightThrottling": "CDP Network.emulateNetworkConditions per sample",
+    "profiles": {
+      "koreaLte": {
+        "label": "Korea LTE (pilot primary)",
+        "downloadThroughput": 1572864,
+        "uploadThroughput": 786432,
+        "latency": 28,
+        "note": "추정: ~12Mbps down, ~28ms latency (SK/KT LTE 실내·혼잡 보수)"
+      },
+      "storeWifi": {
+        "label": "Store Wi-Fi (pilot primary)",
+        "downloadThroughput": 4587520,
+        "uploadThroughput": 1572864,
+        "latency": 12,
+        "note": "추정: ~35Mbps down, ~12ms latency (소형 매장 AP·손님 1명 콜드)"
+      },
+      "fast3g": {
+        "label": "Fast 3G (regression guard)",
+        "downloadThroughput": 209715,
+        "uploadThroughput": 96000,
+        "latency": 562.5,
+        "note": "Chrome DevTools Fast 3G — KPI 아님, 회귀만"
+      }
+    },
+    "pilotPrimaryProfileKeys": [
+      "koreaLte",
+      "storeWifi"
+    ],
+    "regressionGuardProfileKeys": [
+      "fast3g"
+    ],
+    "kpiNote": "파일럿 KPI = koreaLte·storeWifi median. fast3g = 회귀 가드만.",
+    "target": "https://chaya-app.vercel.app",
+    "supabaseDbRegion": "ap-northeast-2 (Seoul) — run explain-consumer-menus.sql separately",
+    "note": "소비자는 콜드 스타트가 기본 — 매 샘플 새 context, storage 비움"
+  },
+  "config": {
+    "baseUrl": "https://chaya-app.vercel.app",
+    "tenant": "demo",
+    "menuUrl": "https://chaya-app.vercel.app/t/demo",
+    "runs": 20
+  },
+  "architectureNotes": {
+    "guestSession": "GuestSessionInit useEffect → localStorage UUID (렌더 비차단)",
+    "qrScanEvent": "ExperienceTrackQrScan useEffect → trackExperienceEvent server action (void, 비차단)",
+    "menuData": "listMenusForTenantBoard SSR on page + unstable_cache 60s",
+    "images": "/menu-thumb WebP proxy (~128px), SSR list eager top-2, MenuLazyImage lazy+priority rows",
+    "pageCache": "revalidate removed — locale via ?lang+cookie; menu data unstable_cache 60s"
+  },
+  "httpDocumentFetch": {
+    "label": "fetch_full_document_no_throttle",
+    "note": "Node fetch from measurer PC — not Playwright; includes full HTML download",
+    "n": 20,
+    "min": 522,
+    "median": 547,
+    "p95": 574,
+    "max": 638,
+    "statusNote": "실측 (측정 PC 네트워크, 쓰로틀링 없음)"
+  },
+  "playwrightColdPath": {
+    "koreaLte": {
+      "profile": "Korea LTE (pilot primary)",
+      "coldQrToMenu": {
+        "documentTtfb": {
+          "n": 20,
+          "min": 421,
+          "median": 465,
+          "p95": 1363,
+          "max": 9502
+        },
+        "menuTextVisible": {
+          "n": 20,
+          "min": 842,
+          "median": 926,
+          "p95": 1775,
+          "max": 10645
+        },
+        "interactivePaint": {
+          "n": 20,
+          "min": 911,
+          "median": 986,
+          "p95": 1815,
+          "max": 10682
+        },
+        "firstMenuImageVisible": {
+          "n": 20,
+          "min": 920,
+          "median": 1004,
+          "p95": 1827,
+          "max": 12933
+        },
+        "firstMenuImageMissingSamples": 0
+      },
+      "sideEffects": {
+        "guestSessionBeforeMenuText": {
+          "note": "localStorage UUID — useEffect, non-blocking SSR",
+          "samplesWithSessionAtTextPaint": 1,
+          "total": 20
+        },
+        "experienceEventPost": {
+          "note": "trackExperienceEvent server action — fire-and-forget void, after paint",
+          "relativeToNavStartMs": {
+            "n": 2,
+            "min": 1258,
+            "median": 1259,
+            "p95": 1260,
+            "max": 1260
+          },
+          "postResponseMs": {
+            "n": 1,
+            "min": 4,
+            "median": 4,
+            "p95": 4,
+            "max": 4
+          },
+          "samplesWithPost": 2
+        },
+        "menuImageCountAtText": {
+          "n": 20,
+          "min": 6,
+          "median": 6,
+          "p95": 8,
+          "max": 8
+        },
+        "jsChunkRequests": {
+          "n": 20,
+          "min": 21,
+          "median": 23,
+          "p95": 26,
+          "max": 27
+        }
+      },
+      "categoryChipSwitch": {
+        "n": 1,
+        "min": 229,
+        "median": 229,
+        "p95": 229,
+        "max": 229
+      }
+    },
+    "storeWifi": {
+      "profile": "Store Wi-Fi (pilot primary)",
+      "coldQrToMenu": {
+        "documentTtfb": {
+          "n": 20,
+          "min": 405,
+          "median": 437,
+          "p95": 494,
+          "max": 502
+        },
+        "menuTextVisible": {
+          "n": 20,
+          "min": 760,
+          "median": 861,
+          "p95": 1247,
+          "max": 1253
+        },
+        "interactivePaint": {
+          "n": 20,
+          "min": 798,
+          "median": 947,
+          "p95": 1286,
+          "max": 1297
+        },
+        "firstMenuImageVisible": {
+          "n": 20,
+          "min": 806,
+          "median": 963,
+          "p95": 1292,
+          "max": 1305
+        },
+        "firstMenuImageMissingSamples": 0
+      },
+      "sideEffects": {
+        "guestSessionBeforeMenuText": {
+          "note": "localStorage UUID — useEffect, non-blocking SSR",
+          "samplesWithSessionAtTextPaint": 7,
+          "total": 20
+        },
+        "experienceEventPost": {
+          "note": "trackExperienceEvent server action — fire-and-forget void, after paint",
+          "relativeToNavStartMs": {
+            "n": 11,
+            "min": 832,
+            "median": 1074,
+            "p95": 1184,
+            "max": 1184
+          },
+          "postResponseMs": {
+            "n": 0,
+            "min": null,
+            "median": null,
+            "p95": null,
+            "max": null
+          },
+          "samplesWithPost": 11
+        },
+        "menuImageCountAtText": {
+          "n": 20,
+          "min": 6,
+          "median": 6,
+          "p95": 8,
+          "max": 8
+        },
+        "jsChunkRequests": {
+          "n": 20,
+          "min": 23,
+          "median": 24,
+          "p95": 26,
+          "max": 26
+        }
+      },
+      "categoryChipSwitch": {
+        "n": 0,
+        "note": "single category — skipped"
+      }
+    },
+    "fast3g": {
+      "profile": "Fast 3G (regression guard)",
+      "coldQrToMenu": {
+        "documentTtfb": {
+          "n": 20,
+          "min": 639,
+          "median": 661,
+          "p95": 670,
+          "max": 695
+        },
+        "menuTextVisible": {
+          "n": 20,
+          "min": 2439,
+          "median": 2477,
+          "p95": 2503,
+          "max": 2503
+        },
+        "interactivePaint": {
+          "n": 20,
+          "min": 2468,
+          "median": 2520,
+          "p95": 2556,
+          "max": 2557
+        },
+        "firstMenuImageVisible": {
+          "n": 20,
+          "min": 3034,
+          "median": 3078,
+          "p95": 3098,
+          "max": 3129
+        },
+        "firstMenuImageMissingSamples": 0
+      },
+      "sideEffects": {
+        "guestSessionBeforeMenuText": {
+          "note": "localStorage UUID — useEffect, non-blocking SSR",
+          "samplesWithSessionAtTextPaint": 0,
+          "total": 20
+        },
+        "experienceEventPost": {
+          "note": "trackExperienceEvent server action — fire-and-forget void, after paint",
+          "relativeToNavStartMs": {
+            "n": 0,
+            "min": null,
+            "median": null,
+            "p95": null,
+            "max": null
+          },
+          "postResponseMs": {
+            "n": 0,
+            "min": null,
+            "median": null,
+            "p95": null,
+            "max": null
+          },
+          "samplesWithPost": 0
+        },
+        "menuImageCountAtText": {
+          "n": 20,
+          "min": 6,
+          "median": 6,
+          "p95": 6,
+          "max": 6
+        },
+        "jsChunkRequests": {
+          "n": 20,
+          "min": 23,
+          "median": 23,
+          "p95": 23,
+          "max": 23
+        }
+      },
+      "categoryChipSwitch": {
+        "n": 0,
+        "note": "single category — skipped"
+      }
+    }
+  },
+  "top3BottleneckHypothesis": {
+    "profile": "Korea LTE (pilot primary)",
+    "ranked": [
+      {
+        "label": "first_menu_image",
+        "ms": 1004,
+        "cause": "image lazy+CDN"
+      },
+      {
+        "label": "interactive_paint",
+        "ms": 986,
+        "cause": "hydration"
+      },
+      {
+        "label": "menu_text_visible",
+        "ms": 926,
+        "cause": "SSR+hydration+render"
+      }
+    ],
+    "experiencePostMedianMs": 1259,
+    "blockingRisk": "guest_session·experience_events는 useEffect/void — 메뉴 텍스트 paint를 막지 않음 (코드 확인)",
+    "fast3gRegressionMenuTextMedian": 2477
+  }
+}

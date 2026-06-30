@@ -123,7 +123,7 @@
 
 | # | 기능 | 구현 |
 |---|------|------|
-| 1 | 서명·만료 QR | `CONSUMER_TABLE_QR_TOKEN_SECRET` · `buildSignedConsumerTableUrl` · submit 시 `validateGuestTableQrToken` |
+| 1 | 서명·만료 QR | `/t/{tenant}/qr?table=&tsig=` 스캔 → **HttpOnly 쿠키**(스캔 시점+TTL) → 메뉴 리다이렉트. `?table=`만 복사 시 주문 불가. 인쇄 QR은 **만료 없음**. |
 | 2 | 주문 받기 중지 | `tenant_store_settings.orders_accepting` (기존) |
 | 3 | rate limit | `submitGuestOrderAction` — IP·guest_session (15분 창) |
 | 4 | 영업시간 | `business_open`/`business_close` 설정 시 KST 구간 밖 `orders_closed` |

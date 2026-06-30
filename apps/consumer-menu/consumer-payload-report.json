@@ -1,0 +1,175 @@
+{
+  "measuredAt": "2026-06-20T14:43:43.173Z",
+  "config": {
+    "menuUrl": "https://chaya-app.vercel.app/t/demo",
+    "runs": 8,
+    "profileKey": "fast3g",
+    "profileLabel": "Fast 3G (regression guard)"
+  },
+  "timingMs": {
+    "documentTtfb": {
+      "n": 8,
+      "min": 645,
+      "median": 666,
+      "p95": 708,
+      "max": 708
+    },
+    "menuTextVisible": {
+      "n": 8,
+      "min": 2448,
+      "median": 2487,
+      "p95": 2550,
+      "max": 2550
+    },
+    "gapTtfbToText": {
+      "n": 8,
+      "min": 1778,
+      "median": 1812,
+      "p95": 1845,
+      "max": 1845
+    }
+  },
+  "transferBytesUntilTextVisible": {
+    "note": "CDP Network.loadingFinished encodedDataLength 합 (wire bytes, 압축 후)",
+    "htmlDocument": {
+      "n": 8,
+      "min": 9710,
+      "median": 9713,
+      "p95": 9744,
+      "max": 9744
+    },
+    "rscFlightSeparateRequests": {
+      "n": 8,
+      "min": 0,
+      "median": 0,
+      "p95": 0,
+      "max": 0
+    },
+    "jsChunks": {
+      "n": 8,
+      "min": 101267,
+      "median": 101600,
+      "p95": 101765,
+      "max": 101765
+    },
+    "images": {
+      "n": 8,
+      "min": 0,
+      "median": 0,
+      "p95": 0,
+      "max": 0
+    },
+    "css": {
+      "n": 8,
+      "min": 25127,
+      "median": 25165,
+      "p95": 25380,
+      "max": 25380
+    },
+    "other": {
+      "n": 8,
+      "min": 40289,
+      "median": 40369,
+      "p95": 40634,
+      "max": 40634
+    },
+    "totalAllRequestsFinished": {
+      "n": 8,
+      "min": 176795,
+      "median": 176916,
+      "p95": 177025,
+      "max": 177025
+    }
+  },
+  "htmlDocumentDetail": {
+    "note": "첫 document 응답 + HTML 내 inline __next_f (RSC flight가 HTML에 embed된 부분)",
+    "htmlUtf8Estimate": {
+      "n": 8,
+      "min": 43122,
+      "median": 43122,
+      "p95": 43122,
+      "max": 43122
+    },
+    "inlineNextFlightScriptChars": {
+      "n": 8,
+      "min": 26161,
+      "median": 26161,
+      "p95": 26161,
+      "max": 26161
+    }
+  },
+  "sampleTopRequests": [
+    {
+      "bucket": "css",
+      "transfer": 24355,
+      "url": "https://chaya-app.vercel.app/_next/static/chunks/ed5fed3d68cf6bac.css",
+      "mime": "text/css"
+    },
+    {
+      "bucket": "jsChunk",
+      "transfer": 17845,
+      "url": "https://chaya-app.vercel.app/_next/static/chunks/80bc014991d5c1bd.js",
+      "mime": "application/javascript"
+    },
+    {
+      "bucket": "jsChunk",
+      "transfer": 16458,
+      "url": "https://chaya-app.vercel.app/_next/static/chunks/800f87e132b2c1e1.js",
+      "mime": "application/javascript"
+    },
+    {
+      "bucket": "jsChunk",
+      "transfer": 15570,
+      "url": "https://chaya-app.vercel.app/_next/static/chunks/4e8a381fdc7bac65.js",
+      "mime": "application/javascript"
+    },
+    {
+      "bucket": "other",
+      "transfer": 13890,
+      "url": "https://chaya-app.vercel.app/_next/static/media/8f46d218c8f79e34-s.p.12435988.woff2",
+      "mime": "font/woff2"
+    },
+    {
+      "bucket": "other",
+      "transfer": 13548,
+      "url": "https://chaya-app.vercel.app/_next/static/media/6f42e0a3b0519c4d-s.p.7183773d.woff2",
+      "mime": "font/woff2"
+    },
+    {
+      "bucket": "other",
+      "transfer": 13196,
+      "url": "https://chaya-app.vercel.app/_next/static/media/3c285486269019b7-s.p.f6eddd95.woff2",
+      "mime": "font/woff2"
+    },
+    {
+      "bucket": "jsChunk",
+      "transfer": 12877,
+      "url": "https://chaya-app.vercel.app/_next/static/chunks/3892dd5c853c461f.js",
+      "mime": "application/javascript"
+    },
+    {
+      "bucket": "jsChunk",
+      "transfer": 10364,
+      "url": "https://chaya-app.vercel.app/_next/static/chunks/6c3d725ab2548640.js",
+      "mime": "application/javascript"
+    },
+    {
+      "bucket": "htmlDocument",
+      "transfer": 9744,
+      "url": "https://chaya-app.vercel.app/t/demo",
+      "mime": "text/html"
+    },
+    {
+      "bucket": "jsChunk",
+      "transfer": 7733,
+      "url": "https://chaya-app.vercel.app/_next/static/chunks/3d6787d69b85c6dd.js",
+      "mime": "application/javascript"
+    },
+    {
+      "bucket": "jsChunk",
+      "transfer": 5951,
+      "url": "https://chaya-app.vercel.app/_next/static/chunks/1df32724df735088.js",
+      "mime": "application/javascript"
+    }
+  ]
+}

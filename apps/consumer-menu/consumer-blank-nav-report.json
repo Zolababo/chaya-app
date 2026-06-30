@@ -1,0 +1,245 @@
+{
+  "measuredAt": "2026-06-20T14:22:24.358Z",
+  "throttleProfile": {
+    "downloadThroughput": 209715,
+    "uploadThroughput": 96000,
+    "latency": 562.5,
+    "downloadMbps": 1.6,
+    "uploadKbps": 750
+  },
+  "runs": 8,
+  "captureDir": "C:\\Users\\skim0\\Desktop\\Test\\chaya-app\\apps\\consumer-menu\\bench-captures",
+  "routes": [
+    {
+      "id": "login",
+      "url": "https://chaya-app.vercel.app/t/demo/login",
+      "readySelector": "#main-content h1",
+      "note": "tenant loading.tsx 제거 후 — main에 본문 텍스트/폼 나오기 전 구간",
+      "documentTtfb": {
+        "n": 8,
+        "min": 632,
+        "median": 647,
+        "p95": 753,
+        "max": 753
+      },
+      "blankUntilMainVisibleText": {
+        "n": 8,
+        "min": 2407,
+        "median": 2435,
+        "p95": 2533,
+        "max": 2533
+      },
+      "readySelectorVisible": {
+        "n": 8,
+        "min": 2564,
+        "median": 2595,
+        "p95": 2714,
+        "max": 2714
+      },
+      "filmstrip": [
+        {
+          "label": "00-nav-start",
+          "actualMs": 0,
+          "file": "C:\\Users\\skim0\\Desktop\\Test\\chaya-app\\apps\\consumer-menu\\bench-captures\\login-00-nav-start-0ms.png",
+          "main": {
+            "exists": false,
+            "childCount": 0,
+            "textLen": 0,
+            "hasVisibleText": false,
+            "preview": ""
+          }
+        },
+        {
+          "label": "01-after-commit",
+          "actualMs": 975,
+          "file": "C:\\Users\\skim0\\Desktop\\Test\\chaya-app\\apps\\consumer-menu\\bench-captures\\login-01-after-commit-975ms.png",
+          "main": {
+            "exists": true,
+            "childCount": 1,
+            "textLen": 169,
+            "hasVisibleText": true,
+            "preview": "로그인 | demo · 주문을 계정에 연결하려면 로그인하세요. | 이메일 | 비밀번호 | 로그인하면 이 폰·브라우저에서 보낸 비회원 주문을 내 "
+          }
+        },
+        {
+          "label": "load-2745",
+          "actualMs": 2745,
+          "file": "C:\\Users\\skim0\\Desktop\\Test\\chaya-app\\apps\\consumer-menu\\bench-captures\\login-load-2745-2745ms.png",
+          "main": {
+            "exists": true,
+            "childCount": 1,
+            "textLen": 169,
+            "hasVisibleText": true,
+            "preview": "로그인 | demo · 주문을 계정에 연결하려면 로그인하세요. | 이메일 | 비밀번호 | 로그인하면 이 폰·브라우저에서 보낸 비회원 주문을 내 "
+          }
+        },
+        {
+          "label": "ready",
+          "actualMs": 4429,
+          "file": "C:\\Users\\skim0\\Desktop\\Test\\chaya-app\\apps\\consumer-menu\\bench-captures\\login-ready-4429ms.png",
+          "main": {
+            "exists": true,
+            "childCount": 1,
+            "textLen": 169,
+            "hasVisibleText": true,
+            "preview": "로그인 | demo · 주문을 계정에 연결하려면 로그인하세요. | 이메일 | 비밀번호 | 로그인하면 이 폰·브라우저에서 보낸 비회원 주문을 내 "
+          }
+        }
+      ]
+    },
+    {
+      "id": "signup",
+      "url": "https://chaya-app.vercel.app/t/demo/signup",
+      "readySelector": "#main-content h1",
+      "note": "tenant loading.tsx 제거 후 — main에 본문 텍스트/폼 나오기 전 구간",
+      "documentTtfb": {
+        "n": 8,
+        "min": 647,
+        "median": 666,
+        "p95": 722,
+        "max": 722
+      },
+      "blankUntilMainVisibleText": {
+        "n": 8,
+        "min": 738,
+        "median": 767,
+        "p95": 842,
+        "max": 842
+      },
+      "readySelectorVisible": {
+        "n": 8,
+        "min": 760,
+        "median": 776,
+        "p95": 861,
+        "max": 861
+      },
+      "filmstrip": [
+        {
+          "label": "00-nav-start",
+          "actualMs": 0,
+          "file": "C:\\Users\\skim0\\Desktop\\Test\\chaya-app\\apps\\consumer-menu\\bench-captures\\signup-00-nav-start-0ms.png",
+          "main": {
+            "exists": false,
+            "childCount": 0,
+            "textLen": 0,
+            "hasVisibleText": false,
+            "preview": ""
+          }
+        },
+        {
+          "label": "01-after-commit",
+          "actualMs": 909,
+          "file": "C:\\Users\\skim0\\Desktop\\Test\\chaya-app\\apps\\consumer-menu\\bench-captures\\signup-01-after-commit-909ms.png",
+          "main": {
+            "exists": true,
+            "childCount": 1,
+            "textLen": 148,
+            "hasVisibleText": true,
+            "preview": "회원가입 | demo · 주문 내역을 계정으로 모으려면 가입하세요. | 이메일 | 비밀번호 | 8자 이상 | 가입 후 이 폰·브라우저의 비회원 "
+          }
+        },
+        {
+          "label": "load-2673",
+          "actualMs": 2673,
+          "file": "C:\\Users\\skim0\\Desktop\\Test\\chaya-app\\apps\\consumer-menu\\bench-captures\\signup-load-2673-2673ms.png",
+          "main": {
+            "exists": true,
+            "childCount": 1,
+            "textLen": 148,
+            "hasVisibleText": true,
+            "preview": "회원가입 | demo · 주문 내역을 계정으로 모으려면 가입하세요. | 이메일 | 비밀번호 | 8자 이상 | 가입 후 이 폰·브라우저의 비회원 "
+          }
+        },
+        {
+          "label": "ready",
+          "actualMs": 4300,
+          "file": "C:\\Users\\skim0\\Desktop\\Test\\chaya-app\\apps\\consumer-menu\\bench-captures\\signup-ready-4300ms.png",
+          "main": {
+            "exists": true,
+            "childCount": 1,
+            "textLen": 148,
+            "hasVisibleText": true,
+            "preview": "회원가입 | demo · 주문 내역을 계정으로 모으려면 가입하세요. | 이메일 | 비밀번호 | 8자 이상 | 가입 후 이 폰·브라우저의 비회원 "
+          }
+        }
+      ]
+    },
+    {
+      "id": "barrier-free",
+      "url": "https://chaya-app.vercel.app/t/demo/barrier-free",
+      "readySelector": "#main-content button, #main-content [role='listitem']",
+      "note": "tenant loading.tsx 제거 후 — main에 본문 텍스트/폼 나오기 전 구간",
+      "documentTtfb": {
+        "n": 8,
+        "min": 649,
+        "median": 662,
+        "p95": 668,
+        "max": 668
+      },
+      "blankUntilMainVisibleText": {
+        "n": 8,
+        "min": 2600,
+        "median": 2638,
+        "p95": 2681,
+        "max": 2681
+      },
+      "readySelectorVisible": {
+        "n": 8,
+        "min": 2617,
+        "median": 2657,
+        "p95": 3178,
+        "max": 3178
+      },
+      "filmstrip": [
+        {
+          "label": "00-nav-start",
+          "actualMs": 0,
+          "file": "C:\\Users\\skim0\\Desktop\\Test\\chaya-app\\apps\\consumer-menu\\bench-captures\\barrier-free-00-nav-start-0ms.png",
+          "main": {
+            "exists": false,
+            "childCount": 0,
+            "textLen": 0,
+            "hasVisibleText": false,
+            "preview": ""
+          }
+        },
+        {
+          "label": "01-after-commit",
+          "actualMs": 1281,
+          "file": "C:\\Users\\skim0\\Desktop\\Test\\chaya-app\\apps\\consumer-menu\\bench-captures\\barrier-free-01-after-commit-1281ms.png",
+          "main": {
+            "exists": true,
+            "childCount": 1,
+            "textLen": 539,
+            "hasVisibleText": true,
+            "preview": "전체 | 음식 | 음료 | 갈비탕14,000원담기 | 갈비탕14,000원 | 갈비탕 | 14,000원 | 담기 | 된장찌개10,000원담기 | "
+          }
+        },
+        {
+          "label": "load-3194",
+          "actualMs": 3194,
+          "file": "C:\\Users\\skim0\\Desktop\\Test\\chaya-app\\apps\\consumer-menu\\bench-captures\\barrier-free-load-3194-3194ms.png",
+          "main": {
+            "exists": true,
+            "childCount": 5,
+            "textLen": 793,
+            "hasVisibleText": true,
+            "preview": "갈비탕14,000원 | 갈비탕 | 14,000원 | 된장찌개10,000원 | 된장찌개 | 10,000원 | 떡볶이10,000원 | 떡볶이 | 1"
+          }
+        },
+        {
+          "label": "ready",
+          "actualMs": 8590,
+          "file": "C:\\Users\\skim0\\Desktop\\Test\\chaya-app\\apps\\consumer-menu\\bench-captures\\barrier-free-ready-8590ms.png",
+          "main": {
+            "exists": true,
+            "childCount": 5,
+            "textLen": 793,
+            "hasVisibleText": true,
+            "preview": "갈비탕14,000원 | 갈비탕 | 14,000원 | 된장찌개10,000원 | 된장찌개 | 10,000원 | 떡볶이10,000원 | 떡볶이 | 1"
+          }
+        }
+      ]
+    }
+  ]
+}

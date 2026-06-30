@@ -1,0 +1,328 @@
+{
+  "measuredAt": "2026-06-20T14:06:04.563Z",
+  "menuUrl": "https://chaya-app.vercel.app/t/demo",
+  "throttleProfile": {
+    "name": "Fast 3G (Chrome DevTools / CDP Network.emulateNetworkConditions)",
+    "downloadMbps": 1.6,
+    "uploadKbps": 750,
+    "latencyMs": 562.5,
+    "note": "latency는 요청마다 추가되는 최소 네트워크 지연(ms). Chrome Fast 3G 프리셋 = 562.5ms. RTT ≈ 2×562.5ms + 처리시간."
+  },
+  "timingMs": {
+    "documentTtfbMedian": 687,
+    "menuTextVisibleMedian": 2497,
+    "gapTtfbToTextMedian": 1799,
+    "lastNetworkFinishMedian": 2453.4,
+    "lastCssEndMedian": 2373.7,
+    "cssEndToTextGapMedian": 99.90000000000009
+  },
+  "requestsUntilText": {
+    "totalMedian": 29,
+    "bucketsMedian": {
+      "document": 1,
+      "js": 15,
+      "css": 2,
+      "font": 3,
+      "image": 8,
+      "rsc": 0,
+      "other": 0
+    },
+    "jsChunksMedian": 15,
+    "startingAfterDocTtfbMedian": 28
+  },
+  "dependencyChain": {
+    "maxInitiatorDepthMedian": 0,
+    "startWaveCountMedian": 4,
+    "serialSingleRequestWavesMedian": 2,
+    "jsInitiatorTypes": {
+      "parser": 15
+    },
+    "interpretation": [
+      "startWaveCount: 요청 시작 시각 클러스터(80ms 이내=같은 wave). 많을수록 순차 라운드트립 가능성.",
+      "maxInitiatorDepth: script→script initiator 체인 깊이. 2+ 이면 JS가 JS를 연쇄 로드.",
+      "document 이후 시작 요청 = HTML 파싱 후에야 발견되는 리소스(JS/CSS/font/preload)."
+    ]
+  },
+  "wavesSample0": [
+    {
+      "startMs": 0,
+      "parallelCount": 1,
+      "buckets": [
+        "document"
+      ]
+    },
+    {
+      "startMs": 696.3,
+      "parallelCount": 20,
+      "buckets": [
+        "font",
+        "css",
+        "js"
+      ]
+    },
+    {
+      "startMs": 1096.4,
+      "parallelCount": 1,
+      "buckets": [
+        "image"
+      ]
+    },
+    {
+      "startMs": 2452.5,
+      "parallelCount": 7,
+      "buckets": [
+        "image"
+      ]
+    }
+  ],
+  "topRequestsSample0": [
+    {
+      "startMs": 0,
+      "endMs": 1096,
+      "transferKb": 9.6,
+      "bucket": "document",
+      "initiator": "other",
+      "url": "/t/demo"
+    },
+    {
+      "startMs": 696.3,
+      "endMs": 2106.2,
+      "transferKb": 12.9,
+      "bucket": "font",
+      "initiator": "other",
+      "url": "/_next/static/.../3c285486269019b7-s.p.f6eddd95.woff2"
+    },
+    {
+      "startMs": 697,
+      "endMs": 2185,
+      "transferKb": 13.2,
+      "bucket": "font",
+      "initiator": "other",
+      "url": "/_next/static/.../6f42e0a3b0519c4d-s.p.7183773d.woff2"
+    },
+    {
+      "startMs": 697.3,
+      "endMs": 2185.4,
+      "transferKb": 13.6,
+      "bucket": "font",
+      "initiator": "other",
+      "url": "/_next/static/.../8f46d218c8f79e34-s.p.12435988.woff2"
+    },
+    {
+      "startMs": 698.6,
+      "endMs": 1346.8,
+      "transferKb": 1,
+      "bucket": "css",
+      "initiator": "parser",
+      "url": "/_next/static/.../88532042137e13ec.css"
+    },
+    {
+      "startMs": 698.9,
+      "endMs": 2403.1,
+      "transferKb": 23.5,
+      "bucket": "css",
+      "initiator": "parser",
+      "url": "/_next/static/.../7972b28924b91dad.css"
+    },
+    {
+      "startMs": 699.1,
+      "endMs": 1513.7,
+      "transferKb": 1.8,
+      "bucket": "js",
+      "initiator": "parser",
+      "url": "/_next/static/.../a425f9a4d6fa120a.js"
+    },
+    {
+      "startMs": 699.3,
+      "endMs": 1982.3,
+      "transferKb": 10,
+      "bucket": "js",
+      "initiator": "parser",
+      "url": "/_next/static/.../6c3d725ab2548640.js"
+    },
+    {
+      "startMs": 699.5,
+      "endMs": 1763.8,
+      "transferKb": 5.8,
+      "bucket": "js",
+      "initiator": "parser",
+      "url": "/_next/static/.../1df32724df735088.js"
+    },
+    {
+      "startMs": 699.7,
+      "endMs": null,
+      "transferKb": 0,
+      "bucket": "js",
+      "initiator": "parser",
+      "url": "/_next/static/.../4e66d6cc7ff74050.js"
+    },
+    {
+      "startMs": 699.9,
+      "endMs": 2122.3,
+      "transferKb": 12.6,
+      "bucket": "js",
+      "initiator": "parser",
+      "url": "/_next/static/.../3892dd5c853c461f.js"
+    },
+    {
+      "startMs": 700.1,
+      "endMs": 2279.6,
+      "transferKb": 17.3,
+      "bucket": "js",
+      "initiator": "parser",
+      "url": "/_next/static/.../80bc014991d5c1bd.js"
+    },
+    {
+      "startMs": 700.3,
+      "endMs": 1686.5,
+      "transferKb": 4.4,
+      "bucket": "js",
+      "initiator": "parser",
+      "url": "/_next/static/.../turbopack-bf9e013082cdca91.js"
+    },
+    {
+      "startMs": 700.5,
+      "endMs": 1529.1,
+      "transferKb": 1.8,
+      "bucket": "js",
+      "initiator": "parser",
+      "url": "/_next/static/.../e35bdf7a255aa8f3.js"
+    },
+    {
+      "startMs": 700.7,
+      "endMs": 1420.7,
+      "transferKb": 0.4,
+      "bucket": "js",
+      "initiator": "parser",
+      "url": "/_next/static/.../cb457c30e24c53b7.js"
+    },
+    {
+      "startMs": 700.8,
+      "endMs": 1936.2,
+      "transferKb": 7.6,
+      "bucket": "js",
+      "initiator": "parser",
+      "url": "/_next/static/.../3d6787d69b85c6dd.js"
+    },
+    {
+      "startMs": 700.9,
+      "endMs": 1639.6,
+      "transferKb": 3.7,
+      "bucket": "js",
+      "initiator": "parser",
+      "url": "/_next/static/.../6236b5a4a9e3098a.js"
+    },
+    {
+      "startMs": 701.1,
+      "endMs": 2294.5,
+      "transferKb": 16.2,
+      "bucket": "js",
+      "initiator": "parser",
+      "url": "/_next/static/.../800f87e132b2c1e1.js"
+    },
+    {
+      "startMs": 701.4,
+      "endMs": 2248,
+      "transferKb": 15.2,
+      "bucket": "js",
+      "initiator": "parser",
+      "url": "/_next/static/.../4e8a381fdc7bac65.js"
+    },
+    {
+      "startMs": 701.6,
+      "endMs": 1421.6,
+      "transferKb": 1.3,
+      "bucket": "js",
+      "initiator": "parser",
+      "url": "/_next/static/.../561b373a15e44fe5.js"
+    }
+  ],
+  "topTransferSample0": [
+    {
+      "transferKb": 23.5,
+      "startMs": 698.9,
+      "endMs": 2403.1,
+      "bucket": "css",
+      "url": "/_next/static/.../7972b28924b91dad.css"
+    },
+    {
+      "transferKb": 17.3,
+      "startMs": 700.1,
+      "endMs": 2279.6,
+      "bucket": "js",
+      "url": "/_next/static/.../80bc014991d5c1bd.js"
+    },
+    {
+      "transferKb": 16.2,
+      "startMs": 701.1,
+      "endMs": 2294.5,
+      "bucket": "js",
+      "url": "/_next/static/.../800f87e132b2c1e1.js"
+    },
+    {
+      "transferKb": 15.2,
+      "startMs": 701.4,
+      "endMs": 2248,
+      "bucket": "js",
+      "url": "/_next/static/.../4e8a381fdc7bac65.js"
+    },
+    {
+      "transferKb": 13.6,
+      "startMs": 697.3,
+      "endMs": 2185.4,
+      "bucket": "font",
+      "url": "/_next/static/.../8f46d218c8f79e34-s.p.12435988.woff2"
+    },
+    {
+      "transferKb": 13.2,
+      "startMs": 697,
+      "endMs": 2185,
+      "bucket": "font",
+      "url": "/_next/static/.../6f42e0a3b0519c4d-s.p.7183773d.woff2"
+    },
+    {
+      "transferKb": 12.9,
+      "startMs": 696.3,
+      "endMs": 2106.2,
+      "bucket": "font",
+      "url": "/_next/static/.../3c285486269019b7-s.p.f6eddd95.woff2"
+    },
+    {
+      "transferKb": 12.6,
+      "startMs": 699.9,
+      "endMs": 2122.3,
+      "bucket": "js",
+      "url": "/_next/static/.../3892dd5c853c461f.js"
+    },
+    {
+      "transferKb": 10,
+      "startMs": 699.3,
+      "endMs": 1982.3,
+      "bucket": "js",
+      "url": "/_next/static/.../6c3d725ab2548640.js"
+    },
+    {
+      "transferKb": 9.6,
+      "startMs": 0,
+      "endMs": 1096,
+      "bucket": "document",
+      "url": "/t/demo"
+    }
+  ],
+  "rttFloorEstimate": {
+    "latencyPerHopMs": 562.5,
+    "approximateRttMs": 1125,
+    "ttfbMedianMs": 687,
+    "gapAfterTtfbMedianMs": 1799,
+    "wavesMedian": 4,
+    "serialLatencyFloorMs": 4500,
+    "note": "이론 하한 ≈ waves × RTT (전송량 0 가정). 실측 gap은 전송+파싱+실행 포함."
+  },
+  "verdict": {
+    "primaryBottleneck": "latency_round_trips",
+    "gapMs": 1799,
+    "estimatedSerialRttFloorMs": 4500,
+    "estimatedTransferSerialMs183KB": 894,
+    "explanation": "전송량·다운로드 시간이 지배적일 가능성."
+  }
+}

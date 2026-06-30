@@ -122,7 +122,8 @@ export function MerchantConsumerQrPanel({ tenantSlug, siteBase }: Props) {
         에서 번호만 넣으면 됩니다 (CHAYA가 QR을 만들어 드립니다).
       </p>
       <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
-        테이블 QR은 서명·만료 링크로 생성됩니다. 저장·공유한 옛 주소로는 주문할 수 없어요.
+        테이블 QR은 인쇄해도 만료되지 않습니다. 손님이 <strong>스캔한 시점부터</strong> 주문 가능(기본 4시간).
+        메뉴 주소만 복사해서는 주문할 수 없습니다.
       </p>
     </section>
   );

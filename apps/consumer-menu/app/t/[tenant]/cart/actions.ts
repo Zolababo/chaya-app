@@ -50,8 +50,6 @@ export async function submitGuestOrderAction(
   guestSessionId: string | null,
   tableNo: string | null,
   guestNote: string | null,
-  tableQrExp: number | null,
-  tableQrSig: string | null,
 ): Promise<SubmitGuestOrderActionResult> {
   const slug = tenant.trim();
   const ipKey = await rateLimitKeyFromHeaders(`guest-order:${slug}`);
@@ -89,7 +87,5 @@ export async function submitGuestOrderAction(
     guestSessionId: sid || null,
     tableNo: tableNo?.trim() || null,
     guestNote: guestNote?.trim() || null,
-    tableQrExp,
-    tableQrSig: tableQrSig?.trim() || null,
   });
 }

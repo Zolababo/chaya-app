@@ -39,8 +39,6 @@ import {
   readGuestSessionFromBrowser,
 } from "@/lib/guest-session/ensure-guest-session";
 
-import { readTableQrTokenPref } from "@/lib/cart/table-qr-token-pref";
-
 import { useConsumerEasyMode } from "@/lib/consumer/consumer-easy-mode-context";
 import { useEasyMenuHref } from "@/lib/consumer/use-easy-menu-href";
 import { useConsumerVoiceAnnounce } from "@/lib/consumer/use-consumer-voice-announce";
@@ -190,11 +188,6 @@ export function CartCheckoutClient({
     ensureGuestSessionInBrowser();
     const guestSessionId = readGuestSessionFromBrowser();
     const tableNo = tableSelection.effectiveCode;
-    const qrPref = readTableQrTokenPref(tenant);
-    const qrForTable =
-      qrPref && tableNo.trim() && qrPref.table === tableNo.trim()
-        ? { exp: qrPref.exp, sig: qrPref.sig }
-        : { exp: null, sig: null };
 
     startTransition(async () => {
       let orderSucceeded = false;
@@ -205,8 +198,6 @@ export function CartCheckoutClient({
           guestSessionId,
           tableNo.trim() || null,
           null,
-          qrForTable.exp,
-          qrForTable.sig,
         );
         if (!res.ok) {
           const msg = resolveGuestOrderError(res.code, locale, res.params);

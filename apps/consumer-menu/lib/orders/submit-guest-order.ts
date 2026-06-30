@@ -9,7 +9,7 @@ import {
   fetchTenantStoreSettings,
   guestOrderAcceptanceBlock,
 } from "@/lib/tenant/tenant-store-settings";
-import { validateGuestTableQrToken } from "@/lib/tables/validate-guest-table-qr-token";
+import { validateGuestTableOrderGate } from "@/lib/tables/validate-guest-table-qr-token";
 
 import { validateGuestTableNo } from "@/lib/tables/validate-guest-table";
 
@@ -36,8 +36,6 @@ export async function submitGuestOrder(input: {
   guestSessionId?: string | null;
   tableNo?: string | null;
   guestNote?: string | null;
-  tableQrExp?: number | null;
-  tableQrSig?: string | null;
 }): Promise<SubmitGuestOrderResult> {
   const tenantCheck = sanitizeTenantSlug(input.tenant);
   if (!tenantCheck.ok) {
@@ -138,14 +136,9 @@ export async function submitGuestOrder(input: {
     return { ok: false, code: tableCheck.code };
   }
   if (tableCheck.tableNo) {
-    const qrCheck = await validateGuestTableQrToken(
-      slug,
-      tableCheck.tableNo,
-      input.tableQrExp,
-      input.tableQrSig,
-    );
-    if (!qrCheck.ok) {
-      return { ok: false, code: qrCheck.code };
+    const gateCheck = await validateGuestTableOrderGate(slug, tableCheck.tableNo);
+    if (!gateCheck.ok) {
+      return { ok: false, code: gateCheck.code };
     }
     row.table_no = tableCheck.tableNo;
   }
